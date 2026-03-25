@@ -180,89 +180,109 @@ async def scrape():
     _bbox_last_page = None
 
     async with async_playwright() as p:
-        proxy_cfg = _pick_proxy()
-        if proxy_cfg:
-            print(f"  Using proxy: {proxy_cfg['server']}")
-        browser = await p.chromium.launch(
-            headless=HEADLESS,
-            args=[
-                "--disable-blink-features=AutomationControlled",
-                "--no-sandbox",
-                "--disable-dev-shm-usage",
-                "--enable-unsafe-swiftshader",
-            ],
-            proxy=proxy_cfg,
-        )
-        context = await browser.new_context(
-            viewport={"width": 1280, "height": 720},
-            user_agent=(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/146.0.0.0 Safari/537.36"
+        MAX_PROXY_ATTEMPTS = 3
+        browser = page = None
+
+        for proxy_attempt in range(1, MAX_PROXY_ATTEMPTS + 1):
+            proxy_cfg = _pick_proxy()
+            if proxy_cfg:
+                log.info("Proxy attempt %d/%d: %s (user: %s)",
+                         proxy_attempt, MAX_PROXY_ATTEMPTS,
+                         proxy_cfg['server'], proxy_cfg.get('username', 'none'))
+                print(f"  Using proxy: {proxy_cfg['server']}")
+
+            browser = await p.chromium.launch(
+                headless=HEADLESS,
+                args=[
+                    "--disable-blink-features=AutomationControlled",
+                    "--no-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--enable-unsafe-swiftshader",
+                ],
+                proxy=proxy_cfg,
             )
-        )
-        page = await context.new_page()
+            context = await browser.new_context(
+                viewport={"width": 1280, "height": 720},
+                user_agent=(
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/146.0.0.0 Safari/537.36"
+                )
+            )
+            page = await context.new_page()
 
-        # ── Capture Bearer token from outgoing requests ────────────────────────
-        def on_request(request):
-            nonlocal bearer_token
-            if bearer_token or "api.zap-map.io" not in request.url:
-                return
-            auth = request.headers.get("authorization", "")
-            if auth.startswith("Bearer "):
-                bearer_token = auth
+            # ── Capture Bearer token from outgoing requests ────────────────────
+            def on_request(request):
+                nonlocal bearer_token
+                if bearer_token or "api.zap-map.io" not in request.url:
+                    return
+                auth = request.headers.get("authorization", "")
+                if auth.startswith("Bearer "):
+                    bearer_token = auth
 
-        page.on("request", on_request)
-        page.on("console", lambda msg: log.debug("BROWSER %s: %s", msg.type, msg.text)
-                if msg.type == "error" else None)
-        page.on("requestfailed", lambda req: log.debug(
-                "REQUEST FAILED [%s]: %s", req.failure, req.url[:120]))
-        
+            page.on("request", on_request)
+            page.on("console", lambda msg: log.debug("BROWSER %s: %s", msg.type, msg.text)
+                    if msg.type == "error" else None)
+            page.on("requestfailed", lambda req: log.debug(
+                    "REQUEST FAILED [%s]: %s", req.failure, req.url[:120]))
 
-        # ── Intercept all bounding-box responses ───────────────────────────────
-        async def handle_response(response):
-            nonlocal _bbox_base_url, _bbox_last_page
-            if "api.zap-map.io" in response.url:
-                log.debug("API response [%d]: %s", response.status, response.url[:120])
-            if "bounding-box" in response.url:
-                try:
-                    body = await response.json()
-                    before = len(locations)
-                    for loc in body.get("data", []):
-                        locations[loc["uuid"]] = loc
-                    meta = body.get("meta", {})
-                    added = len(locations) - before
-                    print(
-                        f"  bounding-box page {meta.get('current_page')}/{meta.get('last_page')}"
-                        f" — {added} new locations (total: {len(locations)})"
-                    )
-                    _bbox_base_url = re.sub(r"[?&]page=\d+", "", response.url)
-                    _bbox_last_page = meta.get("last_page", 1)
-                except Exception:
-                    pass
-                return
+            # ── Intercept all bounding-box responses ──────────────────────────
+            async def handle_response(response):
+                nonlocal _bbox_base_url, _bbox_last_page
+                if "api.zap-map.io" in response.url:
+                    log.debug("API response [%d]: %s", response.status, response.url[:120])
+                if "bounding-box" in response.url:
+                    try:
+                        body = await response.json()
+                        before = len(locations)
+                        for loc in body.get("data", []):
+                            locations[loc["uuid"]] = loc
+                        meta = body.get("meta", {})
+                        added = len(locations) - before
+                        print(
+                            f"  bounding-box page {meta.get('current_page')}/{meta.get('last_page')}"
+                            f" — {added} new locations (total: {len(locations)})"
+                        )
+                        _bbox_base_url = re.sub(r"[?&]page=\d+", "", response.url)
+                        _bbox_last_page = meta.get("last_page", 1)
+                    except Exception:
+                        pass
+                    return
 
-        page.on("response", handle_response)
+            page.on("response", handle_response)
 
-        # ── Apply stealth patches to bypass Cloudflare bot detection ─────────
-        await page.add_init_script("""
-            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
-            Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
-            Object.defineProperty(navigator, 'languages', {get: () => ['en-GB', 'en']});
-            Object.defineProperty(window, 'chrome', {
-                writable: true, enumerable: true, configurable: false,
-                value: {runtime: {}}
-            });
-            const _origQuery = window.navigator.permissions.query;
-            window.navigator.permissions.query = (p) =>
-                p.name === 'notifications'
-                    ? Promise.resolve({state: Notification.permission})
-                    : _origQuery(p);
-        """)
+            # ── Apply stealth patches to bypass Cloudflare bot detection ──────
+            await page.add_init_script("""
+                Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+                Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
+                Object.defineProperty(navigator, 'languages', {get: () => ['en-GB', 'en']});
+                Object.defineProperty(window, 'chrome', {
+                    writable: true, enumerable: true, configurable: false,
+                    value: {runtime: {}}
+                });
+                const _origQuery = window.navigator.permissions.query;
+                window.navigator.permissions.query = (p) =>
+                    p.name === 'notifications'
+                        ? Promise.resolve({state: Notification.permission})
+                        : _origQuery(p);
+            """)
 
-        # ── Load zapmap.com/live/ ──────────────────────────────────────────────
-        print("Loading zapmap.com...")
-        await page.goto("https://www.zapmap.com/live/", wait_until="domcontentloaded", timeout=90_000)
+            # ── Load zapmap.com/live/ ──────────────────────────────────────────
+            print("Loading zapmap.com...")
+            try:
+                await page.goto("https://www.zapmap.com/live/",
+                                wait_until="domcontentloaded", timeout=90_000)
+                break  # page loaded — proceed with scrape
+            except Exception as exc:
+                log.warning(
+                    "Proxy attempt %d/%d failed [%s]: %s — %s",
+                    proxy_attempt, MAX_PROXY_ATTEMPTS,
+                    proxy_cfg['server'] if proxy_cfg else 'direct',
+                    type(exc).__name__, str(exc)[:80],
+                )
+                await browser.close()
+                if proxy_attempt == MAX_PROXY_ATTEMPTS:
+                    raise
 
         # Give JS time to initialise before any interaction (longer on headless Linux)
         await page.wait_for_timeout(12_000)

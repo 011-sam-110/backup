@@ -15,7 +15,7 @@ export function FilterProvider({ children }) {
   const [dateRange, setDateRange] = useState({ start: null, end: null })
   const [availableOperators, setAvailableOperators] = useState([])
 
-  function clearFilters() {
+  const clearFilters = useCallback(() => {
     setSearch('')
     setMinEvses('')
     setMaxEvses('')
@@ -26,18 +26,18 @@ export function FilterProvider({ children }) {
     setConnectorFilter('all')
     setOperatorFilter('all')
     setDateRange({ start: null, end: null })
-  }
+  }, [])
 
   /** Returns query-string suffix for API calls that support date range, e.g. "&start_dt=...&end_dt=..." */
-  function apiDateParams() {
+  const apiDateParams = useCallback(() => {
     if (dateRange.start && dateRange.end) {
       return `&start_dt=${encodeURIComponent(dateRange.start.toISOString())}&end_dt=${encodeURIComponent(dateRange.end.toISOString())}`
     }
     return ''
-  }
+  }, [dateRange])
 
   /** Returns query-string suffix for analytics endpoints (date range + operator/connector/kW) */
-  function analyticsParams() {
+  const analyticsParams = useCallback(() => {
     const parts = []
     if (dateRange.start && dateRange.end) {
       parts.push(`start_dt=${encodeURIComponent(dateRange.start.toISOString())}`)
@@ -50,10 +50,10 @@ export function FilterProvider({ children }) {
     if (minEvses) parts.push(`min_evses=${encodeURIComponent(minEvses)}`)
     if (maxEvses) parts.push(`max_evses=${encodeURIComponent(maxEvses)}`)
     return parts.length ? '&' + parts.join('&') : ''
-  }
+  }, [dateRange, operatorFilter, connectorFilter, minKw, maxKw, minEvses, maxEvses])
 
   /** Query-string suffix for operator/connector/kW only (no date range). */
-  function filterOnlyParams() {
+  const filterOnlyParams = useCallback(() => {
     const parts = []
     if (operatorFilter !== 'all') parts.push(`operator=${encodeURIComponent(operatorFilter)}`)
     if (connectorFilter !== 'all') parts.push(`connector=${encodeURIComponent(connectorFilter)}`)
@@ -62,7 +62,7 @@ export function FilterProvider({ children }) {
     if (minEvses) parts.push(`min_evses=${encodeURIComponent(minEvses)}`)
     if (maxEvses) parts.push(`max_evses=${encodeURIComponent(maxEvses)}`)
     return parts.length ? '&' + parts.join('&') : ''
-  }
+  }, [operatorFilter, connectorFilter, minKw, maxKw, minEvses, maxEvses])
 
   /** Returns URL query params object for /api/hubs date range filtering */
   const hubsUrl = useCallback(() => {

@@ -138,7 +138,7 @@ export default function Graphs() {
                   ? <div className="empty">No hub data.</div>
                   : <HubBarChart hubs={filteredHubs} onHubClick={setSelectedHub} label="Snapshot utilisation figure" />}
                 <CustomRangePanel
-                  title="Custom Range"
+                  title="Secondary Chart"
                   buildUrl={(range, sh, eh) =>
                     range.start && range.end
                       ? `/api/hubs?start_dt=${enc(range.start)}&end_dt=${enc(range.end)}&start_hour=${sh}&end_hour=${eh}`
@@ -166,7 +166,7 @@ export default function Graphs() {
                   ? <div className="empty">Need 2+ scrape runs to show a trend.</div>
                   : <UtilisationLine data={history} />}
                 <CustomRangePanel
-                  title="Custom Range"
+                  title="SECONDARY CUSTOM CHART"
                   buildUrl={(range, sh, eh, fp) => {
                     const dt = range.start && range.end
                       ? `&start_dt=${enc(range.start)}&end_dt=${enc(range.end)}`
@@ -192,7 +192,7 @@ export default function Graphs() {
               <>
                 <ReliabilityChart data={reliabilityData} />
                 <CustomRangePanel
-                  title="Custom Range"
+                  title="SECONDARY CUSTOM CHART"
                   buildUrl={(range, sh, eh, fp) => {
                     const dt = range.start && range.end
                       ? `&start_dt=${enc(range.start)}&end_dt=${enc(range.end)}`
@@ -214,7 +214,7 @@ export default function Graphs() {
               <>
                 <HourlyPattern data={hourly} />
                 <CustomRangePanel
-                  title="Custom Range"
+                  title="SECONDARY CUSTOM CHART"
                   buildUrl={(range, sh, eh, fp) => {
                     const dt = range.start && range.end
                       ? `&start_dt=${enc(range.start)}&end_dt=${enc(range.end)}`
