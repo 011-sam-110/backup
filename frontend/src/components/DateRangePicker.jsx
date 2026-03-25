@@ -142,8 +142,8 @@ export default function DateRangePicker({ value, onChange }) {
         onClick={() => setOpen(o => !o)}
         style={{
           width: '100%',
-          background: '#1e2130',
-          border: '1px solid #404660',
+          background: 'var(--surface)',
+          border: '1px solid #CED4DA',
           borderRadius: 6,
           color: start ? 'var(--text)' : 'var(--text-muted)',
           padding: '6px 10px',
@@ -202,7 +202,7 @@ export default function DateRangePicker({ value, onChange }) {
                   color: 'var(--text)', fontSize: 12, cursor: 'pointer',
                   transition: 'background 0.1s',
                 }}
-                onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                onMouseOver={e => e.currentTarget.style.background = 'rgba(0,0,0,0.04)'}
                 onMouseOut={e => e.currentTarget.style.background = 'none'}
               >
                 {p.label}

@@ -19,14 +19,14 @@ function Section({ title, icon, defaultOpen = true, children }) {
         style={{
           width: '100%', display: 'flex', alignItems: 'center', gap: 7,
           padding: '9px 12px', background: 'none', border: 'none',
-          color: '#ffffff', cursor: 'pointer',
+          color: '#495057', cursor: 'pointer',
           fontSize: 12, fontWeight: 700, textTransform: 'uppercase',
           letterSpacing: '0.09em', userSelect: 'none',
           fontFamily: 'Inter, inherit',
           transition: 'color 0.15s',
         }}
-        onMouseOver={e => e.currentTarget.style.color = '#ffffff'}
-        onMouseOut={e => e.currentTarget.style.color = '#ffffff'}
+        onMouseOver={e => e.currentTarget.style.color = '#495057'}
+        onMouseOut={e => e.currentTarget.style.color = '#495057'}
       >
         <span style={{ fontSize: 12, opacity: 0.65 }}>{icon}</span>
         <span style={{ flex: 1, textAlign: 'left' }}>{title}</span>
@@ -43,7 +43,7 @@ function Section({ title, icon, defaultOpen = true, children }) {
 
 function Label({ children }) {
   return (
-    <div style={{ fontSize: 12, color: '#ffffff', marginBottom: 4, marginTop: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+    <div style={{ fontSize: 12, color: '#495057', marginBottom: 4, marginTop: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
       {children}
     </div>
   )
@@ -79,7 +79,7 @@ export default function Toolbar() {
       <aside style={{
         width: 220,
         flexShrink: 0,
-        background: 'var(--surface)',
+        background: '#F1F3F5',
         borderRight: '1px solid var(--border)',
         overflowY: 'auto',
         display: 'flex',
@@ -92,7 +92,7 @@ export default function Toolbar() {
           borderBottom: '1px solid var(--border)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.09em', color: '#ffffff' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.09em', color: '#495057' }}>
             Filters
           </span>
           {hasFilters && (

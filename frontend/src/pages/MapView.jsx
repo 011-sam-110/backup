@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { MapContainer, TileLayer, Marker, Tooltip, useMap } from 'react-leaflet'
+import MarkerClusterGroup from 'react-leaflet-cluster'
 import L from 'leaflet'
 import HubDetailModal from '../components/HubDetailModal'
 import { utilColor, MAP_BANDS } from '../utils/status'
@@ -87,23 +88,25 @@ export default function MapView() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             />
             {flyTarget && <FlyTo target={flyTarget} />}
-            {filtered.map(hub => (
-              <Marker
-                key={hub.uuid}
-                position={[hub.latitude, hub.longitude]}
-                icon={makePin(utilColor(hub.utilisation_pct ?? 0))}
-                eventHandlers={{ click: () => setSelectedHub(hub) }}
-              >
-                <Tooltip direction="top" offset={[0, -28]} opacity={1}>
-                  <div style={{ fontFamily: 'sans-serif', fontSize: 12, lineHeight: 1.4 }}>
-                    <div style={{ fontWeight: 600 }}>{hubLabel(hub)}</div>
-                    <div style={{ color: utilColor(hub.utilisation_pct ?? 0) }}>
-                      {hub.utilisation_pct ?? 0}% utilised
+            <MarkerClusterGroup chunkedLoading>
+              {filtered.map(hub => (
+                <Marker
+                  key={hub.uuid}
+                  position={[hub.latitude, hub.longitude]}
+                  icon={makePin(utilColor(hub.utilisation_pct ?? 0))}
+                  eventHandlers={{ click: () => setSelectedHub(hub) }}
+                >
+                  <Tooltip direction="top" offset={[0, -28]} opacity={1}>
+                    <div style={{ fontFamily: 'sans-serif', fontSize: 12, lineHeight: 1.4 }}>
+                      <div style={{ fontWeight: 600 }}>{hubLabel(hub)}</div>
+                      <div style={{ color: utilColor(hub.utilisation_pct ?? 0) }}>
+                        {hub.utilisation_pct ?? 0}% utilised
+                      </div>
                     </div>
-                  </div>
-                </Tooltip>
-              </Marker>
-            ))}
+                  </Tooltip>
+                </Marker>
+              ))}
+            </MarkerClusterGroup>
           </MapContainer>
         </div>
 
@@ -159,9 +162,7 @@ export default function MapView() {
                     <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>{hub.total_evses} EVSEs · {hub.max_power_kw}kW</div>
                   </div>
                   <span style={{
-                    fontSize: 11, fontWeight: 700, color: utilColor(hub.utilisation_pct ?? 0),
-                    background: `${utilColor(hub.utilisation_pct ?? 0)}1a`,
-                    padding: '2px 7px', borderRadius: 99,
+                    fontSize: 11, fontWeight: 600, color: 'var(--text-muted)',
                   }}>
                     {hub.utilisation_pct ?? 0}%
                   </span>

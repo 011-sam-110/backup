@@ -40,7 +40,7 @@ export default function HubTable({ hubs, onHubClick }) {
   const paginated = sorted.slice(0, page * PAGE_SIZE)
   const hasMore = paginated.length < sorted.length
 
-  const NUMERIC_KEYS = new Set(['max_power_kw','total_evses','charging_count','est_kw','available_count','inoperative_count','latitude','longitude','user_rating'])
+  const NUMERIC_KEYS = new Set(['max_power_kw','total_evses','charging_count','est_kw','available_count','inoperative_count','latitude','longitude','user_rating','utilisation_pct'])
 
   function th(label, key, extraStyle = {}) {
     const active = sortKey === key
@@ -129,8 +129,8 @@ export default function HubTable({ hubs, onHubClick }) {
                 </td>
                 <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{hub.available_count ?? '—'}</td>
                 <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: hub.inoperative_count > 0 ? 'var(--amber)' : undefined }}>{hub.inoperative_count ?? '—'}</td>
-                <td style={{ textAlign: 'center' }}>
-                  <div className="util-cell" style={{ justifyContent: 'center' }}>
+                <td style={{ textAlign: 'right' }}>
+                  <div className="util-cell" style={{ justifyContent: 'flex-end' }}>
                     <div className="util-bar-bg">
                       <div
                         className="util-bar"

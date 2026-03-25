@@ -23,8 +23,8 @@ export function utilClass(pct) {
 }
 
 export function utilIcon(pct) {
-  if (pct >= 50) return { icon: '⚠', label: 'Critical', ariaLabel: 'Critical utilisation' }
-  if (pct >= 30) return { icon: '▲', label: 'High',     ariaLabel: 'High utilisation' }
+  if (pct >= 50) return { icon: '▲', label: 'High',     ariaLabel: 'High utilisation' }
+  if (pct >= 30) return { icon: '▲', label: 'Busy',     ariaLabel: 'Busy utilisation' }
   if (pct >= 25) return { icon: '▲', label: 'Moderate', ariaLabel: 'Moderate utilisation' }
   if (pct >= 15) return { icon: '●', label: 'Low',      ariaLabel: 'Low utilisation' }
   return                 { icon: '✓', label: 'Normal',   ariaLabel: 'Normal utilisation' }
@@ -49,5 +49,5 @@ export const MAP_BANDS = [
   { color: '#84cc16', label: '15–24%', min: 15, max: 25 },
   { color: '#f59e0b', label: '25–29%', min: 25, max: 30 },
   { color: '#f97316', label: '30–49%', min: 30, max: 50 },
-  { color: '#ef4444', label: '50%+',   min: 50, max: Infinity },
+  { color: '#1D4ED8', label: '50%+',   min: 50, max: Infinity },
 ]

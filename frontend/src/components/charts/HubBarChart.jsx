@@ -96,7 +96,7 @@ export default function HubBarChart({ hubs, onHubClick, label }) {
             <Bar
               dataKey="utilisation_pct"
               radius={[0, 4, 4, 0]}
-              maxBarSize={26}
+              maxBarSize={18}
               onClick={(data) => onHubClick?.(data)}
             >
               {chartData.map((h) => (

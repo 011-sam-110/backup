@@ -63,7 +63,7 @@ export default function HourlyPattern({ data }) {
   return (
     <ResponsiveContainer width="100%" height={220}>
       <BarChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
         <XAxis
           dataKey="hour"
           tickFormatter={fmtHour}
@@ -80,7 +80,7 @@ export default function HourlyPattern({ data }) {
           tickFormatter={v => `${v}%`}
         />
         <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
-        <Bar dataKey="avg_utilisation_pct" radius={[4, 4, 0, 0]} maxBarSize={32}>
+        <Bar dataKey="avg_utilisation_pct" radius={[4, 4, 0, 0]} maxBarSize={20}>
           {chartData.map((d) => (
             <Cell key={d.hour} fill={barFill(d.avg_utilisation_pct)} />
           ))}

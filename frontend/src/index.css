@@ -9,7 +9,7 @@
   --surface-2: #F3F4F6;
 
   /* Borders */
-  --border:       #E5E7EB;
+  --border:       #DEE2E6;
   --border-light: #D1D5DB;
 
   /* Text */
@@ -136,7 +136,7 @@ body {
 }
 
 .last-updated {
-  color: var(--text-muted);
+  color: var(--text);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   font-weight: 500;
@@ -282,7 +282,7 @@ tbody td { padding: 11px 16px; font-size: 13px; font-variant-numeric: tabular-nu
   font-size: 11px; font-weight: 700;
   white-space: nowrap; letter-spacing: 0.02em;
 }
-.badge-critical { background: rgba(239,68,68,0.12);  color: var(--red); }
+.badge-critical { background: rgba(29,78,216,0.10);   color: #1D4ED8; }
 .badge-busy     { background: rgba(249,115,22,0.12); color: var(--orange); }
 .badge-moderate { background: rgba(245,158,11,0.12); color: var(--amber); }
 .badge-low      { background: rgba(132,204,22,0.12); color: var(--lime); }
