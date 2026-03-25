@@ -236,7 +236,7 @@ async def scrape():
 
         # ── Load zapmap.com/live/ ──────────────────────────────────────────────
         print("Loading zapmap.com...")
-        await page.goto("https://www.zapmap.com/live/", wait_until="load", timeout=120_000)
+        await page.goto("https://www.zapmap.com/live/", wait_until="domcontentloaded", timeout=90_000)
 
         # Give JS time to initialise before any interaction (longer on headless Linux)
         await page.wait_for_timeout(12_000)
