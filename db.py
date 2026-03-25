@@ -18,7 +18,7 @@ DB_PATH = Path(os.getenv("DATABASE_PATH", "chargers.db"))
 def _connect() -> sqlite3.Connection:
     con = sqlite3.connect(DB_PATH)
     con.row_factory = sqlite3.Row
-    con.execute("PRAGMA journal_mode=WAL")
+    con.execute("PRAGMA journal_mode=DELETE")
     return con
 
 
