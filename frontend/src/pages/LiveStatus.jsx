@@ -3,7 +3,9 @@ import StatCard from '../components/StatCard'
 import HubTable from '../components/HubTable'
 import PageLoader from '../components/PageLoader'
 import HubDetailModal from '../components/HubDetailModal'
+import MethodologyPanel from '../components/MethodologyPanel'
 import { useFilters, applyFilters } from '../context/FilterContext'
+import { fmtKw, hubEstKw } from '../utils/status'
 
 const REFRESH_MS = 60_000
 
@@ -21,6 +23,7 @@ function FilteredStatsStrip({ hubs }) {
   const totalCharging = hubs.reduce((s, h) => s + (h.charging_count ?? 0), 0)
   const utilPct       = totalEvses > 0 ? totalCharging / totalEvses * 100 : 0
   const tier          = utilPct >= 50 ? 'red' : utilPct >= 30 ? 'amber' : 'green'
+  const estKw         = hubs.reduce((s, h) => s + hubEstKw(h), 0)
 
   return (
     <div style={{
@@ -39,6 +42,7 @@ function FilteredStatsStrip({ hubs }) {
       <Stat label="EVSEs"    value={totalEvses} />
       <Stat label="charging" value={totalCharging} valueClass="green" />
       <Stat label="avg util" value={`${utilPct.toFixed(2)}%`} valueClass={tier} />
+      <Stat label="est. load" value={fmtKw(estKw)} valueClass="amber" />
     </div>
   )
 }
@@ -105,13 +109,7 @@ export default function LiveStatus() {
   } : null
 
   const sparkValues = sparkline.map(d => d.avg_utilisation_pct)
-
-  function fmtKwh(v) {
-    if (v == null) return '—'
-    if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)} GWh`
-    if (v >= 1_000) return `${(v / 1_000).toFixed(1)} MWh`
-    return `${Math.round(v)} kWh`
-  }
+  const totalEstKw   = hubs.reduce((s, h) => s + hubEstKw(h), 0)
 
   if (loading) return <PageLoader text="Loading live data…" />
 
@@ -150,11 +148,13 @@ export default function LiveStatus() {
         />
         <StatCard
           icon="⚡"
-          label="Est. Energy (7d)"
-          value={fmtKwh(stats?.estimated_kwh_7d)}
-          sub="±30–50% estimate"
+          label="Est. Load"
+          value={fmtKw(totalEstKw)}
+          sub="active draw estimate"
         />
       </div>
+
+      <MethodologyPanel />
 
       {isFiltered && filtered.length > 0 && <FilteredStatsStrip hubs={filtered} />}
 

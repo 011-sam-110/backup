@@ -169,7 +169,10 @@ def job():
     scraping = True
     print_scrape_header(run_count)
     t0 = time.monotonic()
-    asyncio.run(scrape())
+    try:
+        asyncio.run(scrape())
+    except Exception as exc:
+        print(f"\n  ERROR: scrape() raised an exception:\n  {exc}\n")
     duration = time.monotonic() - t0
     next_run_at = datetime.now(timezone.utc) + timedelta(minutes=INTERVAL_MINUTES)
     card = build_status_card(run_count, duration)

@@ -1,0 +1,9 @@
+common commands
+  docker compose logs -f scheduler    # watch scraper live
+  docker compose logs -f api          # watch API logs
+  docker compose ps                   # check both containers running
+  docker compose restart scheduler    # restart just one service
+  docker compose down                 # stop everything
+  docker compose up -d                # start everything back up
+  docker compose restart              # restart docker
+  docker compose build                # make docker file

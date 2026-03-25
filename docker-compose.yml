@@ -6,7 +6,11 @@ services:
       - "8000:8000"
     volumes:
       - ./chargers.db:/app/chargers.db
+      - ./chargers.db-shm:/app/chargers.db-shm
+      - ./chargers.db-wal:/app/chargers.db-wal
       - ./proxies.txt:/app/proxies.txt:ro
+    environment:
+      - TERM=xterm
     env_file: .env
     restart: unless-stopped
 
@@ -15,6 +19,10 @@ services:
     command: python scheduler.py
     volumes:
       - ./chargers.db:/app/chargers.db
+      - ./chargers.db-shm:/app/chargers.db-shm
+      - ./chargers.db-wal:/app/chargers.db-wal
       - ./proxies.txt:/app/proxies.txt:ro
+    environment:
+      - TERM=xterm
     env_file: .env
     restart: unless-stopped

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { utilColor, utilTier, utilIcon } from '../utils/status'
+import { utilColor, utilTier, utilIcon, fmtKw, hubEstKw } from '../utils/status'
 
 const PAGE_SIZE = 25
 
@@ -26,9 +26,14 @@ export default function HubTable({ hubs, onHubClick }) {
     }
   }
 
+  function getVal(hub, key) {
+    if (key === 'est_kw') return hubEstKw(hub)
+    return hub[key] ?? -1
+  }
+
   const sorted = [...hubs].sort((a, b) => {
-    const av = a[sortKey] ?? -1
-    const bv = b[sortKey] ?? -1
+    const av = getVal(a, sortKey)
+    const bv = getVal(b, sortKey)
     return sortDir === 'asc' ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1)
   })
 
@@ -63,6 +68,7 @@ export default function HubTable({ hubs, onHubClick }) {
             {th('Max kW', 'max_power_kw')}
             {th('EVSEs', 'total_evses')}
             {th('Charging', 'charging_count')}
+            {th('Est. Load', 'est_kw')}
             {th('Available', 'available_count')}
             {th('Inop', 'inoperative_count')}
             {th('Utilisation', 'utilisation_pct')}
@@ -115,6 +121,9 @@ export default function HubTable({ hubs, onHubClick }) {
                 <td>{hub.max_power_kw}</td>
                 <td>{hub.total_evses}</td>
                 <td className="green">{hub.charging_count ?? '—'}</td>
+                <td style={{ color: 'var(--amber, #f59e0b)', fontSize: 12 }}>
+                  {hub.charging_count > 0 ? fmtKw(hubEstKw(hub)) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
+                </td>
                 <td>{hub.available_count ?? '—'}</td>
                 <td className={hub.inoperative_count > 0 ? 'amber' : ''}>{hub.inoperative_count ?? '—'}</td>
                 <td>

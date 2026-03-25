@@ -14,7 +14,7 @@ function fmtTime(iso) {
 function fmtKwh(v) {
   if (v == null) return null
   if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)} GWh`
-  if (v >= 1_000) return `${(v / 1_000).toFixed(1)} MWh`
+  if (v >= 1_000) return `${(v / 1_000).toFixed(2)} MWh`
   return `${Math.round(v)} kWh`
 }
 

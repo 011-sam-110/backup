@@ -237,8 +237,11 @@ def insert_snapshots(records: list[dict]) -> None:
         unknown     = r.get("unknown_count")      or 0
         total_status = available + charging + inoperative + oos + unknown
         util_pct = round(charging / total_status * 100, 2) if total_status > 0 else 0.0
-        max_kw = r.get("max_power_kw") or power_map.get(r["uuid"], 0.0)
-        estimated_kwh = round(charging * max_kw * interval_hours * _KWH_COEFFICIENT, 2)
+        try:
+            max_kw = r.get("max_power_kw") or power_map.get(r["uuid"], 0.0)
+            estimated_kwh = round(charging * max_kw * interval_hours * _KWH_COEFFICIENT, 2)
+        except Exception:
+            estimated_kwh = None
         rows.append((
             r["uuid"],
             r["scraped_at"],
@@ -695,11 +698,6 @@ def get_stats() -> dict:
         total_evses = 0
 
     snapshot_count = con.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
-    kwh_row = con.execute("""
-        SELECT ROUND(SUM(estimated_kwh), 1) FROM snapshots
-        WHERE scraped_at >= datetime('now', '-7 days')
-    """).fetchone()
-    estimated_kwh_7d = kwh_row[0] or 0.0
     con.close()
     return {
         "total_hubs": hub_count,
@@ -708,5 +706,4 @@ def get_stats() -> dict:
         "total_evses": total_evses,
         "last_scraped_at": last_scraped,
         "total_snapshots": snapshot_count,
-        "estimated_kwh_7d": estimated_kwh_7d,
     }

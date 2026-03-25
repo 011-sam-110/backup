@@ -30,6 +30,19 @@ export function utilIcon(pct) {
   return                 { icon: '✓', label: 'Normal',   ariaLabel: 'Normal utilisation' }
 }
 
+/** Format a kW value as kW or MW */
+export function fmtKw(kw) {
+  if (kw == null || isNaN(kw)) return '—'
+  if (kw >= 1_000_000) return `${(kw / 1_000_000).toFixed(1)} GW`
+  if (kw >= 1_000) return `${(kw / 1_000).toFixed(1)} MW`
+  return `${Math.round(kw)} kW`
+}
+
+/** Estimated load for a single hub: charging_count × max_power_kw × 0.7 */
+export function hubEstKw(hub) {
+  return (hub.charging_count ?? 0) * (hub.max_power_kw ?? 0) * 0.7
+}
+
 /** Bands used in the map legend */
 export const MAP_BANDS = [
   { color: '#22c55e', label: '0–14%',  min: 0,  max: 15 },

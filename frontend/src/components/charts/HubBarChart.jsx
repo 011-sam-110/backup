@@ -2,11 +2,12 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell,
 } from 'recharts'
-import { utilColor } from '../../utils/status'
+import { utilColor, fmtKw, hubEstKw } from '../../utils/status'
 
 const CustomTooltip = ({ active, payload }) => {
   if (!active || !payload?.length) return null
   const d = payload[0].payload
+  const estKw = hubEstKw(d)
   return (
     <div style={{
       background: '#0d1220', border: '1px solid #1c2840',
@@ -17,6 +18,9 @@ const CustomTooltip = ({ active, payload }) => {
       <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#2a3d52', marginBottom: 5 }}>{d.uuid}</div>
       <div style={{ color: utilColor(d.utilisation_pct), fontWeight: 600 }}>{d.utilisation_pct}% utilised</div>
       <div style={{ color: '#dae5f5', marginTop: 2 }}>{d.charging_count} / {d.total_evses} charging</div>
+      {d.charging_count > 0 && (
+        <div style={{ color: '#f59e0b', marginTop: 2 }}>Est. load: {fmtKw(estKw)}</div>
+      )}
     </div>
   )
 }
