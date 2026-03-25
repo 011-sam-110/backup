@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import * as XLSX from 'xlsx'
 import { useFilters, applyFilters } from '../context/FilterContext'
+import { authFetch } from '../context/AuthContext'
 
 const ALL_COLS = [
   { key: 'uuid',               label: 'Hub UUID' },
@@ -73,21 +74,21 @@ export default function ExportModal({ onClose }) {
       let data
 
       if (scope === 'current') {
-        const res = await fetch(isFiltered ? hubsUrl() : '/api/hubs')
+        const res = await authFetch(isFiltered ? hubsUrl() : '/api/hubs')
         const raw = await res.json()
         data = isFiltered ? applyFilters(raw, filters) : raw
       } else {
         const snapshotUrl = `/api/export/snapshots?hours=${hours}`
         if (isFiltered) {
           const [hubRes, snapRes] = await Promise.all([
-            fetch(hubsUrl()),
-            fetch(snapshotUrl),
+            authFetch(hubsUrl()),
+            authFetch(snapshotUrl),
           ])
           const [hubData, snapData] = await Promise.all([hubRes.json(), snapRes.json()])
           const filteredUUIDs = new Set(applyFilters(hubData, filters).map(h => h.uuid))
           data = snapData.filter(row => filteredUUIDs.has(row.uuid))
         } else {
-          const res = await fetch(snapshotUrl)
+          const res = await authFetch(snapshotUrl)
           data = await res.json()
         }
       }

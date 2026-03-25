@@ -22,10 +22,13 @@ Run with:
 """
 
 import os
+import secrets
+import asyncio
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request, Body
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from typing import Optional
 
@@ -42,6 +45,29 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+
+_PASSWORD = os.getenv("DASHBOARD_PASSWORD", "")
+
+
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):
+    """Protect all /api/* routes except /api/auth with a bearer token."""
+    if _PASSWORD and request.url.path.startswith("/api/") and request.url.path != "/api/auth":
+        auth = request.headers.get("authorization", "")
+        if not auth.startswith("Bearer "):
+            return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
+        if not secrets.compare_digest(auth[7:], _PASSWORD):
+            return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
+    return await call_next(request)
+
+
+@app.post("/api/auth")
+async def login(body: dict = Body(...)):
+    pw = body.get("password", "")
+    if not _PASSWORD or not secrets.compare_digest(pw, _PASSWORD):
+        await asyncio.sleep(1)
+        raise HTTPException(status_code=401, detail="Invalid password")
+    return {"token": _PASSWORD}
 
 
 @app.get("/api/stats")

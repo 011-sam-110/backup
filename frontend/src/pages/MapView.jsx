@@ -5,6 +5,7 @@ import HubDetailModal from '../components/HubDetailModal'
 import { MAP_BANDS } from '../utils/status'
 import PageLoader from '../components/PageLoader'
 import { useFilters, applyFilters } from '../context/FilterContext'
+import { authFetch } from '../context/AuthContext'
 
 function bandColor(pct) {
   const band = MAP_BANDS.find(b => pct >= b.min && pct < b.max)
@@ -50,7 +51,7 @@ export default function MapView() {
 
   const load = useCallback(() => {
     setLoading(true)
-    fetch(hubsUrl())
+    authFetch(hubsUrl())
       .then(r => r.json())
       .then(d => {
         setHubs(d)

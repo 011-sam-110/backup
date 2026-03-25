@@ -30,6 +30,7 @@ import PageLoader from '../components/PageLoader'
 import HubDetailModal from '../components/HubDetailModal'
 import MethodologyPanel from '../components/MethodologyPanel'
 import { useFilters, applyFilters } from '../context/FilterContext'
+import { authFetch } from '../context/AuthContext'
 import { fmtKw, hubEstKw } from '../utils/status'
 
 const REFRESH_MS = 60_000
@@ -87,10 +88,10 @@ export default function LiveStatus() {
   const load = useCallback(async () => {
     try {
       const [statsRes, hubsRes, deltasRes, sparkRes] = await Promise.all([
-        fetch('/api/stats'),
-        fetch(hubsUrl()),
-        fetch('/api/stats/deltas'),
-        fetch('/api/sparkline?days=7'),
+        authFetch('/api/stats'),
+        authFetch(hubsUrl()),
+        authFetch('/api/stats/deltas'),
+        authFetch('/api/sparkline?days=7'),
       ])
       const hubData = await hubsRes.json()
       setStats(await statsRes.json())

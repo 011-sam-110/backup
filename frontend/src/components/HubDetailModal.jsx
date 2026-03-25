@@ -3,6 +3,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
 import { utilClass } from '../utils/status'
+import { authFetch } from '../context/AuthContext'
 
 function fmtTime(iso) {
   if (!iso) return '—'
@@ -39,7 +40,7 @@ export default function HubDetailModal({ hub, onClose }) {
   const [detailLoading, setDetailLoading] = useState(true)
 
   useEffect(() => {
-    fetch(`/api/history?hub_uuid=${hub.uuid}&hours=24`)
+    authFetch(`/api/history?hub_uuid=${hub.uuid}&hours=24`)
       .then(r => r.json())
       .then(d => setHistory(d))
       .catch(() => {})
@@ -47,7 +48,7 @@ export default function HubDetailModal({ hub, onClose }) {
   }, [hub.uuid])
 
   useEffect(() => {
-    fetch(`/api/hubs/${hub.uuid}`)
+    authFetch(`/api/hubs/${hub.uuid}`)
       .then(r => r.json())
       .then(d => setDetail(d))
       .catch(() => {})

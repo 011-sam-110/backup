@@ -8,6 +8,7 @@ import HubDetailModal from '../components/HubDetailModal'
 import PageLoader from '../components/PageLoader'
 import CustomRangePanel from '../components/charts/CustomRangePanel'
 import { useFilters, applyFilters } from '../context/FilterContext'
+import { authFetch } from '../context/AuthContext'
 
 const REFRESH_MS = 60_000
 
@@ -59,12 +60,12 @@ export default function Graphs() {
     try {
       const ap = analyticsParams()
       const [histRes, hubsRes, hourlyRes, relRes, statsRes, deltasRes] = await Promise.all([
-        fetch(`/api/history?hours=168${ap}`,        { signal: controller.signal }),
-        fetch(hubsUrl(),                             { signal: controller.signal }),
-        fetch(`/api/hourly-pattern?hours=168${ap}`, { signal: controller.signal }),
-        fetch(`/api/reliability?hours=168${ap}`,    { signal: controller.signal }),
-        fetch('/api/stats',                          { signal: controller.signal }),
-        fetch('/api/stats/deltas',                   { signal: controller.signal }),
+        authFetch(`/api/history?hours=168${ap}`,        { signal: controller.signal }),
+        authFetch(hubsUrl(),                             { signal: controller.signal }),
+        authFetch(`/api/hourly-pattern?hours=168${ap}`, { signal: controller.signal }),
+        authFetch(`/api/reliability?hours=168${ap}`,    { signal: controller.signal }),
+        authFetch('/api/stats',                          { signal: controller.signal }),
+        authFetch('/api/stats/deltas',                   { signal: controller.signal }),
       ])
       const hubData = await hubsRes.json()
       setHistory(await histRes.json())

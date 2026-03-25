@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import DateRangePicker from '../DateRangePicker'
 import { useFilters } from '../../context/FilterContext'
+import { authFetch } from '../../context/AuthContext'
 
 const HOUR_OPTS = Array.from({ length: 24 }, (_, h) => ({
   value: h,
@@ -42,7 +43,7 @@ export default function CustomRangePanel({ title = 'Custom Range', buildUrl, ren
     }
 
     setLoading(true)
-    fetch(url, { signal: controller.signal })
+    authFetch(url, { signal: controller.signal })
       .then(r => r.json())
       .then(d => { if (!controller.signal.aborted) setData(d) })
       .catch(() => {})
