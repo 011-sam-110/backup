@@ -6,6 +6,7 @@ import random
 import re
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from playwright.async_api import async_playwright
@@ -24,8 +25,8 @@ HEADLESS = os.getenv("HEADLESS", "true").lower() == "true"
 USE_PROXY = os.getenv("USE_PROXY", "false").lower() == "true"
 
 
-def _pick_proxy() -> str | None:
-    """Return a random proxy URL from proxies.txt, or None if disabled/empty."""
+def _pick_proxy() -> dict | None:
+    """Return a Playwright proxy dict from proxies.txt, or None if disabled/empty."""
     if not USE_PROXY:
         return None
     proxies_path = Path("proxies.txt")
@@ -33,7 +34,15 @@ def _pick_proxy() -> str | None:
         return None
     lines = [l.strip() for l in proxies_path.read_text().splitlines()
              if l.strip() and not l.startswith("#")]
-    return random.choice(lines) if lines else None
+    if not lines:
+        return None
+    parsed = urlparse(random.choice(lines))
+    proxy: dict = {"server": f"{parsed.scheme}://{parsed.hostname}:{parsed.port}"}
+    if parsed.username:
+        proxy["username"] = parsed.username
+    if parsed.password:
+        proxy["password"] = parsed.password
+    return proxy
 
 
 def max_power_w(location: dict) -> int:
@@ -171,9 +180,9 @@ async def scrape():
     _bbox_last_page = None
 
     async with async_playwright() as p:
-        proxy_url = _pick_proxy()
-        if proxy_url:
-            print(f"  Using proxy: {proxy_url.split('@')[-1]}")
+        proxy_cfg = _pick_proxy()
+        if proxy_cfg:
+            print(f"  Using proxy: {proxy_cfg['server']}")
         browser = await p.chromium.launch(
             headless=HEADLESS,
             args=[
@@ -182,7 +191,7 @@ async def scrape():
                 "--disable-dev-shm-usage",
                 "--enable-unsafe-swiftshader",
             ],
-            proxy={"server": proxy_url} if proxy_url else None,
+            proxy=proxy_cfg,
         )
         context = await browser.new_context(
             viewport={"width": 1280, "height": 720},
