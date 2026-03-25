@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import os
 import random
 import re
@@ -10,6 +11,8 @@ from dotenv import load_dotenv
 from playwright.async_api import async_playwright
 
 import db
+
+log = logging.getLogger("evanti.scraper")
 
 load_dotenv()
 BASE_API = "https://api.zap-map.io/locations/v1"
@@ -281,6 +284,7 @@ async def scrape():
                         locations[loc["uuid"]] = loc
 
         if not bearer_token:
+            log.warning("No Bearer token captured — snapshots will have zero counts")
             print("WARNING: No Bearer token captured — status data will be missing. Snapshots will have zero counts.")
 
         # ── Power filter + England filter ──────────────────────────────────────
@@ -288,9 +292,12 @@ async def scrape():
             loc for loc in locations.values()
             if is_great_britain(loc) and max_power_w(loc) >= MIN_POWER_W
         ]
+        log.info("Bounding-box: %d total locations, %d GB 100kW+ qualifying",
+                 len(locations), len(qualifying))
         print(f"Filtered to {len(qualifying)} GB 100kW+ locations.")
 
         if not qualifying:
+            log.warning("No qualifying chargers found — aborting scrape")
             print("No qualifying chargers found. Exiting.")
             await browser.close()
             return
@@ -317,14 +324,19 @@ async def scrape():
                     print(f"  WARNING: Status fetch failed for chunk {i+1}/{len(chunks)} ({len(chunk)} hubs)")
 
             if failed_chunks:
+                log.warning("Status fetch: %d/%d chunks failed", failed_chunks, len(chunks))
                 print(f"WARNING: {failed_chunks}/{len(chunks)} status chunks failed — those hubs have zero counts.")
+            else:
+                log.info("Status fetch: all %d chunks OK, %d hubs with status", len(chunks), len(status_map))
         else:
+            log.warning("Skipping status fetch — no Bearer token")
             print("Skipping status fetch — no Bearer token.")
 
         print(f"Fetching location details for {len(qualifying)} hubs...")
         loc_detail_map = await fetch_location_details(
             page, [loc["uuid"] for loc in qualifying], auth=bearer_token
         )
+        log.info("Location details fetched: %d/%d", len(loc_detail_map), len(qualifying))
 
         scraped_at = datetime.now(timezone.utc).isoformat()
 
@@ -356,6 +368,9 @@ async def scrape():
             "devices":            parsed["devices_out"],
         })
 
+    total_records = len(all_records) + len(db_only_records)
+    log.info("Records built: %d bounding-box + %d db-only = %d total",
+             len(all_records), len(db_only_records), total_records)
     print(f"Collected {len(all_records)} bounding-box + {len(db_only_records)} DB-only hub records.")
 
     # Persist to SQLite
@@ -363,7 +378,8 @@ async def scrape():
     db.upsert_hubs(all_records)
     db.insert_snapshots(all_records + db_only_records)
     db.update_latest_devices_status(db_only_records)
-    print(f"Saved {len(all_records) + len(db_only_records)} hub snapshots to database.")
+    log.info("DB write complete — %d hub snapshots saved", total_records)
+    print(f"Saved {total_records} hub snapshots to database.")
 
 
 if __name__ == "__main__":

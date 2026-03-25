@@ -7,10 +7,13 @@ Tables:
 """
 
 import json
+import logging
 import os
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+log = logging.getLogger("evanti.db")
 
 DB_PATH = Path(os.getenv("DATABASE_PATH", "chargers.db"))
 
@@ -253,6 +256,7 @@ def insert_snapshots(records: list[dict]) -> None:
             util_pct,
             estimated_kwh,
         ))
+    count_before = con.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
     con.executemany("""
         INSERT INTO snapshots
             (hub_uuid, scraped_at, available_count, charging_count,
@@ -261,6 +265,8 @@ def insert_snapshots(records: list[dict]) -> None:
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, rows)
     con.commit()
+    count_after = con.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
+    log.info("insert_snapshots: %d → %d (+%d)", count_before, count_after, count_after - count_before)
     con.close()
 
 

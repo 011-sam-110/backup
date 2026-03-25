@@ -1,7 +1,9 @@
 import asyncio
+import logging
 import os
 import threading
 import time
+import traceback
 from collections import deque
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -11,10 +13,13 @@ from colorama import Fore, Style
 from apscheduler.schedulers.blocking import BlockingScheduler
 from dotenv import load_dotenv
 
+from log_setup import setup_logging
 from scraper import scrape
 import db
 
 load_dotenv()
+setup_logging()
+log = logging.getLogger("evanti.scheduler")
 INTERVAL_MINUTES = int(os.getenv("SCRAPE_INTERVAL_MINUTES", 15))
 DB_PATH = Path("chargers.db")
 
@@ -168,19 +173,30 @@ def job():
     run_count += 1
     scraping = True
     print_scrape_header(run_count)
+    log.info("Scrape #%d started", run_count)
     t0 = time.monotonic()
     try:
         asyncio.run(scrape())
+        duration = time.monotonic() - t0
+        log.info("Scrape #%d done in %.0fs", run_count, duration)
     except Exception as exc:
-        print(f"\n  ERROR: scrape() raised an exception:\n  {exc}\n")
-    duration = time.monotonic() - t0
+        duration = time.monotonic() - t0
+        log.error(
+            "Scrape #%d FAILED after %.0fs — %s\n%s",
+            run_count, duration, exc, traceback.format_exc()
+        )
+        print(f"\n  ERROR: scrape() failed — see logs/scheduler.log\n  {exc}\n")
     next_run_at = datetime.now(timezone.utc) + timedelta(minutes=INTERVAL_MINUTES)
-    card = build_status_card(run_count, duration)
-    history.append(card)
+    try:
+        card = build_status_card(run_count, duration)
+        history.append(card)
+    except Exception as exc:
+        log.error("build_status_card failed: %s", exc)
     scraping = False          # re-enables auto-refresh
 
 
 if __name__ == "__main__":
+    log.info("Scheduler starting — interval %d min, DB: %s", INTERVAL_MINUTES, db.DB_PATH)
     scheduler = BlockingScheduler()
     scheduler.add_job(job, "interval", minutes=INTERVAL_MINUTES)
     threading.Thread(target=_refresh_loop, daemon=True).start()
