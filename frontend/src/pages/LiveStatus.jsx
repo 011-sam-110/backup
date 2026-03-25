@@ -169,7 +169,6 @@ export default function LiveStatus() {
           }
           sub="charging ÷ total EVSEs"
           delta={utilDelta}
-          sparkData={sparkValues.length > 0 ? sparkValues : null}
         />
         <StatCard
           icon={<IconZap />}

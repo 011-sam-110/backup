@@ -1,11 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import { MapContainer, TileLayer, Marker, Tooltip, useMap } from 'react-leaflet'
-import MarkerClusterGroup from 'react-leaflet-cluster'
 import L from 'leaflet'
 import HubDetailModal from '../components/HubDetailModal'
-import { utilColor, MAP_BANDS } from '../utils/status'
+import { MAP_BANDS } from '../utils/status'
 import PageLoader from '../components/PageLoader'
 import { useFilters, applyFilters } from '../context/FilterContext'
+
+function bandColor(pct) {
+  const band = MAP_BANDS.find(b => pct >= b.min && pct < b.max)
+  return band ? band.color : MAP_BANDS[0].color
+}
 
 const _pinCache = new Map()
 function makePin(color) {
@@ -88,25 +92,23 @@ export default function MapView() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             />
             {flyTarget && <FlyTo target={flyTarget} />}
-            <MarkerClusterGroup chunkedLoading>
-              {filtered.map(hub => (
-                <Marker
-                  key={hub.uuid}
-                  position={[hub.latitude, hub.longitude]}
-                  icon={makePin(utilColor(hub.utilisation_pct ?? 0))}
-                  eventHandlers={{ click: () => setSelectedHub(hub) }}
-                >
-                  <Tooltip direction="top" offset={[0, -28]} opacity={1}>
-                    <div style={{ fontFamily: 'sans-serif', fontSize: 12, lineHeight: 1.4 }}>
-                      <div style={{ fontWeight: 600 }}>{hubLabel(hub)}</div>
-                      <div style={{ color: utilColor(hub.utilisation_pct ?? 0) }}>
-                        {hub.utilisation_pct ?? 0}% utilised
-                      </div>
+            {filtered.map(hub => (
+              <Marker
+                key={hub.uuid}
+                position={[hub.latitude, hub.longitude]}
+                icon={makePin(bandColor(hub.utilisation_pct ?? 0))}
+                eventHandlers={{ click: () => setSelectedHub(hub) }}
+              >
+                <Tooltip direction="top" offset={[0, -28]} opacity={1}>
+                  <div style={{ fontFamily: 'sans-serif', fontSize: 12, lineHeight: 1.4 }}>
+                    <div style={{ fontWeight: 600 }}>{hubLabel(hub)}</div>
+                    <div style={{ color: bandColor(hub.utilisation_pct ?? 0) }}>
+                      {hub.utilisation_pct ?? 0}% utilised
                     </div>
-                  </Tooltip>
-                </Marker>
-              ))}
-            </MarkerClusterGroup>
+                  </div>
+                </Tooltip>
+              </Marker>
+            ))}
           </MapContainer>
         </div>
 
