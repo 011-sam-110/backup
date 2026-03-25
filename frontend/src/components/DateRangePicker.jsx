@@ -143,9 +143,9 @@ export default function DateRangePicker({ value, onChange }) {
         style={{
           width: '100%',
           background: 'var(--surface)',
-          border: '1px solid #CED4DA',
+          border: '1px solid var(--border-light)',
           borderRadius: 6,
-          color: start ? 'var(--text)' : 'var(--text-muted)',
+          color: 'var(--text)',
           padding: '6px 10px',
           fontSize: 12,
           cursor: 'pointer',
@@ -177,7 +177,7 @@ export default function DateRangePicker({ value, onChange }) {
           background: 'var(--surface)',
           border: '1px solid var(--border)',
           borderRadius: 10,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
           display: 'flex',
           minWidth: 480,
           overflow: 'hidden',
@@ -268,7 +268,7 @@ export default function DateRangePicker({ value, onChange }) {
                       background: (isStart || isEnd)
                         ? 'var(--accent)'
                         : inRange
-                          ? 'rgba(99,102,241,0.15)'
+                          ? 'rgba(0,86,179,0.10)'
                           : 'transparent',
                       color: !isCurrentMonth
                         ? 'var(--text-muted)'

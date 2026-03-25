@@ -85,6 +85,7 @@ export default function Toolbar() {
         display: 'flex',
         flexDirection: 'column',
         fontSize: 13,
+        color: 'var(--text)',
       }}>
         {/* Header */}
         <div style={{
