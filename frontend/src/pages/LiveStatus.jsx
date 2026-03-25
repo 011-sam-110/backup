@@ -1,5 +1,30 @@
 import { useState, useEffect, useCallback } from 'react'
 import StatCard from '../components/StatCard'
+
+const IconBuilding = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="2" width="14" height="14" rx="1"/>
+    <path d="M6 18V10h6v8"/>
+    <path d="M6 6h1M11 6h1M6 9h1M11 9h1"/>
+  </svg>
+)
+const IconPlug = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 14v3M6 3v4M12 3v4"/>
+    <rect x="4" y="7" width="10" height="5" rx="2"/>
+    <path d="M9 12v2"/>
+  </svg>
+)
+const IconZap = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10.5 2L4 10h6l-2.5 6L15 8H9l1.5-6z"/>
+  </svg>
+)
+const IconBarChart = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 14V8M7 14V5M11 14V9M15 14V3"/>
+  </svg>
+)
 import HubTable from '../components/HubTable'
 import PageLoader from '../components/PageLoader'
 import HubDetailModal from '../components/HubDetailModal'
@@ -28,7 +53,7 @@ function FilteredStatsStrip({ hubs }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 20,
-      background: 'var(--accent-dim)', border: '1px solid rgba(34,211,238,0.2)',
+      background: 'var(--accent-dim)', border: '1px solid rgba(0,86,179,0.2)',
       borderRadius: 9, padding: '9px 16px', marginBottom: 16,
       fontSize: 13, flexWrap: 'wrap',
     }}>
@@ -124,17 +149,17 @@ export default function LiveStatus() {
       </div>
 
       <div className="stat-grid">
-        <StatCard icon="🏢" label="Hubs Tracked" value={stats?.total_hubs ?? '—'} sub="" />
-        <StatCard icon="🔌" label="Total EVSEs" value={stats?.total_evses ?? '—'} sub="across all hubs" />
+        <StatCard icon={<IconBuilding />} label="Hubs Tracked" value={stats?.total_hubs ?? '—'} sub="" />
+        <StatCard icon={<IconPlug />} label="Total EVSEs" value={stats?.total_evses ?? '—'} sub="across all hubs" />
         <StatCard
-          icon="⚡"
+          icon={<IconZap />}
           label="Charging Now"
           value={stats?.total_charging_evses ?? '—'}
           valueClass="green"
           sub="active sessions"
         />
         <StatCard
-          icon="📊"
+          icon={<IconBarChart />}
           label="Avg Utilisation"
           value={stats ? `${stats.avg_utilisation_pct}%` : '—'}
           valueClass={
@@ -147,7 +172,7 @@ export default function LiveStatus() {
           sparkData={sparkValues.length > 0 ? sparkValues : null}
         />
         <StatCard
-          icon="⚡"
+          icon={<IconZap />}
           label="Est. Load"
           value={fmtKw(totalEstKw)}
           sub="active draw estimate"

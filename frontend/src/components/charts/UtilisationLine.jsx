@@ -25,13 +25,13 @@ const CustomTooltip = ({ active, payload, label }) => {
   const kwh = payload.find(p => p.dataKey === 'total_estimated_kwh')
   return (
     <div style={{
-      background: '#0d1220', border: '1px solid #1c2840',
-      borderRadius: 8, padding: '10px 14px', fontSize: 13,
-      fontFamily: 'Outfit, sans-serif',
+      background: '#FFFFFF', border: '1px solid #E5E7EB',
+      borderRadius: 4, padding: '10px 14px', fontSize: 13,
+      fontFamily: 'Inter, sans-serif',
     }}>
-      <div style={{ color: '#5c7a99', marginBottom: 4 }}>{label}</div>
+      <div style={{ color: '#6B7280', marginBottom: 4 }}>{label}</div>
       {util && (
-        <div style={{ color: '#22d3ee', fontWeight: 600 }}>
+        <div style={{ color: '#0056b3', fontWeight: 600 }}>
           Avg utilisation: {util.value}%
         </div>
       )}
@@ -58,18 +58,18 @@ export default function UtilisationLine({ data }) {
   return (
     <ResponsiveContainer width="100%" height={300}>
       <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 30, left: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1c2840" />
+        <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
         <XAxis
           dataKey="time"
-          tick={{ fill: '#5c7a99', fontSize: 11, fontFamily: 'Outfit, sans-serif' }}
-          axisLine={{ stroke: '#1c2840' }}
+          tick={{ fill: '#6B7280', fontSize: 11, fontFamily: 'Inter, sans-serif' }}
+          axisLine={{ stroke: '#E5E7EB' }}
           tickLine={false}
           interval="preserveStartEnd"
         />
         <YAxis
           yAxisId="pct"
           domain={[0, 100]}
-          tick={{ fill: '#5c7a99', fontSize: 11, fontFamily: 'Outfit, sans-serif' }}
+          tick={{ fill: '#6B7280', fontSize: 11, fontFamily: 'Inter, sans-serif' }}
           axisLine={false}
           tickLine={false}
           tickFormatter={v => `${v}%`}
@@ -77,14 +77,14 @@ export default function UtilisationLine({ data }) {
         <YAxis
           yAxisId="count"
           orientation="right"
-          tick={{ fill: '#5c7a99', fontSize: 11, fontFamily: 'Outfit, sans-serif' }}
+          tick={{ fill: '#6B7280', fontSize: 11, fontFamily: 'Inter, sans-serif' }}
           axisLine={false}
           tickLine={false}
         />
         <YAxis yAxisId="kwh" orientation="right" hide />
         <Tooltip content={<CustomTooltip />} />
         <Legend
-          wrapperStyle={{ fontSize: 11, fontFamily: 'Outfit, sans-serif', color: '#5c7a99', paddingBottom: 4 }}
+          wrapperStyle={{ fontSize: 11, fontFamily: 'Inter, sans-serif', color: '#6B7280', paddingBottom: 4 }}
           formatter={(value) => value === 'Est. kWh' ? `${value} (±30–50%)` : value}
         />
         <ReferenceLine yAxisId="pct" y={50} stroke="#f59e0b" strokeDasharray="4 4" opacity={0.4} />
@@ -93,7 +93,7 @@ export default function UtilisationLine({ data }) {
           yAxisId="pct"
           type="monotone"
           dataKey="avg_utilisation_pct"
-          stroke="#22d3ee"
+          stroke="#2563EB"
           strokeWidth={2}
           dot={false}
           name="Avg utilisation %"
@@ -121,11 +121,11 @@ export default function UtilisationLine({ data }) {
         <Brush
           dataKey="time"
           height={24}
-          stroke="#1c2840"
-          fill="#0d1220"
+          stroke="#E5E7EB"
+          fill="#F9FAFB"
           travellerWidth={8}
           startIndex={0}
-          travellerStyle={{ fill: '#22d3ee' }}
+          travellerStyle={{ fill: '#0056b3' }}
         />
       </LineChart>
     </ResponsiveContainer>

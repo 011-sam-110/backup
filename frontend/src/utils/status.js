@@ -7,11 +7,11 @@ export function utilTier(pct) {
 }
 
 export function utilColor(pct) {
-  if (pct >= 50) return '#ef4444'  // red
-  if (pct >= 30) return '#f97316'  // orange
-  if (pct >= 25) return '#f59e0b'  // amber
-  if (pct >= 15) return '#84cc16'  // lime
-  return '#22c55e'                  // green
+  if (pct >= 50) return '#1D4ED8'  // dark blue  — excellent
+  if (pct >= 30) return '#2563EB'  // blue        — busy
+  if (pct >= 25) return '#60A5FA'  // light blue  — moderate
+  if (pct >= 15) return '#93C5FD'  // pale blue   — low
+  return '#CBD5E1'                  // slate-300   — idle
 }
 
 export function utilClass(pct) {

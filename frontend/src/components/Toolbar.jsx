@@ -22,7 +22,7 @@ function Section({ title, icon, defaultOpen = true, children }) {
           color: '#ffffff', cursor: 'pointer',
           fontSize: 12, fontWeight: 700, textTransform: 'uppercase',
           letterSpacing: '0.09em', userSelect: 'none',
-          fontFamily: 'Outfit, inherit',
+          fontFamily: 'Inter, inherit',
           transition: 'color 0.15s',
         }}
         onMouseOver={e => e.currentTarget.style.color = '#ffffff'}
@@ -102,7 +102,7 @@ export default function Toolbar() {
                 background: 'none', border: 'none',
                 color: 'var(--accent)', fontSize: 10,
                 cursor: 'pointer', padding: '2px 6px',
-                borderRadius: 4, fontFamily: 'Outfit, inherit',
+                borderRadius: 4, fontFamily: 'Inter, inherit',
                 fontWeight: 600, letterSpacing: '0.02em',
                 transition: 'opacity 0.15s',
               }}

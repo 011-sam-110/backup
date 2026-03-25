@@ -10,7 +10,7 @@ function Sparkline({ data, valueClass }) {
     return `${x},${y}`
   }).join(' ')
   const colorMap = { green: '#10b981', lime: '#84cc16', amber: '#f59e0b', orange: '#f97316', red: '#ef4444' }
-  const stroke = colorMap[valueClass] || '#22d3ee'
+  const stroke = colorMap[valueClass] || '#0056b3'
   return (
     <svg width={W} height={H} style={{ display: 'block', marginTop: 8, opacity: 0.85 }}>
       <polyline points={pts} fill="none" stroke={stroke} strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
@@ -18,12 +18,19 @@ function Sparkline({ data, valueClass }) {
   )
 }
 
+function SplitValue({ value }) {
+  if (typeof value !== 'string') return <>{value}</>
+  const m = value.match(/^([\d.,—]+)\s*(.*)$/)
+  if (!m || !m[2]) return <>{value}</>
+  return <><span className="value-number">{m[1]}</span><span className="value-unit">{m[2]}</span></>
+}
+
 export default function StatCard({ label, value, valueClass = '', sub, icon, delta, sparkData }) {
   return (
     <div className="stat-card">
       {icon && <div className="stat-icon" aria-hidden="true">{icon}</div>}
       <div className="label">{label}</div>
-      <div className={`value ${valueClass}`}>{value}</div>
+      <div className={`value ${valueClass}`}><SplitValue value={value} /></div>
       {sub && <div className="sub">{sub}</div>}
       {delta && (
         <div className={`stat-delta ${delta.positive ? 'up' : 'down'}`}>

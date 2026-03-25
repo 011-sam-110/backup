@@ -15,6 +15,14 @@ const ALL_COLS = [
   { key: 'out_of_order_count', label: 'Out of Order' },
   { key: 'unknown_count',      label: 'Unknown' },
   { key: 'utilisation_pct',    label: 'Utilisation %' },
+  {
+    key: 'estimated_kw',
+    label: 'Est. Draw (kW)',
+    compute: row => {
+      const kw = (row.charging_count ?? 0) * (row.max_power_kw ?? 0)
+      return kw > 0 ? Math.round(kw) : ''
+    },
+  },
   { key: 'scraped_at',         label: 'Timestamp' },
 ]
 
@@ -24,7 +32,7 @@ function toRows(data, activeCols) {
   return data.map(item => {
     const row = {}
     for (const col of activeCols) {
-      let val = item[col.key]
+      let val = col.compute ? col.compute(item) : item[col.key]
       if (Array.isArray(val)) val = val.join(', ')
       if (val === null || val === undefined) val = ''
       row[col.label] = val

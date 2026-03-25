@@ -28,8 +28,8 @@ function fmtDate(iso) {
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   return (
-    <div style={{ background: '#0d1220', border: '1px solid #1c2840', borderRadius: 8, padding: '10px 14px', fontSize: 13, fontFamily: 'Outfit, sans-serif' }}>
-      <div style={{ color: '#5c7a99', marginBottom: 4 }}>{label}</div>
+    <div style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 4, padding: '10px 14px', fontSize: 13, fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ color: '#6B7280', marginBottom: 4 }}>{label}</div>
       {payload.map(p => (
         <div key={p.dataKey} style={{ color: p.color, fontWeight: 600 }}>
           {p.name}: {p.value}{p.dataKey !== 'total_charging' ? '%' : ''}
@@ -82,18 +82,18 @@ export default function WeeklyTrend({ onDaysChange, data = [], activeDays = 30 }
           <ComposedChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
             <defs>
               <linearGradient id="utilGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.18} />
-                <stop offset="95%" stopColor="#22d3ee" stopOpacity={0} />
+                <stop offset="5%" stopColor="#2563EB" stopOpacity={0.18} />
+                <stop offset="95%" stopColor="#2563EB" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1c2840" />
-            <XAxis dataKey="label" tick={{ fill: '#5c7a99', fontSize: 11, fontFamily: 'Outfit, sans-serif' }} axisLine={{ stroke: '#1c2840' }} tickLine={false} interval="preserveStartEnd" />
-            <YAxis domain={[0, 100]} tick={{ fill: '#5c7a99', fontSize: 11, fontFamily: 'Outfit, sans-serif' }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+            <XAxis dataKey="label" tick={{ fill: '#6B7280', fontSize: 11, fontFamily: 'Inter, sans-serif' }} axisLine={{ stroke: '#E5E7EB' }} tickLine={false} interval="preserveStartEnd" />
+            <YAxis domain={[0, 100]} tick={{ fill: '#6B7280', fontSize: 11, fontFamily: 'Inter, sans-serif' }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
             <Tooltip content={<CustomTooltip />} />
             <ReferenceLine y={50} stroke="#f59e0b" strokeDasharray="4 4" opacity={0.4} />
             <ReferenceLine y={80} stroke="#ef4444" strokeDasharray="4 4" opacity={0.4} />
-            <Area type="monotone" dataKey="avg_utilisation_pct" name="Avg Util" fill="url(#utilGrad)" stroke="#22d3ee" strokeWidth={2} dot={false} />
-            <Line type="monotone" dataKey="ma" name="7-Day MA" stroke="#67e8f9" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
+            <Area type="monotone" dataKey="avg_utilisation_pct" name="Avg Util" fill="url(#utilGrad)" stroke="#2563EB" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="ma" name="7-Day MA" stroke="#93C5FD" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
           </ComposedChart>
         </ResponsiveContainer>
       )}

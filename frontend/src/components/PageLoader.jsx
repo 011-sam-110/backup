@@ -39,9 +39,9 @@ export default function PageLoader({ text, minMs = 2000, onReady }) {
       return [lerp(c1[0], c2[0], t), lerp(c1[1], c2[1], t), lerp(c1[2], c2[2], t)]
     }
     function toRgb([r, g, b]) { return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})` }
-    const GREEN = [16, 185, 129]
-    const AMBER = [245, 158, 11]
-    const CYAN  = [34, 211, 238]
+    const GREEN = [37, 99, 235]
+    const AMBER = [96, 165, 250]
+    const CYAN  = [29, 78, 216]
 
     function arcColor(t) {
       if (t < 0.5) return toRgb(lerpColor(GREEN, AMBER, t * 2))
@@ -56,7 +56,7 @@ export default function PageLoader({ text, minMs = 2000, onReady }) {
       // Background ring
       ctx.beginPath()
       ctx.arc(cx, cy, R, 0, Math.PI * 2)
-      ctx.strokeStyle = 'rgba(255,255,255,0.07)'
+      ctx.strokeStyle = 'rgba(0,0,0,0.08)'
       ctx.lineWidth = 8
       ctx.stroke()
 
@@ -88,15 +88,15 @@ export default function PageLoader({ text, minMs = 2000, onReady }) {
       ctx.fill()
 
       // Percentage counter
-      ctx.fillStyle = '#dae5f5'
-      ctx.font = 'bold 32px Outfit, -apple-system, BlinkMacSystemFont, sans-serif'
+      ctx.fillStyle = '#212529'
+      ctx.font = 'bold 32px Inter, -apple-system, BlinkMacSystemFont, sans-serif'
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       ctx.fillText(`${pct}%`, cx, cy - 8)
 
       // ⚡ label
-      ctx.fillStyle = '#22d3ee'
-      ctx.font = '16px Outfit, -apple-system, BlinkMacSystemFont, sans-serif'
+      ctx.fillStyle = '#0056b3'
+      ctx.font = '16px Inter, -apple-system, BlinkMacSystemFont, sans-serif'
       ctx.fillText('⚡', cx, cy + 22)
 
       frame++

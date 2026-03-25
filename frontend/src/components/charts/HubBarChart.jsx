@@ -10,14 +10,14 @@ const CustomTooltip = ({ active, payload }) => {
   const estKw = hubEstKw(d)
   return (
     <div style={{
-      background: '#0d1220', border: '1px solid #1c2840',
-      borderRadius: 8, padding: '10px 14px', fontSize: 13,
-      fontFamily: 'Outfit, sans-serif',
+      background: '#FFFFFF', border: '1px solid #E5E7EB',
+      borderRadius: 4, padding: '10px 14px', fontSize: 13,
+      fontFamily: 'Inter, sans-serif',
     }}>
-      <div style={{ color: '#5c7a99', marginBottom: 4 }}>{d.hub_name || d.uuid}</div>
-      <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#2a3d52', marginBottom: 5 }}>{d.uuid}</div>
+      <div style={{ color: '#212529', fontWeight: 600, marginBottom: 4 }}>{d.hub_name || d.uuid}</div>
+      <div style={{ fontFamily: 'monospace', fontSize: 10, color: '#9CA3AF', marginBottom: 5 }}>{d.uuid}</div>
       <div style={{ color: utilColor(d.utilisation_pct), fontWeight: 600 }}>{d.utilisation_pct}% utilised</div>
-      <div style={{ color: '#dae5f5', marginTop: 2 }}>{d.charging_count} / {d.total_evses} charging</div>
+      <div style={{ color: '#6B7280', marginTop: 2 }}>{d.charging_count} / {d.total_evses} charging</div>
       {d.charging_count > 0 && (
         <div style={{ color: '#f59e0b', marginTop: 2 }}>Est. load: {fmtKw(estKw)}</div>
       )}
@@ -37,18 +37,18 @@ function makeCustomYTick(chartData) {
         <text
           x={-6} y={name ? -4 : 4}
           textAnchor="end"
-          fill={name ? '#dae5f5' : '#5c7a99'}
+          fill={name ? '#212529' : '#6B7280'}
           fontSize={11}
-          fontFamily="Outfit, sans-serif"
+          fontFamily="Inter, sans-serif"
         >
           {name || payload.value.slice(0, 8) + '…'}
         </text>
         <text
           x={-6} y={name ? 8 : 18}
           textAnchor="end"
-          fill="#2a3d52"
+          fill="#9CA3AF"
           fontSize={9}
-          fontFamily="JetBrains Mono, monospace"
+          fontFamily="monospace"
         >
           {payload.value}
         </text>
@@ -72,14 +72,14 @@ export default function HubBarChart({ hubs, onHubClick, label }) {
           <BarChart
             layout="vertical"
             data={chartData}
-            margin={{ top: 5, right: 60, bottom: 5, left: 100 }}
+            margin={{ top: 5, right: 60, bottom: 5, left: 120 }}
             style={{ cursor: 'pointer' }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#1c2840" horizontal={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" horizontal={false} />
             <XAxis
               type="number"
               domain={[0, 100]}
-              tick={{ fill: '#5c7a99', fontSize: 11, fontFamily: 'Outfit, sans-serif' }}
+              tick={{ fill: '#6B7280', fontSize: 11, fontFamily: 'Inter, sans-serif' }}
               axisLine={false}
               tickLine={false}
               tickFormatter={v => `${v}%`}
@@ -92,15 +92,15 @@ export default function HubBarChart({ hubs, onHubClick, label }) {
               tickLine={false}
               width={160}
             />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
             <Bar
               dataKey="utilisation_pct"
               radius={[0, 4, 4, 0]}
-              maxBarSize={20}
+              maxBarSize={26}
               onClick={(data) => onHubClick?.(data)}
             >
               {chartData.map((h) => (
-                <Cell key={h.uuid} fill={utilColor(h.utilisation_pct)} />
+                <Cell key={h.uuid} fill="#2563EB" />
               ))}
             </Bar>
           </BarChart>

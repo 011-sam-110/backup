@@ -17,7 +17,7 @@ function fmtHour(h) {
 }
 
 function barFill(pct) {
-  if (pct === 0) return '#1c2840'
+  if (pct === 0) return '#E5E7EB'
   return utilColor(pct)
 }
 
@@ -26,15 +26,15 @@ const CustomTooltip = ({ active, payload }) => {
   const d = payload[0].payload
   return (
     <div style={{
-      background: '#0d1220', border: '1px solid #1c2840',
-      borderRadius: 8, padding: '10px 14px', fontSize: 13,
-      fontFamily: 'Outfit, sans-serif',
+      background: '#FFFFFF', border: '1px solid #E5E7EB',
+      borderRadius: 4, padding: '10px 14px', fontSize: 13,
+      fontFamily: 'Inter, sans-serif',
     }}>
-      <div style={{ color: '#5c7a99', marginBottom: 4 }}>{fmtHour(d.hour)}</div>
+      <div style={{ color: '#6B7280', marginBottom: 4 }}>{fmtHour(d.hour)}</div>
       <div style={{ color: barFill(d.avg_utilisation_pct), fontWeight: 600 }}>
         {d.avg_utilisation_pct}% avg utilisation
       </div>
-      <div style={{ color: '#5c7a99', fontSize: 11, marginTop: 2 }}>
+      <div style={{ color: '#6B7280', fontSize: 11, marginTop: 2 }}>
         {d.data_points} data points
       </div>
     </div>
@@ -63,23 +63,23 @@ export default function HourlyPattern({ data }) {
   return (
     <ResponsiveContainer width="100%" height={220}>
       <BarChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1c2840" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
         <XAxis
           dataKey="hour"
           tickFormatter={fmtHour}
-          tick={{ fill: '#5c7a99', fontSize: 11, fontFamily: 'Outfit, sans-serif' }}
+          tick={{ fill: '#6B7280', fontSize: 11, fontFamily: 'Inter, sans-serif' }}
           axisLine={false}
           tickLine={false}
           interval={2}
         />
         <YAxis
           domain={[0, 100]}
-          tick={{ fill: '#5c7a99', fontSize: 11, fontFamily: 'Outfit, sans-serif' }}
+          tick={{ fill: '#6B7280', fontSize: 11, fontFamily: 'Inter, sans-serif' }}
           axisLine={false}
           tickLine={false}
           tickFormatter={v => `${v}%`}
         />
-        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
         <Bar dataKey="avg_utilisation_pct" radius={[4, 4, 0, 0]} maxBarSize={32}>
           {chartData.map((d) => (
             <Cell key={d.hour} fill={barFill(d.avg_utilisation_pct)} />

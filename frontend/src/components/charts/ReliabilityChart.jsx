@@ -13,8 +13,8 @@ function fmtTime(iso) {
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   return (
-    <div style={{ background: '#0d1220', border: '1px solid #1c2840', borderRadius: 8, padding: '10px 14px', fontSize: 12, fontFamily: 'Outfit, sans-serif' }}>
-      <div style={{ color: '#5c7a99', marginBottom: 6 }}>{label}</div>
+    <div style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 4, padding: '10px 14px', fontSize: 12, fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ color: '#6B7280', marginBottom: 6 }}>{label}</div>
       {payload.map(p => (
         <div key={p.dataKey} style={{ color: p.fill, marginBottom: 2 }}>
           {p.name}: {p.value?.toFixed(1)}%
@@ -44,11 +44,11 @@ export default function ReliabilityChart({ data = [] }) {
             <stop offset="100%" stopColor="#6b7280" stopOpacity={0.6}/>
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1c2840" />
-        <XAxis dataKey="time" tick={{ fill: '#5c7a99', fontSize: 11, fontFamily: 'Outfit, sans-serif' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-        <YAxis domain={[0, 100]} tick={{ fill: '#5c7a99', fontSize: 11, fontFamily: 'Outfit, sans-serif' }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+        <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+        <XAxis dataKey="time" tick={{ fill: '#6B7280', fontSize: 11, fontFamily: 'Inter, sans-serif' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+        <YAxis domain={[0, 100]} tick={{ fill: '#6B7280', fontSize: 11, fontFamily: 'Inter, sans-serif' }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
         <Tooltip content={<CustomTooltip />} />
-        <Legend iconType="square" iconSize={10} wrapperStyle={{ fontSize: 12, color: '#5c7a99', fontFamily: 'Outfit, sans-serif' }} />
+        <Legend iconType="square" iconSize={10} wrapperStyle={{ fontSize: 12, color: '#6B7280', fontFamily: 'Inter, sans-serif' }} />
         <Area stackId="a" type="monotone" dataKey="charging_pct"    name="Charging"     stroke="#10b981" fill="url(#gCharging)"  />
         <Area stackId="a" type="monotone" dataKey="available_pct"   name="Available"    stroke="#60a5fa" fill="url(#gAvailable)" />
         <Area stackId="a" type="monotone" dataKey="inoperative_pct" name="Inoperative"  stroke="#f59e0b" fill="url(#gInop)"      />

@@ -134,31 +134,31 @@ export default function HubDetailModal({ hub, onClose }) {
         ) : (
           <ResponsiveContainer width="100%" height={180}>
             <LineChart data={chartData} margin={{ top: 4, right: 16, bottom: 4, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(28,40,64,1)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
               <XAxis
                 dataKey="time"
-                tick={{ fill: '#5c7a99', fontSize: 10, fontFamily: 'Outfit, sans-serif' }}
+                tick={{ fill: '#6B7280', fontSize: 10, fontFamily: 'Inter, sans-serif' }}
                 axisLine={false}
                 tickLine={false}
                 interval="preserveStartEnd"
               />
               <YAxis
                 domain={[0, 100]}
-                tick={{ fill: '#5c7a99', fontSize: 10, fontFamily: 'Outfit, sans-serif' }}
+                tick={{ fill: '#6B7280', fontSize: 10, fontFamily: 'Inter, sans-serif' }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={v => `${v}%`}
                 width={36}
               />
               <Tooltip
-                contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border-light)', borderRadius: 8, fontSize: 12, fontFamily: 'Outfit, sans-serif' }}
+                contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border-light)', borderRadius: 8, fontSize: 12, fontFamily: 'Inter, sans-serif' }}
                 formatter={v => [`${v}%`, 'Utilisation']}
                 labelStyle={{ color: 'var(--text-muted)' }}
               />
               <Line
                 type="monotone"
                 dataKey="avg_utilisation_pct"
-                stroke="#22d3ee"
+                stroke="#2563EB"
                 strokeWidth={2}
                 dot={false}
               />

@@ -1,26 +1,26 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
   /* Backgrounds */
-  --bg:        #06080f;
-  --surface:   #0d1220;
-  --surface-2: #121926;
+  --bg:        #F8F9FA;
+  --surface:   #FFFFFF;
+  --surface-2: #F3F4F6;
 
   /* Borders */
-  --border:       #1c2840;
-  --border-light: #243350;
+  --border:       #E5E7EB;
+  --border-light: #D1D5DB;
 
   /* Text */
-  --text:      #dae5f5;
-  --text-muted:#5c7a99;
-  --text-dim:  #2a3d52;
+  --text:      #212529;
+  --text-muted:#6B7280;
+  --text-dim:  #9CA3AF;
 
-  /* Accent — electric cyan */
-  --accent:     #22d3ee;
-  --accent-dim: rgba(34, 211, 238, 0.10);
-  --accent-glow:rgba(34, 211, 238, 0.22);
+  /* Accent — enterprise blue */
+  --accent:     #0056b3;
+  --accent-dim: rgba(0, 86, 179, 0.08);
+  --accent-glow:rgba(0, 86, 179, 0.15);
 
   /* Status */
   --green:  #10b981;
@@ -34,7 +34,7 @@
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -52,8 +52,8 @@ body {
   justify-content: center;
   padding: 0 24px;
   height: 58px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  background: #1E293B;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
 .nav-brand {
@@ -69,40 +69,40 @@ body {
 .nav-logo-mark {
   width: 30px;
   height: 30px;
-  background: linear-gradient(145deg, #22d3ee 0%, #0891b2 100%);
-  border-radius: 8px;
+  background: linear-gradient(145deg, #3B82F6 0%, #0056b3 100%);
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 15px;
   line-height: 1;
   flex-shrink: 0;
-  box-shadow: 0 0 12px rgba(34, 211, 238, 0.25);
+  box-shadow: 0 0 12px rgba(0, 86, 179, 0.3);
 }
 
 .nav-wordmark {
   font-size: 13.5px;
   font-weight: 700;
-  color: var(--text);
+  color: #F1F5F9;
   letter-spacing: 0.02em;
 }
 
-.nav-wordmark-accent { color: var(--accent); }
+.nav-wordmark-accent { color: #60A5FA; }
 
 .nav-links { display: flex; gap: 2px; }
 
 .nav-link {
   padding: 5px 15px;
-  border-radius: 7px;
-  color: var(--text-muted);
+  border-radius: 4px;
+  color: #94A3B8;
   text-decoration: none;
   font-weight: 500;
   font-size: 13.5px;
   transition: color 0.15s, background 0.15s;
   letter-spacing: 0.01em;
 }
-.nav-link:hover { color: var(--text); background: rgba(255,255,255,0.05); }
-.nav-link.active { color: var(--accent); background: var(--accent-dim); }
+.nav-link:hover { color: #F1F5F9; background: rgba(255,255,255,0.08); }
+.nav-link.active { color: #60A5FA; background: rgba(96, 165, 250, 0.12); }
 
 /* ─── App Layout ─────────────────────────────────────── */
 
@@ -154,29 +154,18 @@ body {
 .stat-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 6px;
   padding: 22px 22px 18px;
   position: relative;
   overflow: hidden;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.stat-card::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--accent) 0%, transparent 65%);
-  opacity: 0;
-  transition: opacity 0.25s;
-}
-
 .stat-card:hover {
   border-color: var(--border-light);
-  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  border-left: 3px solid var(--accent);
 }
-
-.stat-card:hover::after { opacity: 0.55; }
 
 .stat-icon {
   font-size: 17px;
@@ -199,6 +188,15 @@ body {
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+}
+
+.value-unit {
+  font-size: 0.45em;
+  font-weight: 600;
+  opacity: 0.7;
+  vertical-align: middle;
+  margin-left: 2px;
 }
 
 .stat-card .sub {
@@ -230,7 +228,7 @@ body {
 .table-wrap {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 6px;
   overflow: auto;
   max-height: 65vh;
 }
@@ -261,19 +259,19 @@ thead th {
 thead th:hover { color: var(--text); }
 
 tbody tr {
-  border-bottom: 1px solid rgba(28, 40, 64, 0.8);
+  border-bottom: 1px solid var(--border);
   transition: background 0.1s;
 }
 tbody tr:last-child { border-bottom: none; }
-tbody tr:hover { background: rgba(34, 211, 238, 0.03); }
-tbody td { padding: 11px 16px; font-size: 13px; }
+tbody tr:hover { background: #F9FAFB; }
+tbody td { padding: 11px 16px; font-size: 13px; font-variant-numeric: tabular-nums; }
 
 /* ─── Utilisation Bar ─────────────────────────────────── */
 
 .util-cell { display: flex; align-items: center; gap: 10px; min-width: 160px; }
 .util-bar-bg {
   flex: 1; height: 4px;
-  background: rgba(255,255,255,0.06);
+  background: #E5E7EB;
   border-radius: 2px; overflow: hidden;
 }
 .util-bar { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
@@ -313,7 +311,7 @@ tbody td { padding: 11px 16px; font-size: 13px; }
 .chart-section {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 6px;
   padding: 24px;
   margin-bottom: 24px;
 }
@@ -331,28 +329,27 @@ tbody td { padding: 11px 16px; font-size: 13px; }
 
 /* ─── Links ──────────────────────────────────────────── */
 
-.maps-link { color: var(--accent); text-decoration: none; opacity: 0.8; }
-.maps-link:hover { opacity: 1; text-decoration: underline; }
+.maps-link { color: var(--text-muted); text-decoration: none; }
+.maps-link:hover { color: #0056b3; text-decoration: underline; }
 
 /* ─── Filter Inputs ──────────────────────────────────── */
 
 .filter-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
 
 .filter-input {
-  background: rgba(255,255,255,0.035);
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: 4px;
   color: var(--text);
   padding: 6px 10px;
   font-size: 14px;
-  font-family: 'Outfit', inherit;
+  font-family: 'Inter', inherit;
   outline: none;
-  color: #ffffff;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .filter-input:focus {
-  border-color: rgba(34, 211, 238, 0.5);
-  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.12);
+  border-color: rgba(0, 86, 179, 0.5);
+  box-shadow: 0 0 0 2px rgba(0, 86, 179, 0.10);
 }
 .filter-input::placeholder { color: var(--text-dim); }
 select.filter-input { cursor: pointer; }
@@ -399,8 +396,8 @@ select.filter-input option {
 
 .modal-overlay {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,0.75);
-  backdrop-filter: blur(6px);
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(4px);
   display: flex; align-items: center; justify-content: center;
   z-index: 9999;
 }
@@ -408,13 +405,13 @@ select.filter-input option {
 .modal-card {
   background: var(--surface);
   border: 1px solid var(--border-light);
-  border-radius: 16px;
+  border-radius: 6px;
   padding: 28px;
   width: calc(100% - 32px);
   max-width: 580px;
   max-height: 88vh;
   overflow-y: auto;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.55);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
 }
 
 .modal-header {
@@ -428,28 +425,28 @@ select.filter-input option {
   background: none; border: none;
   color: var(--text-muted); font-size: 20px;
   cursor: pointer; padding: 2px 8px;
-  border-radius: 6px; line-height: 1;
+  border-radius: 4px; line-height: 1;
   transition: color 0.15s, background 0.15s;
   margin-top: -2px;
 }
-.modal-close:hover { color: var(--text); background: rgba(255,255,255,0.07); }
+.modal-close:hover { color: var(--text); background: var(--surface-2); }
 
 /* ─── Buttons ─────────────────────────────────────────── */
 
 .btn {
-  padding: 7px 16px; border-radius: 7px;
+  padding: 7px 16px; border-radius: 4px;
   font-size: 13px; font-weight: 600;
   cursor: pointer; border: none;
   transition: all 0.15s;
-  font-family: 'Outfit', inherit;
+  font-family: 'Inter', inherit;
   letter-spacing: 0.01em;
 }
 .btn:disabled { opacity: 0.45; cursor: default; }
 
-.btn-primary { background: var(--accent); color: #040810; }
+.btn-primary { background: var(--accent); color: #FFFFFF; }
 .btn-primary:hover:not(:disabled) {
-  background: #38e0f5;
-  box-shadow: 0 0 18px rgba(34, 211, 238, 0.35);
+  background: #004494;
+  box-shadow: 0 2px 8px rgba(0, 86, 179, 0.25);
 }
 
 .btn-outline {
@@ -457,7 +454,7 @@ select.filter-input option {
   border: 1px solid var(--border-light);
   color: var(--text-muted);
 }
-.btn-outline:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+.btn-outline:hover { background: var(--surface-2); color: var(--text); }
 
 /* ─── Badges ─────────────────────────────────────────── */
 
@@ -506,19 +503,19 @@ select.filter-input option {
 .trend-tabs { display: flex; gap: 4px; }
 
 .trend-tab {
-  padding: 5px 14px; border-radius: 7px;
+  padding: 5px 14px; border-radius: 4px;
   font-size: 12.5px; font-weight: 600;
   cursor: pointer;
   border: 1px solid var(--border);
   background: none; color: var(--text-muted);
-  font-family: 'Outfit', inherit;
+  font-family: 'Inter', inherit;
   transition: all 0.15s; letter-spacing: 0.01em;
 }
 .trend-tab:hover { color: var(--text); border-color: var(--border-light); }
 .trend-tab.active {
   background: var(--accent-dim);
   color: var(--accent);
-  border-color: rgba(34, 211, 238, 0.28);
+  border-color: rgba(0, 86, 179, 0.28);
 }
 
 /* ─── Map Page ────────────────────────────────────────── */
@@ -528,7 +525,7 @@ select.filter-input option {
   height: calc(100vh - 58px - 56px);
 }
 .map-container {
-  flex: 1; border-radius: 12px;
+  flex: 1; border-radius: 6px;
   overflow: hidden; border: 1px solid var(--border); min-width: 0;
 }
 .map-sidebar { width: 230px; overflow-y: auto; flex-shrink: 0; }
@@ -551,4 +548,4 @@ select.filter-input option {
 
 /* ─── Monospace ───────────────────────────────────────── */
 
-.mono { font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace; }
+.mono { font-family: ui-monospace, 'Fira Code', monospace; }

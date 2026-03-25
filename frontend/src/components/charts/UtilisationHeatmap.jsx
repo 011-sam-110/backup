@@ -19,11 +19,11 @@ function cellOpacity(points) {
 }
 
 function cellColor(pct) {
-  if (!pct || pct === 0) return '#131d2e'
-  if (pct >= 80) return '#ef4444'
-  if (pct >= 50) return '#f59e0b'
-  if (pct >= 20) return '#10b981'
-  return '#065f46'
+  if (!pct || pct === 0) return '#E5E7EB'
+  if (pct >= 80) return '#1D4ED8'
+  if (pct >= 50) return '#2563EB'
+  if (pct >= 20) return '#60A5FA'
+  return '#BFDBFE'
 }
 
 const CELL_W = 36
@@ -67,10 +67,10 @@ export default function UtilisationHeatmap({ data = [] }) {
             x={LABEL_W + col * (CELL_W + GAP) + CELL_W / 2}
             y={LABEL_H - 4}
             textAnchor="middle"
-            fill="#5c7a99"
+            fill="#6B7280"
             fontSize={10}
             fontWeight={700}
-            fontFamily="Outfit, sans-serif"
+            fontFamily="Inter, sans-serif"
           >
             {day}
           </text>
@@ -84,9 +84,9 @@ export default function UtilisationHeatmap({ data = [] }) {
               y={LABEL_H + hour * (CELL_H + GAP) + CELL_H / 2 + 1}
               textAnchor="end"
               dominantBaseline="middle"
-              fill="#5c7a99"
+              fill="#6B7280"
               fontSize={9}
-              fontFamily="Outfit, sans-serif"
+              fontFamily="Inter, sans-serif"
             >
               {fmtHour(hour)}
             </text>
@@ -129,24 +129,24 @@ export default function UtilisationHeatmap({ data = [] }) {
           position: 'fixed',
           left: tooltip.x + 12,
           top: tooltip.y - 10,
-          background: '#0d1220',
-          border: '1px solid #1c2840',
-          borderRadius: 7,
+          background: '#FFFFFF',
+          border: '1px solid #E5E7EB',
+          borderRadius: 4,
           padding: '8px 12px',
           fontSize: 12,
           pointerEvents: 'none',
           zIndex: 999,
-          fontFamily: 'Outfit, sans-serif',
+          fontFamily: 'Inter, sans-serif',
         }}>
-          <div style={{ color: '#5c7a99', marginBottom: 2 }}>{tooltip.day} {fmtHour(tooltip.hour)}</div>
+          <div style={{ color: '#6B7280', marginBottom: 2 }}>{tooltip.day} {fmtHour(tooltip.hour)}</div>
           <div style={{ color: cellColor(tooltip.pct), fontWeight: 700 }}>{tooltip.pct}% avg utilisation</div>
-          <div style={{ color: '#5c7a99', fontSize: 11 }}>{tooltip.points} data points</div>
+          <div style={{ color: '#6B7280', fontSize: 11 }}>{tooltip.points} data points</div>
         </div>
       )}
 
       {/* Colour legend */}
-      <div style={{ display: 'flex', gap: 12, marginTop: 12, fontSize: 11, color: '#5c7a99', alignItems: 'center', fontFamily: 'Outfit, sans-serif' }}>
-        {[['#131d2e', 'No data'], ['#065f46', '< 20%'], ['#10b981', '20–49%'], ['#f59e0b', '50–79%'], ['#ef4444', '≥ 80%']].map(([color, label]) => (
+      <div style={{ display: 'flex', gap: 12, marginTop: 12, fontSize: 11, color: '#6B7280', alignItems: 'center', fontFamily: 'Inter, sans-serif' }}>
+        {[['#E5E7EB', 'No data'], ['#BFDBFE', '< 20%'], ['#60A5FA', '20–49%'], ['#2563EB', '50–79%'], ['#1D4ED8', '≥ 80%']].map(([color, label]) => (
           <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <span style={{ width: 10, height: 10, background: color, borderRadius: 2, display: 'inline-block' }} />
             {label}

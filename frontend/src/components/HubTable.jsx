@@ -40,14 +40,17 @@ export default function HubTable({ hubs, onHubClick }) {
   const paginated = sorted.slice(0, page * PAGE_SIZE)
   const hasMore = paginated.length < sorted.length
 
-  function th(label, key) {
+  const NUMERIC_KEYS = new Set(['max_power_kw','total_evses','charging_count','est_kw','available_count','inoperative_count','latitude','longitude','user_rating'])
+
+  function th(label, key, extraStyle = {}) {
     const active = sortKey === key
     const arrow = active ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''
     const ariaSort = active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'
+    const align = NUMERIC_KEYS.has(key) ? 'right' : 'left'
     return (
       <th
         onClick={() => toggleSort(key)}
-        style={active ? { color: 'var(--text)' } : {}}
+        style={{ textAlign: align, ...(active ? { color: 'var(--text)' } : {}), ...extraStyle }}
         aria-sort={ariaSort}
       >
         {label}{arrow}
@@ -118,16 +121,16 @@ export default function HubTable({ hubs, onHubClick }) {
                     {hub.longitude?.toFixed(4)}
                   </a>
                 </td>
-                <td>{hub.max_power_kw}</td>
-                <td>{hub.total_evses}</td>
-                <td className="green">{hub.charging_count ?? '—'}</td>
-                <td style={{ color: 'var(--amber, #f59e0b)', fontSize: 12 }}>
+                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{hub.max_power_kw}</td>
+                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{hub.total_evses}</td>
+                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--green)' }}>{hub.charging_count ?? '—'}</td>
+                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--amber, #f59e0b)', fontSize: 12 }}>
                   {hub.charging_count > 0 ? fmtKw(hubEstKw(hub)) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                 </td>
-                <td>{hub.available_count ?? '—'}</td>
-                <td className={hub.inoperative_count > 0 ? 'amber' : ''}>{hub.inoperative_count ?? '—'}</td>
-                <td>
-                  <div className="util-cell">
+                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{hub.available_count ?? '—'}</td>
+                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: hub.inoperative_count > 0 ? 'var(--amber)' : undefined }}>{hub.inoperative_count ?? '—'}</td>
+                <td style={{ textAlign: 'center' }}>
+                  <div className="util-cell" style={{ justifyContent: 'center' }}>
                     <div className="util-bar-bg">
                       <div
                         className="util-bar"
