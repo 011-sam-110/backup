@@ -1,0 +1,5638 @@
+[
+  {
+    "uuid": "39DXQZU",
+    "latitude": 50.385763,
+    "longitude": -3.938191,
+    "max_power_kw": 300.0,
+    "location_raw": {
+      "legacy_id": 791491,
+      "uuid": "39DXQZU",
+      "coordinates": {
+        "latitude": 50.385763,
+        "longitude": -3.938191
+      },
+      "power": [
+        50000,
+        300000
+      ],
+      "payment_methods": [
+        "CONTACTLESS",
+        "ZAP_PAY",
+        "ZAP_PAY_RFID",
+        "NETWORK_PAYMENT_METHOD"
+      ],
+      "pricing": {
+        "payg": {
+          "min": 0.87,
+          "max": 0.87
+        },
+        "roaming": {
+          "min": 0.87,
+          "max": 0.87
+        },
+        "currency": "GBP"
+      },
+      "category": "PUBLIC",
+      "created_at": "2024-11-14T10:11:35Z"
+    },
+    "total_devices": 8,
+    "total_evses": 16,
+    "connector_types": [
+      "CHADEMO",
+      "IEC_62196_T2_COMBO"
+    ],
+    "available_count": 14,
+    "charging_count": 2,
+    "inoperative_count": 0,
+    "out_of_order_count": 0,
+    "unknown_count": 0,
+    "devices": [
+      {
+        "device_uuid": "5H51B43",
+        "evses": [
+          {
+            "evse_uuid": "18249f5209b2e660e1ca5e099625d618",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-22T13:39:52Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "938f04e836e098bb6bd16271e5ae0e63",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-22T13:39:52Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "BAF6AKJ",
+        "evses": [
+          {
+            "evse_uuid": "cf33694627aff174c97d5bce5474e03a",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:33:05Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2024-12-30T11:21:56Z"
+          },
+          {
+            "evse_uuid": "e0f391aa6c20f6bd84a29c680e5de0f8",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:33:05Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2024-12-30T11:21:56Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "457UA99",
+        "evses": [
+          {
+            "evse_uuid": "42585e47ca5a811d513d00e408373f78",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:13:00Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-08-20T17:17:55Z"
+          },
+          {
+            "evse_uuid": "5f4186cc3eb1fb5eb86b3ebc8ff9afa9",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:13:00Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-08-20T17:17:55Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "35J57TS",
+        "evses": [
+          {
+            "evse_uuid": "6bfd54f70b61e08b04585c3e606fc28b",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T10:10:50Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-07-22T19:02:26Z"
+          },
+          {
+            "evse_uuid": "a65f22244f9dc6d3cb7565305ea8b8b6",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T10:10:50Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-07-22T19:02:26Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "28LH43G",
+        "evses": [
+          {
+            "evse_uuid": "90b4e257184687b0ab51e87216b8f9b4",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T16:57:43Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "d98a29b67f2e814bbf89c8e2b5a31c76",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T16:57:43Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "YXVIJKT",
+        "evses": [
+          {
+            "evse_uuid": "261d6e38e2f4457198b33d459bfddbf4",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:11:14Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "a2304128b289dead32169ba5438ed052",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:11:14Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "2FRUYQX",
+        "evses": [
+          {
+            "evse_uuid": "3ed6ba4361eac40787117a911d218b58",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:35:50Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "e51736fb018b3430cff39639847df61f",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:35:50Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "5SXCH7N",
+        "evses": [
+          {
+            "evse_uuid": "5e76588311b10cb77bd26c1eeaa354ab",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T13:42:11Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-08-21T14:58:11Z"
+          },
+          {
+            "evse_uuid": "e1edc86d8887e8320216bbfcdb52ea5e",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T13:42:11Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-08-21T14:58:11Z"
+          }
+        ]
+      }
+    ],
+    "scraped_at": "2026-03-24T10:14:23.019517+00:00"
+  },
+  {
+    "uuid": "A9SWW79",
+    "latitude": 50.705724,
+    "longitude": -3.536933,
+    "max_power_kw": 150.0,
+    "location_raw": {
+      "legacy_id": 604831,
+      "uuid": "A9SWW79",
+      "coordinates": {
+        "latitude": 50.705724,
+        "longitude": -3.536933
+      },
+      "power": [
+        50000,
+        120000,
+        150000
+      ],
+      "payment_methods": [
+        "CONTACTLESS",
+        "ZAP_PAY",
+        "ZAP_PAY_RFID",
+        "NETWORK_PAYMENT_METHOD"
+      ],
+      "pricing": {
+        "payg": {
+          "min": 0.72,
+          "max": 0.72
+        },
+        "roaming": {
+          "min": 0.72,
+          "max": 0.72
+        },
+        "currency": "GBP"
+      },
+      "category": "PUBLIC",
+      "created_at": "2023-12-18T15:32:58Z"
+    },
+    "total_devices": 7,
+    "total_evses": 12,
+    "connector_types": [
+      "CHADEMO",
+      "IEC_62196_T2_COMBO"
+    ],
+    "available_count": 10,
+    "charging_count": 2,
+    "inoperative_count": 0,
+    "out_of_order_count": 0,
+    "unknown_count": 0,
+    "devices": [
+      {
+        "device_uuid": "5AVBHP9",
+        "evses": [
+          {
+            "evse_uuid": "494abdf27c0a8ac2ecb62bbe973d8ce8",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:43:51Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "f0874f7c988a806604f166d13a91dd70",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T18:40:01Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "AWC9GCC",
+        "evses": [
+          {
+            "evse_uuid": "b4c199af5e7cadc3c2cab83d426cc9be",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T17:12:15Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "ed1cccdeb3511cfda9367d5b50a4c9b7",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T12:25:08Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "BEVQLBH",
+        "evses": [
+          {
+            "evse_uuid": "cfb763e72fc0da66cb41d6e0713ae097",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:48:04Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-12-10T09:56:49Z"
+          },
+          {
+            "evse_uuid": "d0a13f69a1306525384d2bbe0f36f4f1",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T21:30:20Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-12-10T09:56:49Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "7G9431B",
+        "evses": [
+          {
+            "evse_uuid": "0d952d027313e44b0da50804fa8aecd9",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:38:25Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "1c11d8d2ddc333d2e9823b483467b0a6",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:49:09Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "C0JX0U4",
+        "evses": [
+          {
+            "evse_uuid": "b7600e517baf158a193eb7a8b8839003",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:32:10Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-12-29T16:38:44Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "EPQ2DWB",
+        "evses": [
+          {
+            "evse_uuid": "878bd78240ec92890350ad3a01eb320c",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T17:36:06Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "8dffb2e0027deae24c851b633d12da7d",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:51:18Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "CWCXOMG",
+        "evses": [
+          {
+            "evse_uuid": "121ec46ee7453e860670f78aaec0aff3",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T16:35:14Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      }
+    ],
+    "scraped_at": "2026-03-24T10:14:23.019517+00:00"
+  },
+  {
+    "uuid": "O2FEF0I",
+    "latitude": 50.487001,
+    "longitude": -3.770259,
+    "max_power_kw": 300.0,
+    "location_raw": {
+      "legacy_id": 148965,
+      "uuid": "O2FEF0I",
+      "coordinates": {
+        "latitude": 50.487001,
+        "longitude": -3.770259
+      },
+      "power": [
+        50000,
+        300000
+      ],
+      "payment_methods": [
+        "CONTACTLESS",
+        "ZAP_PAY",
+        "ZAP_PAY_RFID",
+        "NETWORK_PAYMENT_METHOD"
+      ],
+      "pricing": {
+        "payg": {
+          "min": 0.87,
+          "max": 0.87
+        },
+        "roaming": {
+          "min": 0.87,
+          "max": 0.87
+        },
+        "currency": "GBP"
+      },
+      "category": "PUBLIC",
+      "created_at": "2023-05-24T11:12:24Z"
+    },
+    "total_devices": 16,
+    "total_evses": 32,
+    "connector_types": [
+      "CHADEMO",
+      "IEC_62196_T2_COMBO"
+    ],
+    "available_count": 27,
+    "charging_count": 2,
+    "inoperative_count": 3,
+    "out_of_order_count": 0,
+    "unknown_count": 0,
+    "devices": [
+      {
+        "device_uuid": "32IY4M3",
+        "evses": [
+          {
+            "evse_uuid": "73a31d49e4ff479b80ab86c07dd81163",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T11:23:59Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-07-26T09:31:19Z"
+          },
+          {
+            "evse_uuid": "a92b8546509e6c3f80697540539f4c12",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T11:23:59Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-07-26T09:31:19Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "9PSHZLV",
+        "evses": [
+          {
+            "evse_uuid": "cb76fb60c9fc3272dabe757bf280a303",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:06:48Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-07-19T14:30:30Z"
+          },
+          {
+            "evse_uuid": "f04524e80fc4b77c746283737e04a319",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:06:48Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-07-19T14:30:30Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "R1BHIBC",
+        "evses": [
+          {
+            "evse_uuid": "01b432e22f7c525a164bf48f16461069",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T10:05:42Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-08-18T06:29:47Z"
+          },
+          {
+            "evse_uuid": "21b33ec43adf2d4c6550a9d9958aa32b",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T10:05:42Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-08-18T06:29:47Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "4K8G8LJ",
+        "evses": [
+          {
+            "evse_uuid": "b1ab7a500476ffbc7aa56f998febf508",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T18:03:31Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2024-07-14T14:21:55Z"
+          },
+          {
+            "evse_uuid": "ee3a5c5580c3ff100c5d074dfed7041e",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T18:03:31Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2024-07-14T14:21:55Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "1SOM2QM",
+        "evses": [
+          {
+            "evse_uuid": "cc98ed044091c7750539b0dce3626d4d",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:10:01Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2024-07-30T10:31:45Z"
+          },
+          {
+            "evse_uuid": "f7e5a2866935b2d61b0cedb4c6c342c9",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:10:01Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2024-07-30T10:31:45Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "3QBUNRM",
+        "evses": [
+          {
+            "evse_uuid": "35056f1de398c77a9148975b4e273954",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T18:29:58Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-03-13T17:54:09Z"
+          },
+          {
+            "evse_uuid": "7849aae15c32c0d9f1e5f9584d714519",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T18:29:58Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-03-13T17:54:09Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "705A6LU",
+        "evses": [
+          {
+            "evse_uuid": "6e0d7aac46564dadd3979caffbf42cb6",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:48:12Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-08-13T10:25:17Z"
+          },
+          {
+            "evse_uuid": "befcd1679a4c5e94dca0a037ee1b9446",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:48:13Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-08-13T10:25:17Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "BQ2OG3Q",
+        "evses": [
+          {
+            "evse_uuid": "0b67fb1c611c4f21e9cf348f77f7be9e",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:33:28Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-07-14T07:07:52Z"
+          },
+          {
+            "evse_uuid": "711ace6fac33c62fef4478f353047f98",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:33:28Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-07-14T07:07:52Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "8242TGZ",
+        "evses": [
+          {
+            "evse_uuid": "23032436080a30c7aeac36c1e3f3606c",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-20T18:05:13Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-14T14:23:44Z"
+          },
+          {
+            "evse_uuid": "97069e8b7aae46b29b061ac1ed511155",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "INOPERATIVE",
+            "network_updated_at": "2026-03-17T12:35:28Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-14T14:23:44Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "9U9Z3RA",
+        "evses": [
+          {
+            "evse_uuid": "3aab2e82d37fdaa9f5c1ed0e288f3d5e",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T18:46:45Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2024-08-17T13:24:38Z"
+          },
+          {
+            "evse_uuid": "b44d0d1f67b3254f384667b1339dfbe2",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T18:46:45Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2024-08-17T13:24:38Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "5JFRVBF",
+        "evses": [
+          {
+            "evse_uuid": "b7962b7d851d1a917a1d765264754dec",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T10:10:24Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-03-07T11:12:22Z"
+          },
+          {
+            "evse_uuid": "d7b5a086e65c511de71ff398e2a61df7",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T10:10:24Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-03-07T11:12:22Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "A7127HW",
+        "evses": [
+          {
+            "evse_uuid": "8d46c39dbf54b3e2ce61ce5727fa0bcf",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T07:39:13Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-06-12T15:55:06Z"
+          },
+          {
+            "evse_uuid": "c03dc6f7f903bbf1c17831be19056976",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T07:39:13Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-06-12T15:55:06Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "DE33Y7G",
+        "evses": [
+          {
+            "evse_uuid": "b895e5568a8dd9954fdf3ba1b9cb12a0",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:10:35Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-08-22T10:22:38Z"
+          },
+          {
+            "evse_uuid": "cd28369fb7fc96a523f8bbafa4c84d2e",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:10:35Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-08-22T10:22:38Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "AWPD9WN",
+        "evses": [
+          {
+            "evse_uuid": "7690bc9fbfd0f799a557aa52f8763a4d",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:35:32Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-22T11:06:05Z"
+          },
+          {
+            "evse_uuid": "b6922f5807bc4a57552fce33627711cd",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:35:32Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-22T11:06:05Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "3TUXOTP",
+        "evses": [
+          {
+            "evse_uuid": "46463b7ce708aa5746b062c3e5c86f56",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "INOPERATIVE",
+            "network_updated_at": "2026-03-22T14:56:46Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-06-28T11:01:39Z"
+          },
+          {
+            "evse_uuid": "a53846ac5c409288a274e7bfb6a349a4",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "INOPERATIVE",
+            "network_updated_at": "2026-03-22T14:56:39Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-06-28T11:01:39Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "61UHV62",
+        "evses": [
+          {
+            "evse_uuid": "2d56da81afb390c2faef0edf2ed9c97c",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:45:52Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "376c700ddc91cbedc9d26f251b9e95c1",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:45:52Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      }
+    ],
+    "scraped_at": "2026-03-24T10:14:23.019517+00:00"
+  },
+  {
+    "uuid": "3IG91R8",
+    "latitude": 50.981213,
+    "longitude": -3.20538,
+    "max_power_kw": 180.0,
+    "location_raw": {
+      "legacy_id": 3203924,
+      "uuid": "3IG91R8",
+      "coordinates": {
+        "latitude": 50.981213,
+        "longitude": -3.20538
+      },
+      "power": [
+        80000,
+        180000
+      ],
+      "payment_methods": [
+        "CONTACTLESS"
+      ],
+      "pricing": {
+        "payg": {
+          "min": 0.816,
+          "max": 0.816
+        },
+        "roaming": {
+          "min": null,
+          "max": null
+        },
+        "currency": "GBP"
+      },
+      "category": "PUBLIC",
+      "created_at": "2025-07-10T14:45:22Z"
+    },
+    "total_devices": 7,
+    "total_evses": 14,
+    "connector_types": [
+      "CHADEMO",
+      "IEC_62196_T2_COMBO"
+    ],
+    "available_count": 14,
+    "charging_count": 0,
+    "inoperative_count": 0,
+    "out_of_order_count": 0,
+    "unknown_count": 0,
+    "devices": [
+      {
+        "device_uuid": "7ZO6WQZ",
+        "evses": [
+          {
+            "evse_uuid": "df55b13612386f62c9c4bb6fddbcdb31",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-22T12:35:01Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-08-01T06:29:05Z"
+          },
+          {
+            "evse_uuid": "eadab296e6fa8aa610dda1f08a356d00",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T06:59:04Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-08-01T06:29:05Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "84PIZ3L",
+        "evses": [
+          {
+            "evse_uuid": "783a1749aa7616792e56f200758c0198",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-22T14:15:47Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-08-23T14:53:39Z"
+          },
+          {
+            "evse_uuid": "9ba5ead8787f095094a95bfe2a9eef10",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T07:59:04Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-08-23T14:53:39Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "B8ZI602",
+        "evses": [
+          {
+            "evse_uuid": "6080c6e5b87f97c8161175889ff0469c",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T07:27:15Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-12-26T11:31:52Z"
+          },
+          {
+            "evse_uuid": "b7609f50fbe77c2d0dd976d6c1cf65c6",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T11:16:51Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-12-26T11:31:52Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "CO0JT02",
+        "evses": [
+          {
+            "evse_uuid": "005db4e046bdba1cc47518f12d0799de",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:49:07Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-12-14T20:04:06Z"
+          },
+          {
+            "evse_uuid": "427774c1a4e273490627fb406a85575b",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T06:59:04Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-12-14T20:04:06Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "AUBC6RB",
+        "evses": [
+          {
+            "evse_uuid": "326956e0bc4770881c5143361cf7c79d",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-18T14:19:27Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "8294954bbc1dec13cbbc8acdb5d4196e",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T10:14:28Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "ER3H4NG",
+        "evses": [
+          {
+            "evse_uuid": "26c2a240fb8f790185bb7569b6c016d9",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-14T15:53:18Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "f6aa39618d5576c5395067d3ca350749",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-19T07:12:42Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "AKYNAQU",
+        "evses": [
+          {
+            "evse_uuid": "529d3eedc4ed69bc2d193d1ed0208283",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:08:58Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "c0a47c24b296d0e9b02b3f76a5c283d5",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-21T12:46:25Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      }
+    ],
+    "scraped_at": "2026-03-24T10:14:23.019517+00:00"
+  },
+  {
+    "uuid": "DBRZT38",
+    "latitude": 50.693724,
+    "longitude": -3.512225,
+    "max_power_kw": 250.0,
+    "location_raw": {
+      "legacy_id": 575814,
+      "uuid": "DBRZT38",
+      "coordinates": {
+        "latitude": 50.693724,
+        "longitude": -3.512225
+      },
+      "power": [
+        250000
+      ],
+      "payment_methods": [
+        "CONTACTLESS",
+        "NETWORK_PAYMENT_METHOD"
+      ],
+      "pricing": {
+        "payg": {
+          "min": null,
+          "max": null
+        },
+        "roaming": {
+          "min": null,
+          "max": null
+        },
+        "currency": null
+      },
+      "category": "PUBLIC",
+      "created_at": "2024-06-04T09:23:08Z"
+    },
+    "total_devices": 12,
+    "total_evses": 12,
+    "connector_types": [
+      "IEC_62196_T2_COMBO"
+    ],
+    "available_count": 12,
+    "charging_count": 0,
+    "inoperative_count": 0,
+    "out_of_order_count": 0,
+    "unknown_count": 0,
+    "devices": [
+      {
+        "device_uuid": "AEZFPCX",
+        "evses": [
+          {
+            "evse_uuid": "655a60e1cbb0e85ebae1a6d582afe7d5",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T10:01:30Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-10-17T15:29:52Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "7KT1H0C",
+        "evses": [
+          {
+            "evse_uuid": "c8d72ca4cd8a78f32529502d171cf554",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:41:23Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-09-30T15:22:02Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "CUTFT5R",
+        "evses": [
+          {
+            "evse_uuid": "bf82ab86efab57e27f1033b45d6e750c",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:36:29Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-09-21T13:21:51Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "82FW9BN",
+        "evses": [
+          {
+            "evse_uuid": "5b00f954b2dcf276135e8e7bd27cfa56",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T22:11:22Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-07-25T12:17:24Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "49FRL6B",
+        "evses": [
+          {
+            "evse_uuid": "7e5dd79f3aafd437bc47a9188cf395ea",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T17:36:26Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-07-22T15:45:30Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "EL81OEW",
+        "evses": [
+          {
+            "evse_uuid": "acb1236fdedb603c61913fd195b95460",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:56:27Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-06-26T02:33:13Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "FMIIKAG",
+        "evses": [
+          {
+            "evse_uuid": "55864115ef5933e4c2b9710459f5bfc9",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:11:19Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-08-02T22:17:31Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "BDH7GSW",
+        "evses": [
+          {
+            "evse_uuid": "1f2bc15c77e423dcfed9440b550197c7",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:01:28Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "CADXDQ4",
+        "evses": [
+          {
+            "evse_uuid": "d4379b478e83fb29897c9e8e4068cdac",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:56:27Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-08-15T14:40:43Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "F0P0ZQD",
+        "evses": [
+          {
+            "evse_uuid": "3bfd3a69c34fda893448bd670cd3bb15",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:16:26Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-06-07T13:48:23Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "E8UHXLV",
+        "evses": [
+          {
+            "evse_uuid": "07025b34d67e9b196e6b154941571f16",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T18:41:40Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-12-27T09:25:29Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "F05LEEI",
+        "evses": [
+          {
+            "evse_uuid": "627e18c77164209aff7d82bac76ac081",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:01:28Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-28T08:20:03Z"
+          }
+        ]
+      }
+    ],
+    "scraped_at": "2026-03-24T10:14:23.019517+00:00"
+  },
+  {
+    "uuid": "W4GPZAW",
+    "latitude": 50.715656,
+    "longitude": -3.464862,
+    "max_power_kw": 250.0,
+    "location_raw": {
+      "legacy_id": 128757,
+      "uuid": "W4GPZAW",
+      "coordinates": {
+        "latitude": 50.715656,
+        "longitude": -3.464862
+      },
+      "power": [
+        250000
+      ],
+      "payment_methods": [
+        "NETWORK_PAYMENT_METHOD"
+      ],
+      "pricing": {
+        "payg": {
+          "min": null,
+          "max": null
+        },
+        "roaming": {
+          "min": null,
+          "max": null
+        },
+        "currency": null
+      },
+      "category": "PUBLIC",
+      "created_at": "2023-02-07T10:36:26Z"
+    },
+    "total_devices": 32,
+    "total_evses": 32,
+    "connector_types": [
+      "IEC_62196_T2_COMBO"
+    ],
+    "available_count": 23,
+    "charging_count": 8,
+    "inoperative_count": 0,
+    "out_of_order_count": 1,
+    "unknown_count": 0,
+    "devices": [
+      {
+        "device_uuid": "9NCB63X",
+        "evses": [
+          {
+            "evse_uuid": "6b25a3939849930ed52e0c96222c193c",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:11:18Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "BKVW9V2",
+        "evses": [
+          {
+            "evse_uuid": "4db386bab09c52494a72be4d4ddc3b08",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:06:31Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "9XDCGGY",
+        "evses": [
+          {
+            "evse_uuid": "2b0c002850e4b1a8bf42a08bda032866",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:06:22Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "APIR92J",
+        "evses": [
+          {
+            "evse_uuid": "39558e06c43871f846e123105cdf5b8b",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:31:19Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "EE7A14Q",
+        "evses": [
+          {
+            "evse_uuid": "36c87005e108677ec8f387d2a455bf05",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T09:51:27Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "4LT3QZ8",
+        "evses": [
+          {
+            "evse_uuid": "ee735e3dcda9c74fdd4074ae097596d0",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:36:27Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "653Y0PG",
+        "evses": [
+          {
+            "evse_uuid": "2a456bd51df1f38cd0246a21d078a654",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:36:27Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "920URFK",
+        "evses": [
+          {
+            "evse_uuid": "56fbbc9791ba6aceb090d06883686964",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:56:20Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "DT405TK",
+        "evses": [
+          {
+            "evse_uuid": "6fbf555b53459a188af9fb14542ce215",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:26:21Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "4ARPY26",
+        "evses": [
+          {
+            "evse_uuid": "5f4b5ab942abcfdf510064808cf04f26",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:51:21Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "7LSQQG9",
+        "evses": [
+          {
+            "evse_uuid": "2dac5b72bc3188971b25e9bd5d0217c6",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T13:46:22Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "BX12KTL",
+        "evses": [
+          {
+            "evse_uuid": "31efe8290ad2cdafdd6dda0480979b8a",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:21:23Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "60DLB6O",
+        "evses": [
+          {
+            "evse_uuid": "6d9ad86dd1774ed15210c37a4193564d",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:36:27Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "C34R2EP",
+        "evses": [
+          {
+            "evse_uuid": "6abca56f908cd9efc34fcb0caba4ed55",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:46:24Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "AOFR6N5",
+        "evses": [
+          {
+            "evse_uuid": "9f93b518840865ea7cd1241c5280a7bb",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T17:21:21Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "H4T9VCS",
+        "evses": [
+          {
+            "evse_uuid": "36e4cad692056347aee4f26b379500ce",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:06:31Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-05-09T16:17:43Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "6N3K351",
+        "evses": [
+          {
+            "evse_uuid": "7056b5b64d28c1a159654bbf8ef4f229",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:51:27Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "5PETC8H",
+        "evses": [
+          {
+            "evse_uuid": "bade0ee00fbcd9a337e86599ddc8b481",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:36:27Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "9GSRQT0",
+        "evses": [
+          {
+            "evse_uuid": "0f325ea496f8559bcf81ed84028734c5",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:36:27Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "4OXJ14G",
+        "evses": [
+          {
+            "evse_uuid": "0793aa960168e457109c9fce95a43d7a",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:56:25Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "CIH4EMU",
+        "evses": [
+          {
+            "evse_uuid": "b398630a58024e95d5dc3606575d20d0",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T19:41:28Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-07-14T10:47:29Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "1V9NB8F",
+        "evses": [
+          {
+            "evse_uuid": "a3a71a40916e3f99399326df5f263a5a",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:56:25Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "3AU1GRT",
+        "evses": [
+          {
+            "evse_uuid": "fd0e3494c70353576d705442f6b1d2f8",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:41:20Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "3D99PMG",
+        "evses": [
+          {
+            "evse_uuid": "c0b4790aad9f006e7fb5346dba272360",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:26:26Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "5SXMU53",
+        "evses": [
+          {
+            "evse_uuid": "5585645b2a52328358bfcd8cc3ad414e",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T19:41:28Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "42XTOS0",
+        "evses": [
+          {
+            "evse_uuid": "c3e16f05133deee1a5efd8835a2f52ac",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T10:11:28Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "3L2U6O9",
+        "evses": [
+          {
+            "evse_uuid": "7afa87b943fe35fa6dd7b4f1268f8a26",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:36:27Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "F5283SR",
+        "evses": [
+          {
+            "evse_uuid": "2f490e121e50688948c6ce2489d18c5b",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:21:23Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "1W12OT3",
+        "evses": [
+          {
+            "evse_uuid": "14a57f474aaa543eaef52bf5f55cc965",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "OUTOFORDER",
+            "network_updated_at": "2026-03-20T19:41:29Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "9P4QSO3",
+        "evses": [
+          {
+            "evse_uuid": "5b8be7c72e70bbdabb60af50a287836a",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T10:01:27Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-07-14T17:23:03Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "7G18V7R",
+        "evses": [
+          {
+            "evse_uuid": "dbe6800e655d61987fee3c239580918e",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:31:19Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "NLS3D9L",
+        "evses": [
+          {
+            "evse_uuid": "52c015d5dcc28678f34283d16feaef97",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T17:51:26Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      }
+    ],
+    "scraped_at": "2026-03-24T10:14:23.019517+00:00"
+  },
+  {
+    "uuid": "IMFJ6B1",
+    "latitude": 50.715717,
+    "longitude": -3.464543,
+    "max_power_kw": 400.0,
+    "location_raw": {
+      "legacy_id": 67638,
+      "uuid": "IMFJ6B1",
+      "coordinates": {
+        "latitude": 50.715717,
+        "longitude": -3.464543
+      },
+      "power": [
+        11000,
+        100000,
+        350000,
+        360000,
+        400000
+      ],
+      "payment_methods": [
+        "CONTACTLESS",
+        "NETWORK_PAYMENT_METHOD"
+      ],
+      "pricing": {
+        "payg": {
+          "min": 0.5899,
+          "max": 0.888
+        },
+        "roaming": {
+          "min": null,
+          "max": null
+        },
+        "currency": null
+      },
+      "category": "PUBLIC",
+      "created_at": "2021-06-29T11:20:00Z"
+    },
+    "total_devices": 36,
+    "total_evses": 46,
+    "connector_types": [
+      "CHADEMO",
+      "IEC_62196_T2",
+      "IEC_62196_T2_COMBO"
+    ],
+    "available_count": 35,
+    "charging_count": 9,
+    "inoperative_count": 0,
+    "out_of_order_count": 2,
+    "unknown_count": 0,
+    "devices": [
+      {
+        "device_uuid": "BN0WOVJ",
+        "evses": [
+          {
+            "evse_uuid": "8649da2a21824f4387aca3968366b316",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T07:13:30Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-12-15T19:34:25Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "GU07HUL",
+        "evses": [
+          {
+            "evse_uuid": "809b10470ae0474292abd1e435bd1aea",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:46:46Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-01-31T14:46:10Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "6BUG3AK",
+        "evses": [
+          {
+            "evse_uuid": "403a743fe18e47ae9afd825ed8bbec43",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:38:06Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-01-01T14:40:52Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "IWDFCSJ",
+        "evses": [
+          {
+            "evse_uuid": "d9a6ea4cc3594a74b1fff7877a6a58fc",
+            "connectors": [
+              "IEC_62196_T2_COMBO",
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T20:18:38Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-01-15T12:36:47Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "MIX4FBL",
+        "evses": [
+          {
+            "evse_uuid": "805a8431ceb54289a512bb2a0d9714e0",
+            "connectors": [
+              "CHADEMO",
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T18:35:15Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-10-25T06:22:10Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "KQPVSMW",
+        "evses": [
+          {
+            "evse_uuid": "1f95e5cab1224da58aa05935407f93ce",
+            "connectors": [
+              "IEC_62196_T2_COMBO",
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T15:31:13Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-06-22T20:23:10Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "CUXLHJN",
+        "evses": [
+          {
+            "evse_uuid": "ba0d91fb46d546fab13b5b6122566c00",
+            "connectors": [
+              "CHADEMO",
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:36:36Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-06-13T20:41:35Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "GYSUC37",
+        "evses": [
+          {
+            "evse_uuid": "1ace23efcadc45e2b8f448d8e6af4ce8",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T08:35:31Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2024-12-29T13:32:49Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "VAVU2RO",
+        "evses": [
+          {
+            "evse_uuid": "47c34c7c15824ce486989844e3de0a48",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T13:38:09Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2024-12-16T19:22:25Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "IQ48QRB",
+        "evses": [
+          {
+            "evse_uuid": "39f3616e33bb4b9e9c5d801b2dc227ae",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:12:54Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-02-18T12:58:23Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "IGZPKFV",
+        "evses": [
+          {
+            "evse_uuid": "de9c71a8589e404eb4b4d700cdf962e1",
+            "connectors": [
+              "CHADEMO",
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:31:39Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-03-03T13:42:55Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "VKKSFRW",
+        "evses": [
+          {
+            "evse_uuid": "7eef9941d14e4e8483f4cd5515ed6aeb",
+            "connectors": [
+              "IEC_62196_T2_COMBO",
+              "CHADEMO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T10:13:47Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2026-01-20T16:24:31Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "T33SOCJ",
+        "evses": [
+          {
+            "evse_uuid": "0d80ea4543ef4040800dd76affe36245",
+            "connectors": [
+              "IEC_62196_T2_COMBO",
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T10:04:02Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-11-16T16:57:15Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "Q2YDYXR",
+        "evses": [
+          {
+            "evse_uuid": "e06b91da89794468b7af9bf1eb2f7f21",
+            "connectors": [
+              "CHADEMO",
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T10:13:49Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2026-01-28T10:46:20Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "DTHKOVH",
+        "evses": [
+          {
+            "evse_uuid": "4aacbc2ba78049d4921062cf353c8012",
+            "connectors": [
+              "CHADEMO",
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T15:55:58Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-05-12T13:21:44Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "8S3OUNK",
+        "evses": [
+          {
+            "evse_uuid": "8da70d2afa61436e9a515e1f24c34691",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T07:59:45Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-09-30T15:15:24Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "AXPOUCG",
+        "evses": [
+          {
+            "evse_uuid": "a9b1c56dde9441ce9ba07bae0caf3367",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:54:05Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-05-12T13:21:16Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "OHSDGE5",
+        "evses": [
+          {
+            "evse_uuid": "e292920ea9be40af823c7bc0b7ffb7f3",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T14:31:07Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-05-12T13:20:07Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "2DLKK1M",
+        "evses": [
+          {
+            "evse_uuid": "d947096f9e73f4fca0a745da25a8a29b",
+            "connectors": [
+              "CHADEMO",
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "OUTOFORDER",
+            "network_updated_at": "2026-03-24T10:04:17Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-11-07T12:09:08Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "B6JWPEO",
+        "evses": [
+          {
+            "evse_uuid": "6d22f09102619fa241571a25ed8d6dc8",
+            "connectors": [
+              "IEC_62196_T2_COMBO",
+              "CHADEMO"
+            ],
+            "network_status": "OUTOFORDER",
+            "network_updated_at": "2026-03-24T10:04:14Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-09-07T14:37:33Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "B7P8KQ3",
+        "evses": [
+          {
+            "evse_uuid": "68ea212d7cacb4b3a5adb8ae414cc0d0",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T10:05:41Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-09-01T15:26:15Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "6CZ0EKJ",
+        "evses": [
+          {
+            "evse_uuid": "74d50ea990250572c901c359089355ad",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:57:55Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-10-18T13:55:49Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "2BWPQVZ",
+        "evses": [
+          {
+            "evse_uuid": "257968032d3c0471f9235aa071b80dc1",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T10:09:58Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-07-31T08:06:19Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "4F7CSPG",
+        "evses": [
+          {
+            "evse_uuid": "813c9b0c21c37e21417da613e14a623f",
+            "connectors": [
+              "IEC_62196_T2_COMBO",
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T10:10:33Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-07-07T09:41:35Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "AG16V3L",
+        "evses": [
+          {
+            "evse_uuid": "7413217611265aa85b2c03a02a1b470b",
+            "connectors": [
+              "IEC_62196_T2"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-23T14:14:40Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2024-08-04T12:56:23Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "D8A53Y6",
+        "evses": [
+          {
+            "evse_uuid": "58321a6be34b86fe6069360e7689c1e7",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:22:54Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-10-26T13:15:46Z"
+          },
+          {
+            "evse_uuid": "7efc81e03d40400e2987652b1c11b7d9",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:57:52Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-10-26T13:15:46Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "2LF7N9Y",
+        "evses": [
+          {
+            "evse_uuid": "173f11b159a68c5129d6f9468355960a",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:49:01Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-07-07T09:43:06Z"
+          },
+          {
+            "evse_uuid": "4051e292b9dd7fc0a2c0523eb7488dc3",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:58:57Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-07-07T09:43:06Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "CAGXG8Y",
+        "evses": [
+          {
+            "evse_uuid": "6711dc56e02d2198855d853893509ac7",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:44:33Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-11-01T12:20:05Z"
+          },
+          {
+            "evse_uuid": "b6ccd6a69e95a5a5127086f3f3e0b559",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:42:05Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-11-01T12:20:05Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "C9Y47O8",
+        "evses": [
+          {
+            "evse_uuid": "5fe63b41aee06bf89c9dd28e7fdcd977",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T10:07:22Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-09-23T10:15:02Z"
+          },
+          {
+            "evse_uuid": "fc509407df58884222fdb8c8092d29fe",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T20:43:32Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-09-23T10:15:02Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "7PKL986",
+        "evses": [
+          {
+            "evse_uuid": "a33586930665e2e71520d5734eca72cd",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T07:18:13Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2026-01-21T15:27:28Z"
+          },
+          {
+            "evse_uuid": "b9f94b0dbede76f4a9dd9a39c52e2dee",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T10:04:39Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2026-01-21T15:27:28Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "65Q21OV",
+        "evses": [
+          {
+            "evse_uuid": "5d07fd3adebfdb2adfa4cebbad2ae39f",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:28:22Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-10T12:30:35Z"
+          },
+          {
+            "evse_uuid": "ded0e335b01c0636f21fcece6d94c36a",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T10:14:01Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-10T12:30:35Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "B94YF09",
+        "evses": [
+          {
+            "evse_uuid": "0f19cd704414a636ed2b1facbb5b2e7f",
+            "connectors": [
+              "IEC_62196_T2"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T19:39:19Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-12-31T12:34:07Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "7CGVUFT",
+        "evses": [
+          {
+            "evse_uuid": "6eb8184b100684378c741fb900e94641",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T10:14:05Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "9a8dab13edd4fb08e7c0148043147f1d",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:17:35Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "2YLOA0B",
+        "evses": [
+          {
+            "evse_uuid": "b4efc36615b7e98da126d16e534a218b",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:22:36Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-01-03T16:38:21Z"
+          },
+          {
+            "evse_uuid": "d2eb4380f7e0f9786f2d63b56ead336a",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T10:13:56Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-01-03T16:38:21Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "3JOBR3G",
+        "evses": [
+          {
+            "evse_uuid": "0053d3772bbdee43aa9128641ff29d9b",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:43:37Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-15T07:32:08Z"
+          },
+          {
+            "evse_uuid": "3134449845e9f57fead9ba339c56ae6a",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T10:11:00Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-15T07:32:08Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "F25JNWO",
+        "evses": [
+          {
+            "evse_uuid": "1122a0368530c64ad606b17baaa2d9fa",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T10:07:37Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "79e0c3b8bd7ed67bea8478ab9b7b34f5",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:43:06Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      }
+    ],
+    "scraped_at": "2026-03-24T10:14:23.019517+00:00"
+  },
+  {
+    "uuid": "W5AL1BD",
+    "latitude": 50.686098,
+    "longitude": -3.449975,
+    "max_power_kw": 250.0,
+    "location_raw": {
+      "legacy_id": 3215,
+      "uuid": "W5AL1BD",
+      "coordinates": {
+        "latitude": 50.686098,
+        "longitude": -3.449975
+      },
+      "power": [
+        130000,
+        250000
+      ],
+      "payment_methods": [
+        "NETWORK_PAYMENT_METHOD"
+      ],
+      "pricing": {
+        "payg": {
+          "min": null,
+          "max": null
+        },
+        "roaming": {
+          "min": null,
+          "max": null
+        },
+        "currency": null
+      },
+      "category": "PUBLIC",
+      "created_at": "2014-12-04T00:00:00Z"
+    },
+    "total_devices": 12,
+    "total_evses": 12,
+    "connector_types": [
+      "IEC_62196_T2_COMBO",
+      "TESLA_S"
+    ],
+    "available_count": 7,
+    "charging_count": 5,
+    "inoperative_count": 0,
+    "out_of_order_count": 0,
+    "unknown_count": 0,
+    "devices": [
+      {
+        "device_uuid": "59AAEZR",
+        "evses": [
+          {
+            "evse_uuid": "eef4ba70eb7fc539e239060fb02d38c7",
+            "connectors": [
+              "IEC_62196_T2_COMBO",
+              "TESLA_S"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T10:11:25Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-08-26T12:25:03Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "BNYU2W6",
+        "evses": [
+          {
+            "evse_uuid": "e9c1cc4972f6430abd98e6238ee68052",
+            "connectors": [
+              "IEC_62196_T2_COMBO",
+              "TESLA_S"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T10:11:25Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "7FEYDLJ",
+        "evses": [
+          {
+            "evse_uuid": "a007d06f684eba067cdabaa61719b0ce",
+            "connectors": [
+              "IEC_62196_T2_COMBO",
+              "TESLA_S"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:41:18Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-06-14T17:05:20Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "1VNI7Y8",
+        "evses": [
+          {
+            "evse_uuid": "b2450fd2003776cf4b7023e6f19700c2",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T10:11:25Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "A22UMT5",
+        "evses": [
+          {
+            "evse_uuid": "280291f83a87691fd23d45d66f951e35",
+            "connectors": [
+              "IEC_62196_T2_COMBO",
+              "TESLA_S"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:16:22Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-07-26T10:54:45Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "EE2F2FJ",
+        "evses": [
+          {
+            "evse_uuid": "03639312112509b25bf1051743382600",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:16:22Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2026-02-20T10:44:49Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "7DW5XD5",
+        "evses": [
+          {
+            "evse_uuid": "5c5fc9f601fa01114625d6b5fba6abff",
+            "connectors": [
+              "IEC_62196_T2_COMBO",
+              "TESLA_S"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T08:56:19Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-06-14T18:51:51Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "DE18004",
+        "evses": [
+          {
+            "evse_uuid": "838f4ad59d14800b928c5ab86d7b72b8",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:16:22Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "4B2O7Q0",
+        "evses": [
+          {
+            "evse_uuid": "a91513e6a4e565127b8a777cc6fad660",
+            "connectors": [
+              "IEC_62196_T2_COMBO",
+              "TESLA_S"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:51:24Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-03-19T13:11:25Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "ADU82YX",
+        "evses": [
+          {
+            "evse_uuid": "7bffcc54afac4f9215240ffe52e8d52b",
+            "connectors": [
+              "TESLA_S",
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T07:51:22Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-08-23T21:12:47Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "EANJGZM",
+        "evses": [
+          {
+            "evse_uuid": "a92f8a959635820ca6e0598457a416ed",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T19:11:19Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-06-07T10:21:33Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "D48WAP0",
+        "evses": [
+          {
+            "evse_uuid": "f1d965c970cf89ec852d1ffa0998a33b",
+            "connectors": [
+              "TESLA_S",
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:26:20Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-10-28T07:10:07Z"
+          }
+        ]
+      }
+    ],
+    "scraped_at": "2026-03-24T10:14:23.019517+00:00"
+  },
+  {
+    "uuid": "BM2UASF",
+    "latitude": 50.979798,
+    "longitude": -3.20572,
+    "max_power_kw": 300.0,
+    "location_raw": {
+      "legacy_id": 2762345,
+      "uuid": "BM2UASF",
+      "coordinates": {
+        "latitude": 50.979798,
+        "longitude": -3.20572
+      },
+      "power": [
+        50000,
+        300000
+      ],
+      "payment_methods": [
+        "CONTACTLESS",
+        "ZAP_PAY",
+        "ZAP_PAY_RFID",
+        "NETWORK_PAYMENT_METHOD"
+      ],
+      "pricing": {
+        "payg": {
+          "min": 0.79,
+          "max": 0.79
+        },
+        "roaming": {
+          "min": 0.79,
+          "max": 0.79
+        },
+        "currency": "GBP"
+      },
+      "category": "PUBLIC",
+      "created_at": "2025-05-28T13:15:12Z"
+    },
+    "total_devices": 4,
+    "total_evses": 12,
+    "connector_types": [
+      "CHADEMO",
+      "IEC_62196_T2_COMBO"
+    ],
+    "available_count": 9,
+    "charging_count": 0,
+    "inoperative_count": 0,
+    "out_of_order_count": 0,
+    "unknown_count": 3,
+    "devices": [
+      {
+        "device_uuid": "1SL257D",
+        "evses": [
+          {
+            "evse_uuid": "977aeb86f940ba5ad40b06cbc4a7886f",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:33:35Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-10-24T11:12:09Z"
+          },
+          {
+            "evse_uuid": "97dcdd5c3325f800b02a8eeac4d34014",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T14:02:41Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-10-24T11:12:09Z"
+          },
+          {
+            "evse_uuid": "d0495067a7d834ce3d37f92d4d2b5a79",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:36:11Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-10-24T11:12:09Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "4TP1EJB",
+        "evses": [
+          {
+            "evse_uuid": "1fc4394caf5c7570ccfe9736ae2ea0f8",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T19:17:40Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-11-08T11:17:32Z"
+          },
+          {
+            "evse_uuid": "e2d5007d720cc46accea60e1af387333",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T07:05:42Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-11-08T11:17:32Z"
+          },
+          {
+            "evse_uuid": "f918eeab44e261614b3957481e178a3e",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T07:56:13Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-11-08T11:17:32Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "2BFC4RF",
+        "evses": [
+          {
+            "evse_uuid": "828721fa515216eb9b934efbaf18c0e2",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "UNKNOWN",
+            "network_updated_at": "2026-03-22T12:43:49Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-26T09:33:37Z"
+          },
+          {
+            "evse_uuid": "bf8cbb9d5da6ad06e1c8722cd6d91c17",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "UNKNOWN",
+            "network_updated_at": "2026-03-22T12:48:12Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-26T09:33:37Z"
+          },
+          {
+            "evse_uuid": "c38563df2e196682c555c47a43333460",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "UNKNOWN",
+            "network_updated_at": "2026-03-22T12:43:49Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-26T09:33:37Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "4MU98SP",
+        "evses": [
+          {
+            "evse_uuid": "02b7e03befef91e31de63be38d906930",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-22T16:26:59Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-15T18:24:55Z"
+          },
+          {
+            "evse_uuid": "3b9891a53ce7a4ac00da3777b07ac543",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T19:45:15Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-15T18:24:55Z"
+          },
+          {
+            "evse_uuid": "7c082a95b888bef1b7563164ed9b7204",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:41:16Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-15T18:24:55Z"
+          }
+        ]
+      }
+    ],
+    "scraped_at": "2026-03-24T10:14:23.019517+00:00"
+  },
+  {
+    "uuid": "ECL0FMW",
+    "latitude": 53.233419,
+    "longitude": -1.428958,
+    "max_power_kw": 150.0,
+    "location_raw": {
+      "legacy_id": 5574872,
+      "uuid": "ECL0FMW",
+      "coordinates": {
+        "latitude": 53.233419,
+        "longitude": -1.428958
+      },
+      "power": [
+        150000
+      ],
+      "payment_methods": [
+        "CONTACTLESS",
+        "ZAP_PAY",
+        "ZAP_PAY_RFID",
+        "NETWORK_PAYMENT_METHOD"
+      ],
+      "pricing": {
+        "payg": {
+          "min": 0.768,
+          "max": 0.768
+        },
+        "roaming": {
+          "min": 0.768,
+          "max": 0.768
+        },
+        "currency": "GBP"
+      },
+      "category": "PUBLIC",
+      "created_at": "2026-02-24T16:55:32Z"
+    },
+    "total_devices": 8,
+    "total_evses": 16,
+    "connector_types": [
+      "IEC_62196_T2_COMBO"
+    ],
+    "available_count": 15,
+    "charging_count": 1,
+    "inoperative_count": 0,
+    "out_of_order_count": 0,
+    "unknown_count": 0,
+    "devices": [
+      {
+        "device_uuid": "IQBLBG0",
+        "evses": [
+          {
+            "evse_uuid": "45ecaa8119a0e366b4648603cb87690f",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-21T13:57:39Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "a3c777ab08c42d5bc896a0794eac1c84",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-21T17:57:40Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "8IPHW35",
+        "evses": [
+          {
+            "evse_uuid": "3ebd3f5d81d793cc1b205e0515dd5af3",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:27:38Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "a5f0be3286b91a6c8ddfa07270b2bc7a",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T20:17:43Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "8J026XK",
+        "evses": [
+          {
+            "evse_uuid": "012d7208434435433a1a4d71fa625c53",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-22T18:12:42Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-26T11:59:39Z"
+          },
+          {
+            "evse_uuid": "49cd0e80315c111741640753307540aa",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T13:27:40Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-26T11:59:39Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "9YLQTO8",
+        "evses": [
+          {
+            "evse_uuid": "64a9448f85a6e054a419a7ec4dba3d10",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:27:38Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-03-05T14:38:54Z"
+          },
+          {
+            "evse_uuid": "d50df150558b933e865ea7859e21391b",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-22T13:42:44Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-03-05T14:38:54Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "8FRYA6M",
+        "evses": [
+          {
+            "evse_uuid": "5ef5b250f5cfb8b9b59f6cacdda44d0e",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T10:22:38Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "c574c30448c8698b890727f86ee7641a",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T16:37:36Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "DCT7271",
+        "evses": [
+          {
+            "evse_uuid": "8ac7567a1518420584a84ad73dda113e",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T02:32:35Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-28T18:39:26Z"
+          },
+          {
+            "evse_uuid": "c1d5bc8b1291e25359f255fa09554946",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-22T12:12:41Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-28T18:39:26Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "GIIOYLR",
+        "evses": [
+          {
+            "evse_uuid": "11314be60119e621d3de83dbbba7d60a",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T19:43:33Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "281c0b36b76524dfeeb424fb9968b4bd",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T19:47:37Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "CH5IDKX",
+        "evses": [
+          {
+            "evse_uuid": "1cef465241fcc25f44c153ddd069258b",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-16T11:05:01Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-03-12T10:45:29Z"
+          },
+          {
+            "evse_uuid": "dcefc59a997c6fbd0ab4451f20eb0ae4",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T11:42:40Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-03-12T10:45:29Z"
+          }
+        ]
+      }
+    ],
+    "scraped_at": "2026-03-24T10:14:23.019517+00:00"
+  },
+  {
+    "uuid": "1AU2C5H",
+    "latitude": 53.680974,
+    "longitude": -1.550984,
+    "max_power_kw": 200.0,
+    "location_raw": {
+      "legacy_id": 4807666,
+      "uuid": "1AU2C5H",
+      "coordinates": {
+        "latitude": 53.680974,
+        "longitude": -1.550984
+      },
+      "power": [
+        7000,
+        200000
+      ],
+      "payment_methods": [
+        "CONTACTLESS",
+        "ZAP_PAY",
+        "ZAP_PAY_RFID",
+        "NETWORK_PAYMENT_METHOD"
+      ],
+      "pricing": {
+        "payg": {
+          "min": 0.5604,
+          "max": 0.6504
+        },
+        "roaming": {
+          "min": 0.5604,
+          "max": 0.6504
+        },
+        "currency": "GBP"
+      },
+      "category": "PUBLIC",
+      "created_at": "2025-12-10T10:27:40Z"
+    },
+    "total_devices": 7,
+    "total_evses": 14,
+    "connector_types": [
+      "IEC_62196_T2",
+      "IEC_62196_T2_COMBO"
+    ],
+    "available_count": 12,
+    "charging_count": 0,
+    "inoperative_count": 0,
+    "out_of_order_count": 2,
+    "unknown_count": 0,
+    "devices": [
+      {
+        "device_uuid": "8HX993E",
+        "evses": [
+          {
+            "evse_uuid": "1c1938d1ee946d4a236cd28876f929d9",
+            "connectors": [
+              "IEC_62196_T2"
+            ],
+            "network_status": "OUTOFORDER",
+            "network_updated_at": "2026-03-22T23:09:14Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "2d6f2a027215e2a1a0224952a038083e",
+            "connectors": [
+              "IEC_62196_T2"
+            ],
+            "network_status": "OUTOFORDER",
+            "network_updated_at": "2026-03-22T23:09:14Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "5YQSA5W",
+        "evses": [
+          {
+            "evse_uuid": "23218e14d75050adc0344f519cec22be",
+            "connectors": [
+              "IEC_62196_T2"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T07:54:08Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-12-14T08:59:32Z"
+          },
+          {
+            "evse_uuid": "872b127deba62f03256e08918bd92b36",
+            "connectors": [
+              "IEC_62196_T2"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T06:59:12Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-12-14T08:59:32Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "2ZQKW5S",
+        "evses": [
+          {
+            "evse_uuid": "4641565d462af5120d2732c15b41b262",
+            "connectors": [
+              "IEC_62196_T2"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T07:24:13Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "de6ee301402604cee826a13842254052",
+            "connectors": [
+              "IEC_62196_T2"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T07:59:14Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "A9R2LVW",
+        "evses": [
+          {
+            "evse_uuid": "6c2144616a839a02cb5bd23724868c4b",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T17:29:14Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "adda7f005624aace0024664c1e00a521",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:54:14Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "7PYHOEX",
+        "evses": [
+          {
+            "evse_uuid": "4426d4aab4c8500d616ad4e8f1a7fdc9",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T16:59:13Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "7de96e1552c9764d3b17b87785ce963c",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:39:09Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "68WS82A",
+        "evses": [
+          {
+            "evse_uuid": "7dd72126501f5eb5a3d910060e776624",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T20:49:13Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "b076b78f776883c2d5d8f9abd1f4d717",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:24:13Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "3Q7WOI8",
+        "evses": [
+          {
+            "evse_uuid": "570bd8097db8672b28ee6d77d3c26098",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:59:16Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "70a987c36fc98ba53980f4b6782bbf14",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-17T01:59:16Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      }
+    ],
+    "scraped_at": "2026-03-24T10:14:23.019517+00:00"
+  },
+  {
+    "uuid": "16H2D1K",
+    "latitude": 53.103529,
+    "longitude": -1.322314,
+    "max_power_kw": 350.0,
+    "location_raw": {
+      "legacy_id": 4500726,
+      "uuid": "16H2D1K",
+      "coordinates": {
+        "latitude": 53.103529,
+        "longitude": -1.322314
+      },
+      "power": [
+        200000,
+        350000
+      ],
+      "payment_methods": [
+        "CONTACTLESS",
+        "ZAP_PAY",
+        "ZAP_PAY_RFID",
+        "NETWORK_PAYMENT_METHOD"
+      ],
+      "pricing": {
+        "payg": {
+          "min": null,
+          "max": null
+        },
+        "roaming": {
+          "min": 0.8904,
+          "max": 0.8904
+        },
+        "currency": "GBP"
+      },
+      "category": "PUBLIC",
+      "created_at": "2025-11-10T13:53:46Z"
+    },
+    "total_devices": 19,
+    "total_evses": 23,
+    "connector_types": [
+      "IEC_62196_T2_COMBO"
+    ],
+    "available_count": 21,
+    "charging_count": 2,
+    "inoperative_count": 0,
+    "out_of_order_count": 0,
+    "unknown_count": 0,
+    "devices": [
+      {
+        "device_uuid": "7S5HQY5",
+        "evses": [
+          {
+            "evse_uuid": "b6d41feb4ff393b4f1fb3eb30d7a6c7e",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T10:01:06Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "CDU1KP7",
+        "evses": [
+          {
+            "evse_uuid": "bea2a212c457e4da3ce74e27c326662c",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:51:05Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-01-22T19:02:47Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "6DDBLA8",
+        "evses": [
+          {
+            "evse_uuid": "c2ccbe784c0b9210fe8aa8094ecb4a44",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T23:51:08Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-03-07T11:36:36Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "6KZJ6TT",
+        "evses": [
+          {
+            "evse_uuid": "78e0b71cc0f28ad1775c2c34e9ae22fb",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-18T19:21:09Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "B6I6AJW",
+        "evses": [
+          {
+            "evse_uuid": "6aee23e2c0ba7debc35b0c310b65aae1",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:26:07Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "COXRT5I",
+        "evses": [
+          {
+            "evse_uuid": "adfe0848be46323138bec4cb723a35b1",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T22:06:07Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-27T13:01:26Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "6AAD8YW",
+        "evses": [
+          {
+            "evse_uuid": "0d5a064a1d0c4f2b3819c28756ba2a5d",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T07:26:07Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "8MGJPL3",
+        "evses": [
+          {
+            "evse_uuid": "54cfdf04b1cfb74721c925293f29307d",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T18:01:06Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "P7H0GRF",
+        "evses": [
+          {
+            "evse_uuid": "82a7f9ea25e0ab6cab2fd44ca4da7003",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-22T17:26:07Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "AL9E8HI",
+        "evses": [
+          {
+            "evse_uuid": "b7cccc8ccdb4ec1c672e0ebf28606725",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:16:05Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "1VYSGM4",
+        "evses": [
+          {
+            "evse_uuid": "6e8fe74b7f593587a4a811eaffffa5b1",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-21T17:56:07Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "84MROTW",
+        "evses": [
+          {
+            "evse_uuid": "47dee1e65638621f736dbc19f5906b25",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:31:07Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "EWMJFKX",
+        "evses": [
+          {
+            "evse_uuid": "3c656abd06337f7f50e48e8f4d217573",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T20:26:06Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-12-28T15:06:38Z"
+          },
+          {
+            "evse_uuid": "a78c6b2f28b86cb7ab342d474cf23acc",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T20:26:06Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-12-28T15:06:38Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "BBAONV4",
+        "evses": [
+          {
+            "evse_uuid": "e7d5e9632ff7af5250c0cb5fa36377ce",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T20:56:07Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "9PQY6O0",
+        "evses": [
+          {
+            "evse_uuid": "8399797589eec4c50a0717430c35cb5f",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T16:56:06Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "bbd03f786e557ce884a633bb0c918ead",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T16:56:06Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "B71RA4P",
+        "evses": [
+          {
+            "evse_uuid": "c1ea7d0c731276601ffa2177aa404408",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T15:36:06Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-12-19T14:58:42Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "ES6D619",
+        "evses": [
+          {
+            "evse_uuid": "95b8b5d5323bcce1490be28f49b2908b",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:06:10Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "2KB6K9E",
+        "evses": [
+          {
+            "evse_uuid": "130b96608ed73eea3af54eb2496337c1",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:21:06Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-24T12:56:12Z"
+          },
+          {
+            "evse_uuid": "bb155fa5b311afe0349915d39cec2519",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:21:06Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-24T12:56:12Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "64KBCD3",
+        "evses": [
+          {
+            "evse_uuid": "1937d46272e5fefa3e81810c02e394e2",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-22T18:01:06Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "2b05d00aba8f3f38cd7e5a395841fdcb",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-22T18:01:06Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      }
+    ],
+    "scraped_at": "2026-03-24T10:14:23.019517+00:00"
+  },
+  {
+    "uuid": "DTJ199U",
+    "latitude": 53.698507,
+    "longitude": -1.760147,
+    "max_power_kw": 200.0,
+    "location_raw": {
+      "legacy_id": 3982763,
+      "uuid": "DTJ199U",
+      "coordinates": {
+        "latitude": 53.698507,
+        "longitude": -1.760147
+      },
+      "power": [
+        7000,
+        200000
+      ],
+      "payment_methods": [
+        "CONTACTLESS",
+        "ZAP_PAY",
+        "ZAP_PAY_RFID",
+        "NETWORK_PAYMENT_METHOD"
+      ],
+      "pricing": {
+        "payg": {
+          "min": 0.5604,
+          "max": 0.6504
+        },
+        "roaming": {
+          "min": 0.5604,
+          "max": 0.6504
+        },
+        "currency": "GBP"
+      },
+      "category": "PUBLIC",
+      "created_at": "2025-09-24T11:28:57Z"
+    },
+    "total_devices": 6,
+    "total_evses": 12,
+    "connector_types": [
+      "IEC_62196_T2",
+      "IEC_62196_T2_COMBO"
+    ],
+    "available_count": 10,
+    "charging_count": 0,
+    "inoperative_count": 2,
+    "out_of_order_count": 0,
+    "unknown_count": 0,
+    "devices": [
+      {
+        "device_uuid": "68O3YVK",
+        "evses": [
+          {
+            "evse_uuid": "3fe9547dce09e38922df569ab4361a46",
+            "connectors": [
+              "IEC_62196_T2"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T11:29:08Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "8d41381f0f6b7fa67ead155e827b5e65",
+            "connectors": [
+              "IEC_62196_T2"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T11:29:08Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "12K7GHG",
+        "evses": [
+          {
+            "evse_uuid": "12234cc28311bbfc42c304ea3acd674a",
+            "connectors": [
+              "IEC_62196_T2"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T03:54:13Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-12-08T18:24:15Z"
+          },
+          {
+            "evse_uuid": "5ec3b13de2d5aad010a0be4c2d3f9d19",
+            "connectors": [
+              "IEC_62196_T2"
+            ],
+            "network_status": "INOPERATIVE",
+            "network_updated_at": "2026-03-24T03:54:13Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-12-08T18:24:15Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "AQGQTHS",
+        "evses": [
+          {
+            "evse_uuid": "7e95620e84e5bebaa55eedb4fd25527f",
+            "connectors": [
+              "IEC_62196_T2"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T03:54:13Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "aebf3acfce91708cd841535123a4deb8",
+            "connectors": [
+              "IEC_62196_T2"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T03:54:13Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "F30B21H",
+        "evses": [
+          {
+            "evse_uuid": "b69f1a37e42cdfac64d91519804044af",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "INOPERATIVE",
+            "network_updated_at": "2026-03-20T16:04:17Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2026-02-17T16:23:41Z"
+          },
+          {
+            "evse_uuid": "bf255b453e461ae94cc9793eed64eb29",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T16:49:14Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2026-02-17T16:23:41Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "6QKJ860",
+        "evses": [
+          {
+            "evse_uuid": "6e1b1a51cc8c9f6dc3aa23580eb137c4",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:49:14Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2026-02-17T16:24:51Z"
+          },
+          {
+            "evse_uuid": "cc374527fcc8e17af3236fd1d8598e8e",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T19:09:13Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2026-02-17T16:24:51Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "9MHE6V7",
+        "evses": [
+          {
+            "evse_uuid": "9404099ae8dfeb1f6fea020f38af9412",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T16:54:11Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2026-02-17T16:24:21Z"
+          },
+          {
+            "evse_uuid": "d489d1568f4393b05c80023dd56e8258",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-22T00:09:07Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2026-02-17T16:24:21Z"
+          }
+        ]
+      }
+    ],
+    "scraped_at": "2026-03-24T10:14:23.019517+00:00"
+  },
+  {
+    "uuid": "8JVIHU0",
+    "latitude": 53.396936,
+    "longitude": -1.352332,
+    "max_power_kw": 400.0,
+    "location_raw": {
+      "legacy_id": 2711920,
+      "uuid": "8JVIHU0",
+      "coordinates": {
+        "latitude": 53.396936,
+        "longitude": -1.352332
+      },
+      "power": [
+        400000
+      ],
+      "payment_methods": [
+        "CONTACTLESS",
+        "ZAP_PAY",
+        "ZAP_PAY_RFID"
+      ],
+      "pricing": {
+        "payg": {
+          "min": 0.83,
+          "max": 0.83
+        },
+        "roaming": {
+          "min": 0.83,
+          "max": 0.83
+        },
+        "currency": "GBP"
+      },
+      "category": "PUBLIC",
+      "created_at": "2025-05-23T13:50:45Z"
+    },
+    "total_devices": 10,
+    "total_evses": 20,
+    "connector_types": [
+      "IEC_62196_T2_COMBO"
+    ],
+    "available_count": 13,
+    "charging_count": 7,
+    "inoperative_count": 0,
+    "out_of_order_count": 0,
+    "unknown_count": 0,
+    "devices": [
+      {
+        "device_uuid": "T5WB8TV",
+        "evses": [
+          {
+            "evse_uuid": "898a357bade813f52af0ce57d5d35974",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:20:40Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-09-15T20:05:19Z"
+          },
+          {
+            "evse_uuid": "ed53848a73db87e9929969040e978b71",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:05:13Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-09-15T20:05:19Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "49I8TTO",
+        "evses": [
+          {
+            "evse_uuid": "5c7f84d90788158e8464e5904ac4829d",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:57:27Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-09-17T13:18:59Z"
+          },
+          {
+            "evse_uuid": "a9ba4b9346b70c46afba948a0235ea4e",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:46:00Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-09-17T13:18:59Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "9H29M78",
+        "evses": [
+          {
+            "evse_uuid": "2290a4c784571503a385e0d777378e5c",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:51:29Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-08-17T15:45:41Z"
+          },
+          {
+            "evse_uuid": "aa180e050b716dbdaaf6b1bb3444c99f",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:57:05Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-08-17T15:45:41Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "9RI16KI",
+        "evses": [
+          {
+            "evse_uuid": "1f224eda46bb5a9a0723537ce93f97e3",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T10:08:30Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-10-05T15:24:29Z"
+          },
+          {
+            "evse_uuid": "9a9729067d50e2bf3860664e3c423e40",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:36:21Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-10-05T15:24:29Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "CO6OCQP",
+        "evses": [
+          {
+            "evse_uuid": "550b353491f4a5b1fb4ed770d7061168",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T07:53:15Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-12-08T18:59:40Z"
+          },
+          {
+            "evse_uuid": "c794d2a796f19b6b94dbd3f445a38b4f",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:57:25Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-12-08T18:59:40Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "ARG6SGF",
+        "evses": [
+          {
+            "evse_uuid": "0d7b2ba1f7f260713f415e83108b4557",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:10:53Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "2e913ab30c138f83a39e54a178ca7e8b",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:01:40Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "DGSS15P",
+        "evses": [
+          {
+            "evse_uuid": "dfee5464c178109cb0d5856d0991ae6c",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T10:09:45Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "f0f44c287795b5f049e5a717cc32ffab",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T06:33:45Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "656MNJ5",
+        "evses": [
+          {
+            "evse_uuid": "8a43550ffbafdb8cfb55051e6b858fc6",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:48:34Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-12-05T13:36:33Z"
+          },
+          {
+            "evse_uuid": "c23326f4cd6010e78b0fd25e20913b6b",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:58:47Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-12-05T13:36:33Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "AXK5XI4",
+        "evses": [
+          {
+            "evse_uuid": "5b40b3bc9070d8875ee4336c078a97a2",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T07:19:10Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "ef6acac81c923ea71453084b83d04841",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T10:01:37Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "4ZQU9O9",
+        "evses": [
+          {
+            "evse_uuid": "3294765bd1c2762f404fef733e39ad53",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T05:31:49Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-12-23T20:32:57Z"
+          },
+          {
+            "evse_uuid": "9d3bbce66586a3da168cb36b7a3222d4",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T10:06:54Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-12-23T20:32:57Z"
+          }
+        ]
+      }
+    ],
+    "scraped_at": "2026-03-24T10:14:23.019517+00:00"
+  },
+  {
+    "uuid": "98W3UDZ",
+    "latitude": 53.446687,
+    "longitude": -1.465126,
+    "max_power_kw": 300.0,
+    "location_raw": {
+      "legacy_id": 2487833,
+      "uuid": "98W3UDZ",
+      "coordinates": {
+        "latitude": 53.446687,
+        "longitude": -1.465126
+      },
+      "power": [
+        50000,
+        300000
+      ],
+      "payment_methods": [
+        "CONTACTLESS",
+        "ZAP_PAY",
+        "ZAP_PAY_RFID",
+        "NETWORK_PAYMENT_METHOD"
+      ],
+      "pricing": {
+        "payg": {
+          "min": 0.87,
+          "max": 0.87
+        },
+        "roaming": {
+          "min": 0.87,
+          "max": 0.87
+        },
+        "currency": "GBP"
+      },
+      "category": "PUBLIC",
+      "created_at": "2025-05-01T09:17:45Z"
+    },
+    "total_devices": 6,
+    "total_evses": 12,
+    "connector_types": [
+      "CHADEMO",
+      "IEC_62196_T2_COMBO"
+    ],
+    "available_count": 9,
+    "charging_count": 2,
+    "inoperative_count": 1,
+    "out_of_order_count": 0,
+    "unknown_count": 0,
+    "devices": [
+      {
+        "device_uuid": "7HQT010",
+        "evses": [
+          {
+            "evse_uuid": "9d4e68a5df45eb778330ee93c8832c9b",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T07:44:27Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-11-01T14:23:15Z"
+          },
+          {
+            "evse_uuid": "d7680d83343a02dc73d97ef78996f1ee",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T07:44:27Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-11-01T14:23:15Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "7LKA0ZW",
+        "evses": [
+          {
+            "evse_uuid": "334d8fb3fd7e8711dc05cda4902e24d3",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T10:06:23Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "cfb2faedc16931bddc5f96f64f35fe0b",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T10:06:23Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "ANB8O50",
+        "evses": [
+          {
+            "evse_uuid": "2d5e3d0fdbcc79f4d1cb9226a8349c9a",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T10:03:32Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "482b1da42023b4c3bfdb36fdfbf894b4",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "INOPERATIVE",
+            "network_updated_at": "2026-03-18T15:45:19Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "2BGXPBD",
+        "evses": [
+          {
+            "evse_uuid": "65313c34597bd8a265bdeb32139b66c1",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:19:57Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-10-28T16:14:05Z"
+          },
+          {
+            "evse_uuid": "c6bdbf97768dec22b8fc9cab2495aa0e",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:19:55Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-10-28T16:14:05Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "5I5I57S",
+        "evses": [
+          {
+            "evse_uuid": "00eb19a9c45569d1f49fa954aeadf5a6",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:16:27Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-07-13T08:37:35Z"
+          },
+          {
+            "evse_uuid": "fe288bada8bdac6d6ddeeffdc8081233",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:16:27Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-07-13T08:37:35Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "EXQVDP4",
+        "evses": [
+          {
+            "evse_uuid": "776882ed234cbe56694357d9aa70c857",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T07:58:21Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "9dcf2180b942d93b498e9af6f9f98d19",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T07:58:21Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      }
+    ],
+    "scraped_at": "2026-03-24T10:14:23.019517+00:00"
+  },
+  {
+    "uuid": "7PLN62U",
+    "latitude": 53.139675,
+    "longitude": -1.200935,
+    "max_power_kw": 300.0,
+    "location_raw": {
+      "legacy_id": 640451,
+      "uuid": "7PLN62U",
+      "coordinates": {
+        "latitude": 53.139675,
+        "longitude": -1.200935
+      },
+      "power": [
+        50000,
+        300000
+      ],
+      "payment_methods": [
+        "CONTACTLESS",
+        "ZAP_PAY",
+        "ZAP_PAY_RFID",
+        "NETWORK_PAYMENT_METHOD"
+      ],
+      "pricing": {
+        "payg": {
+          "min": 0.87,
+          "max": 0.87
+        },
+        "roaming": {
+          "min": 0.87,
+          "max": 0.87
+        },
+        "currency": "GBP"
+      },
+      "category": "PUBLIC",
+      "created_at": "2024-10-21T08:35:44Z"
+    },
+    "total_devices": 8,
+    "total_evses": 16,
+    "connector_types": [
+      "CHADEMO",
+      "IEC_62196_T2_COMBO"
+    ],
+    "available_count": 16,
+    "charging_count": 0,
+    "inoperative_count": 0,
+    "out_of_order_count": 0,
+    "unknown_count": 0,
+    "devices": [
+      {
+        "device_uuid": "CLH3C46",
+        "evses": [
+          {
+            "evse_uuid": "1c3042259911b06a646229f096d44b78",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:45:22Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-01-18T20:50:20Z"
+          },
+          {
+            "evse_uuid": "602866f3b406cc2973a2fef432fb53f5",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:45:22Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-01-18T20:50:20Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "3MQWYFM",
+        "evses": [
+          {
+            "evse_uuid": "3114289799431f2bdb85147c2d2c11c0",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T07:42:34Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "87ae375907b619cf842b54a33a1fe319",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T07:42:35Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "2DDE82O",
+        "evses": [
+          {
+            "evse_uuid": "ebdc092248f4679dce95e2842eb09bc2",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:59:05Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "f1d1d15708352b33a50a8eb51c582d95",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:59:05Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "7PE1T1G",
+        "evses": [
+          {
+            "evse_uuid": "9cf59304a84236b044006cecdb692a92",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T21:18:22Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-08-21T19:29:01Z"
+          },
+          {
+            "evse_uuid": "f3610a6fb4273810fc4379508b7516e9",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T21:18:24Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-08-21T19:29:01Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "CD026NO",
+        "evses": [
+          {
+            "evse_uuid": "e5b97fa71d8edeb4b709a10434b07ae7",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T22:11:11Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "ed14295245741680430646e70aa627ab",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T22:11:11Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "5G4N1KN",
+        "evses": [
+          {
+            "evse_uuid": "939eea3b93ddf6fa5d2629600a3e26ff",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:17:18Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "ea469a84d4893eea04b5a177f5b8729a",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:17:18Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "8F858OZ",
+        "evses": [
+          {
+            "evse_uuid": "0f466bcbd78922ca971795bcb989d78f",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:09:20Z",
+            "user_status": null,
+            "user_updated_at": null
+          },
+          {
+            "evse_uuid": "37c4b124be79df7b5fabe711b417eb38",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:09:20Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "EOH3QJF",
+        "evses": [
+          {
+            "evse_uuid": "9a0a75d75d25804b8a902202d65853aa",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:50:14Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-12-28T16:10:19Z"
+          },
+          {
+            "evse_uuid": "fdb5ceb2aa8019e770d8dc4d9829548a",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:50:14Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-12-28T16:10:19Z"
+          }
+        ]
+      }
+    ],
+    "scraped_at": "2026-03-24T10:14:23.019517+00:00"
+  },
+  {
+    "uuid": "D5BMQS5",
+    "latitude": 52.1,
+    "longitude": 0.0348,
+    "max_power_kw": 150.0,
+    "location_raw": {
+      "legacy_id": 603491,
+      "uuid": "D5BMQS5",
+      "coordinates": {
+        "latitude": 52.1,
+        "longitude": 0.0348
+      },
+      "power": [
+        50000,
+        150000
+      ],
+      "payment_methods": [
+        "CONTACTLESS",
+        "ZAP_PAY",
+        "ZAP_PAY_RFID",
+        "NETWORK_PAYMENT_METHOD"
+      ],
+      "pricing": {
+        "payg": {
+          "min": 0.59,
+          "max": 0.59
+        },
+        "roaming": {
+          "min": 0.59,
+          "max": 0.59
+        },
+        "currency": "GBP"
+      },
+      "category": "PUBLIC",
+      "created_at": "2024-07-24T14:20:59Z"
+    },
+    "total_devices": 21,
+    "total_evses": 21,
+    "connector_types": [
+      "CHADEMO",
+      "IEC_62196_T2_COMBO"
+    ],
+    "available_count": 16,
+    "charging_count": 3,
+    "inoperative_count": 2,
+    "out_of_order_count": 0,
+    "unknown_count": 0,
+    "devices": [
+      {
+        "device_uuid": "E28C5L8",
+        "evses": [
+          {
+            "evse_uuid": "6671618c0ef38179c98e1d625715e06d",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T16:05:34Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-09-15T15:57:18Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "7SQJ3SB",
+        "evses": [
+          {
+            "evse_uuid": "68dcc8373e2584316542c8bcf2072993",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T19:21:30Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-06-09T10:39:54Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "CLF6Y2G",
+        "evses": [
+          {
+            "evse_uuid": "d9f552d9745adf7e8e7cc196fd2abd03",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T19:25:05Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-07-31T13:49:09Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "1C5N6TR",
+        "evses": [
+          {
+            "evse_uuid": "2f5e4199c77fba7293929f546da1b6e2",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T19:25:05Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-01-31T11:45:29Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "EEO5I0C",
+        "evses": [
+          {
+            "evse_uuid": "c856c9ed6389658d43b95956e9cd6292",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:44:04Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2024-09-02T12:23:52Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "AW6FM6M",
+        "evses": [
+          {
+            "evse_uuid": "6e0230a95f09bf5bd17deda1446bea34",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:24:09Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-06-08T15:27:12Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "8DSTW3Z",
+        "evses": [
+          {
+            "evse_uuid": "45b363a723e78d015d8cbf5ca15cc62c",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T19:25:04Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "64Z4WXQ",
+        "evses": [
+          {
+            "evse_uuid": "df76974e622b64f6c5d04da14fb59e8f",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:42:17Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-02-23T13:45:48Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "39D30FZ",
+        "evses": [
+          {
+            "evse_uuid": "eb862e87379c0e0413ebc7725471e869",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-22T16:07:46Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2024-12-07T13:56:50Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "7JQMORB",
+        "evses": [
+          {
+            "evse_uuid": "f70e1819f639d0ceac9f45ccf597fe0c",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-22T16:08:02Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "ARUYR7G",
+        "evses": [
+          {
+            "evse_uuid": "9eb9870428f8dcd2874d663d89e48c83",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T16:05:33Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "EKS944Z",
+        "evses": [
+          {
+            "evse_uuid": "9071bd74bcd007555fe159d9618ab47c",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T19:25:06Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-02-14T15:53:39Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "AY8T4SJ",
+        "evses": [
+          {
+            "evse_uuid": "cb8fe3bcd4663ceaaa77d43ecdeebab6",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "INOPERATIVE",
+            "network_updated_at": "2026-03-24T09:42:09Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-23T17:55:09Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "7LCAGTA",
+        "evses": [
+          {
+            "evse_uuid": "bc6886465192832a3be8957fa998b0fe",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T12:59:16Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "DCR0DFP",
+        "evses": [
+          {
+            "evse_uuid": "c5ddc1357627438afd502314b553bfa6",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T15:39:53Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-06-14T12:48:19Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "AVBT2LM",
+        "evses": [
+          {
+            "evse_uuid": "bc0683ae767e801a4f3ad99186a2a4ed",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T12:59:22Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-03-02T12:20:12Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "EADEI3Z",
+        "evses": [
+          {
+            "evse_uuid": "3c1ebcc8d9fee0cb6dacba3f3112c3ad",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-19T18:41:11Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "CXW88KU",
+        "evses": [
+          {
+            "evse_uuid": "6994f027673e77cce9bd5c05d855e7e5",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:51:09Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2024-11-05T12:46:12Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "32HLQ64",
+        "evses": [
+          {
+            "evse_uuid": "9454c1ad9f526146110a02b85bfa64b7",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T15:40:24Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "862Z43K",
+        "evses": [
+          {
+            "evse_uuid": "4aa16053feb5f74fb34ad90702465826",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "INOPERATIVE",
+            "network_updated_at": "2026-03-24T09:50:58Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      },
+      {
+        "device_uuid": "5W6HDKB",
+        "evses": [
+          {
+            "evse_uuid": "2cce52e45172cfaee51ece69b5eebe1e",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:31:53Z",
+            "user_status": null,
+            "user_updated_at": null
+          }
+        ]
+      }
+    ],
+    "scraped_at": "2026-03-24T10:14:23.019517+00:00"
+  },
+  {
+    "uuid": "AYMSIIR",
+    "latitude": 52.64964,
+    "longitude": 0.172901,
+    "max_power_kw": 150.0,
+    "location_raw": {
+      "legacy_id": 259292,
+      "uuid": "AYMSIIR",
+      "coordinates": {
+        "latitude": 52.64964,
+        "longitude": 0.172901
+      },
+      "power": [
+        50000,
+        150000
+      ],
+      "payment_methods": [
+        "CONTACTLESS",
+        "ZAP_PAY",
+        "ZAP_PAY_RFID",
+        "NETWORK_PAYMENT_METHOD"
+      ],
+      "pricing": {
+        "payg": {
+          "min": 0.87,
+          "max": 0.87
+        },
+        "roaming": {
+          "min": 0.87,
+          "max": 0.87
+        },
+        "currency": "GBP"
+      },
+      "category": "PUBLIC",
+      "created_at": "2024-01-03T15:08:02Z"
+    },
+    "total_devices": 6,
+    "total_evses": 12,
+    "connector_types": [
+      "CHADEMO",
+      "IEC_62196_T2_COMBO"
+    ],
+    "available_count": 6,
+    "charging_count": 4,
+    "inoperative_count": 2,
+    "out_of_order_count": 0,
+    "unknown_count": 0,
+    "devices": [
+      {
+        "device_uuid": "ACOOGNU",
+        "evses": [
+          {
+            "evse_uuid": "43980b92f36c75783fc5d58617df9025",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:21:56Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-02-26T18:16:26Z"
+          },
+          {
+            "evse_uuid": "7ff9d070886b5e23cd08a1641b424c1d",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:21:56Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-02-26T18:16:26Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "DAQHN33",
+        "evses": [
+          {
+            "evse_uuid": "87ffb02248cdda0a55c5191883543afb",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "INOPERATIVE",
+            "network_updated_at": "2026-03-20T14:14:21Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-02-17T07:43:56Z"
+          },
+          {
+            "evse_uuid": "f391c6e9c937024e1dcdac7faf96b296",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "INOPERATIVE",
+            "network_updated_at": "2026-03-20T14:14:15Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-02-17T07:43:56Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "E3OSMRG",
+        "evses": [
+          {
+            "evse_uuid": "0782125e22b17a64afeb6c9dbbf2197d",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T20:12:06Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-11-30T12:24:26Z"
+          },
+          {
+            "evse_uuid": "2005034a7efe7ea4d464f6fe94ac484f",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T20:12:06Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-11-30T12:24:26Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "5DYA95P",
+        "evses": [
+          {
+            "evse_uuid": "120776482bdd4563cc28c5cc30c83300",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T07:00:10Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2024-12-12T06:37:05Z"
+          },
+          {
+            "evse_uuid": "8a977612eca59d5406ea7e0af39b09d6",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T07:00:10Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2024-12-12T06:37:05Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "7U5KHOM",
+        "evses": [
+          {
+            "evse_uuid": "5f9c2b0710652a3170f31c2874c05d3f",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T10:00:21Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-01-23T12:54:05Z"
+          },
+          {
+            "evse_uuid": "82e6bbf0a1e1cd6f230803bb93661dc4",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T10:00:21Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-01-23T12:54:05Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "AVODJZS",
+        "evses": [
+          {
+            "evse_uuid": "c48aa463ef03d443f8736b591deb3abb",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:14:01Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-07-08T03:25:13Z"
+          },
+          {
+            "evse_uuid": "c59bf9a8b02145b1336a8c2120ed0b80",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:14:01Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-07-08T03:25:13Z"
+          }
+        ]
+      }
+    ],
+    "scraped_at": "2026-03-24T10:14:23.019517+00:00"
+  },
+  {
+    "uuid": "4TPEKNK",
+    "latitude": 52.337407,
+    "longitude": 0.535021,
+    "max_power_kw": 150.0,
+    "location_raw": {
+      "legacy_id": 96045,
+      "uuid": "4TPEKNK",
+      "coordinates": {
+        "latitude": 52.337407,
+        "longitude": 0.535021
+      },
+      "power": [
+        50000,
+        150000
+      ],
+      "payment_methods": [
+        "CONTACTLESS",
+        "ZAP_PAY",
+        "ZAP_PAY_RFID",
+        "NETWORK_PAYMENT_METHOD"
+      ],
+      "pricing": {
+        "payg": {
+          "min": 0.79,
+          "max": 0.79
+        },
+        "roaming": {
+          "min": 0.79,
+          "max": 0.79
+        },
+        "currency": "GBP"
+      },
+      "category": "PUBLIC",
+      "created_at": "2022-06-30T15:12:09Z"
+    },
+    "total_devices": 8,
+    "total_evses": 16,
+    "connector_types": [
+      "CHADEMO",
+      "IEC_62196_T2_COMBO"
+    ],
+    "available_count": 11,
+    "charging_count": 3,
+    "inoperative_count": 2,
+    "out_of_order_count": 0,
+    "unknown_count": 0,
+    "devices": [
+      {
+        "device_uuid": "ZB52LBJ",
+        "evses": [
+          {
+            "evse_uuid": "3536bebfdc544501a36ff884438e9911",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T06:35:29Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-09-16T09:56:47Z"
+          },
+          {
+            "evse_uuid": "f7a6e2aef4bd492eb2b4a38cd352673c",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T06:35:25Z",
+            "user_status": "OUTOFORDER",
+            "user_updated_at": "2025-09-16T09:56:47Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "NRPHFPZ",
+        "evses": [
+          {
+            "evse_uuid": "71df5e93476c469bb651eb99d6ade360",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:41:33Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-09-16T09:57:01Z"
+          },
+          {
+            "evse_uuid": "72bae9c32b7843d5b296c441c1b49bcc",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T10:04:40Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-09-16T09:57:01Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "JVP3XWF",
+        "evses": [
+          {
+            "evse_uuid": "243d6801ddd3433f97631980838f4e7f",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-23T18:46:34Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-01-03T14:37:06Z"
+          },
+          {
+            "evse_uuid": "8a31a7df974641f4ae338be74739c6c0",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T06:52:49Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-01-03T14:37:06Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "Z9MDMDE",
+        "evses": [
+          {
+            "evse_uuid": "1a6adeb631dc40bead41a3596ab55f70",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "INOPERATIVE",
+            "network_updated_at": "2026-03-24T10:09:04Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-06T16:34:21Z"
+          },
+          {
+            "evse_uuid": "6bd2f6cccadd4d11a3b8b1aab3538692",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T10:08:47Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2026-02-06T16:34:21Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "KXVVGHJ",
+        "evses": [
+          {
+            "evse_uuid": "1e17c347459244b0b6f64f1b70ad0503",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:13:19Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-12-25T07:37:25Z"
+          },
+          {
+            "evse_uuid": "c962b2fd59cf433386ac666b9f85211c",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:13:19Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-12-25T07:37:25Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "AYAVROQ",
+        "evses": [
+          {
+            "evse_uuid": "3ba605c0faf6427cac5d7e10ce3ab3ac",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:47:09Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-06-07T17:12:26Z"
+          },
+          {
+            "evse_uuid": "5578bf73af064cb88fd2e805f90bc946",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T09:47:16Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-06-07T17:12:26Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "ITHS3AM",
+        "evses": [
+          {
+            "evse_uuid": "07efa18187f243bf8bddbea46d55d50f",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:05:33Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-07-28T13:26:37Z"
+          },
+          {
+            "evse_uuid": "7805ca53a5de4c3c93c6d16337843b9a",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "AVAILABLE",
+            "network_updated_at": "2026-03-24T08:05:29Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2025-07-28T13:26:37Z"
+          }
+        ]
+      },
+      {
+        "device_uuid": "WYIPNHG",
+        "evses": [
+          {
+            "evse_uuid": "69799d7df15344e7ac468fd787c70523",
+            "connectors": [
+              "CHADEMO"
+            ],
+            "network_status": "INOPERATIVE",
+            "network_updated_at": "2026-03-24T09:48:23Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2024-08-01T22:26:29Z"
+          },
+          {
+            "evse_uuid": "a58e57b3f5574cb99b562080ae0ab6fa",
+            "connectors": [
+              "IEC_62196_T2_COMBO"
+            ],
+            "network_status": "CHARGING",
+            "network_updated_at": "2026-03-24T09:47:46Z",
+            "user_status": "AVAILABLE",
+            "user_updated_at": "2024-08-01T22:26:29Z"
+          }
+        ]
+      }
+    ],
+    "scraped_at": "2026-03-24T10:14:23.019517+00:00"
+  }
+]

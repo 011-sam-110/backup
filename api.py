@@ -1,0 +1,143 @@
+"""
+FastAPI backend for the EV Hub Utilisation dashboard.
+
+Endpoints:
+  GET  /api/stats                       — summary numbers
+  GET  /api/stats/deltas                — week-on-week deltas
+  GET  /api/hubs                        — all hubs with latest snapshot (or averaged over date range)
+  GET  /api/hubs/{uuid}/history         — time-series for one hub
+  GET  /api/history?hours=24            — averaged trend across all hubs
+  GET  /api/history/daily?days=30       — daily aggregates for growth chart
+  GET  /api/hourly-pattern?hours=168    — avg util by hour-of-day
+  GET  /api/hourly-heatmap?hours=336    — avg util by (day_of_week, hour)
+  GET  /api/reliability?hours=168       — network composition over time
+  GET  /api/sparkline?days=7            — global daily sparkline data
+  GET  /api/export/snapshots            — raw snapshot dump for Excel export
+
+All time-window endpoints also accept ?start_dt=ISO&end_dt=ISO to query a
+specific date range (overrides the hours/days parameter when both are present).
+
+Run with:
+    uvicorn api:app --reload --port 8000
+"""
+
+from fastapi import FastAPI, Query
+from fastapi.middleware.cors import CORSMiddleware
+from typing import Optional
+
+import db
+
+db.init_db()
+
+app = FastAPI(title="EV Hub Utilisation API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/api/stats")
+def stats():
+    return db.get_stats()
+
+
+@app.get("/api/stats/deltas")
+def stats_deltas():
+    return db.get_stat_deltas()
+
+
+@app.get("/api/hubs")
+def hubs(start_dt: Optional[str] = Query(default=None),
+         end_dt: Optional[str] = Query(default=None),
+         start_hour: Optional[int] = Query(default=None, ge=0, le=23),
+         end_hour: Optional[int] = Query(default=None, ge=0, le=23)):
+    if start_dt and end_dt:
+        return db.get_hub_averages(start_dt, end_dt, start_hour=start_hour, end_hour=end_hour)
+    return db.get_latest_snapshot_per_hub()
+
+
+@app.get("/api/hubs/{uuid}/history")
+def hub_history(uuid: str,
+                hours: int = Query(default=24, ge=1, le=8760),
+                start_dt: Optional[str] = Query(default=None),
+                end_dt: Optional[str] = Query(default=None)):
+    return db.get_hub_history(uuid, hours, start_dt=start_dt, end_dt=end_dt)
+
+
+@app.get("/api/history")
+def history(hours: int = Query(default=24, ge=1, le=8760),
+            hub_uuid: Optional[str] = Query(default=None),
+            start_dt: Optional[str] = Query(default=None),
+            end_dt: Optional[str] = Query(default=None),
+            operator: Optional[str] = Query(default=None),
+            connector: Optional[str] = Query(default=None),
+            min_kw: Optional[float] = Query(default=None),
+            max_kw: Optional[float] = Query(default=None),
+            start_hour: Optional[int] = Query(default=None, ge=0, le=23),
+            end_hour: Optional[int] = Query(default=None, ge=0, le=23)):
+    return db.get_all_history(hours, hub_uuid=hub_uuid, start_dt=start_dt, end_dt=end_dt,
+                              operator=operator, connector=connector, min_kw=min_kw, max_kw=max_kw,
+                              start_hour=start_hour, end_hour=end_hour)
+
+
+@app.get("/api/history/daily")
+def history_daily(days: int = Query(default=30, ge=1, le=365),
+                  hub_uuid: Optional[str] = Query(default=None),
+                  start_dt: Optional[str] = Query(default=None),
+                  end_dt: Optional[str] = Query(default=None)):
+    return db.get_all_history_daily(days, hub_uuid=hub_uuid, start_dt=start_dt, end_dt=end_dt)
+
+
+@app.get("/api/hourly-pattern")
+def hourly_pattern(hours: int = Query(default=168, ge=24, le=8760),
+                   hub_uuid: Optional[str] = Query(default=None),
+                   start_dt: Optional[str] = Query(default=None),
+                   end_dt: Optional[str] = Query(default=None),
+                   operator: Optional[str] = Query(default=None),
+                   connector: Optional[str] = Query(default=None),
+                   min_kw: Optional[float] = Query(default=None),
+                   max_kw: Optional[float] = Query(default=None),
+                   start_hour: Optional[int] = Query(default=None, ge=0, le=23),
+                   end_hour: Optional[int] = Query(default=None, ge=0, le=23)):
+    return db.get_hourly_pattern(hours, hub_uuid=hub_uuid, start_dt=start_dt, end_dt=end_dt,
+                                 operator=operator, connector=connector, min_kw=min_kw, max_kw=max_kw,
+                                 start_hour=start_hour, end_hour=end_hour)
+
+
+@app.get("/api/hourly-heatmap")
+def hourly_heatmap(hours: int = Query(default=336, ge=24, le=8760),
+                   hub_uuid: Optional[str] = Query(default=None),
+                   start_dt: Optional[str] = Query(default=None),
+                   end_dt: Optional[str] = Query(default=None)):
+    return db.get_hourly_heatmap(hours, hub_uuid=hub_uuid, start_dt=start_dt, end_dt=end_dt)
+
+
+@app.get("/api/reliability")
+def reliability(hours: int = Query(default=168, ge=1, le=8760),
+                hub_uuid: Optional[str] = Query(default=None),
+                start_dt: Optional[str] = Query(default=None),
+                end_dt: Optional[str] = Query(default=None),
+                operator: Optional[str] = Query(default=None),
+                connector: Optional[str] = Query(default=None),
+                min_kw: Optional[float] = Query(default=None),
+                max_kw: Optional[float] = Query(default=None),
+                start_hour: Optional[int] = Query(default=None, ge=0, le=23),
+                end_hour: Optional[int] = Query(default=None, ge=0, le=23)):
+    return db.get_reliability_trend(hours, hub_uuid=hub_uuid, start_dt=start_dt, end_dt=end_dt,
+                                    operator=operator, connector=connector, min_kw=min_kw, max_kw=max_kw,
+                                    start_hour=start_hour, end_hour=end_hour)
+
+
+@app.get("/api/sparkline")
+def sparkline(days: int = Query(default=7, ge=1, le=90)):
+    return db.get_global_sparkline(days)
+
+
+@app.get("/api/export/snapshots")
+def export_snapshots(hours: int = Query(default=24, ge=1, le=8760),
+                     start_dt: Optional[str] = Query(default=None),
+                     end_dt: Optional[str] = Query(default=None)):
+    return db.get_all_snapshots(hours, start_dt=start_dt, end_dt=end_dt)

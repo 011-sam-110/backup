@@ -1,0 +1,8 @@
+playwright
+apscheduler
+fastapi
+uvicorn[standard]
+python-dotenv
+pandas
+openpyxl
+colorama
