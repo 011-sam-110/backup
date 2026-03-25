@@ -180,6 +180,10 @@ async def scrape():
                 "--disable-blink-features=AutomationControlled",
                 "--no-sandbox",
                 "--disable-dev-shm-usage",
+                "--disable-gpu",
+                "--use-gl=swiftshader",
+                "--no-first-run",
+                "--disable-background-timer-throttling",
             ],
             proxy={"server": proxy_url} if proxy_url else None,
         )
@@ -208,6 +212,8 @@ async def scrape():
         # ── Intercept all bounding-box responses ───────────────────────────────
         async def handle_response(response):
             nonlocal _bbox_base_url, _bbox_last_page
+            if "api.zap-map.io" in response.url:
+                log.debug("API response [%d]: %s", response.status, response.url[:120])
             if "bounding-box" in response.url:
                 try:
                     body = await response.json()
@@ -230,10 +236,10 @@ async def scrape():
 
         # ── Load zapmap.com/live/ ──────────────────────────────────────────────
         print("Loading zapmap.com...")
-        await page.goto("https://www.zapmap.com/live/", wait_until="domcontentloaded", timeout=90_000)
+        await page.goto("https://www.zapmap.com/live/", wait_until="load", timeout=120_000)
 
-        # Give JS time to initialise before any interaction
-        await page.wait_for_timeout(3_000)
+        # Give JS time to initialise before any interaction (longer on headless Linux)
+        await page.wait_for_timeout(12_000)
 
         # Dismiss cookie consent
         for selector in [
@@ -280,7 +286,16 @@ async def scrape():
                 await page.mouse.wheel(0, 300)
                 await page.wait_for_timeout(300)
             await page.keyboard.up("Control")
-            await page.wait_for_timeout(8_000)
+            # Wait for bounding-box API response rather than a fixed sleep
+            try:
+                await page.wait_for_response(
+                    lambda r: "bounding-box" in r.url,
+                    timeout=20_000,
+                )
+                await page.wait_for_timeout(2_000)  # let subsequent pages trickle in
+                break
+            except Exception:
+                log.warning("No bounding-box response in 20 s (attempt %d/3)", attempt + 1)
 
         print(f"\nDiscovered {len(locations)} unique locations.")
         log.info("Page interaction complete — %d locations captured, bearer token: %s",
