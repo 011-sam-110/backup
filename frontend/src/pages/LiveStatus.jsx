@@ -106,6 +106,13 @@ export default function LiveStatus() {
 
   const sparkValues = sparkline.map(d => d.avg_utilisation_pct)
 
+  function fmtKwh(v) {
+    if (v == null) return '—'
+    if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)} GWh`
+    if (v >= 1_000) return `${(v / 1_000).toFixed(1)} MWh`
+    return `${Math.round(v)} kWh`
+  }
+
   if (loading) return <PageLoader text="Loading live data…" />
 
   return (
@@ -140,6 +147,12 @@ export default function LiveStatus() {
           sub="charging ÷ total EVSEs"
           delta={utilDelta}
           sparkData={sparkValues.length > 0 ? sparkValues : null}
+        />
+        <StatCard
+          icon="⚡"
+          label="Est. Energy (7d)"
+          value={fmtKwh(stats?.estimated_kwh_7d)}
+          sub="±30–50% estimate"
         />
       </div>
 

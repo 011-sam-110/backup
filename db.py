@@ -100,7 +100,8 @@ def init_db() -> None:
             inoperative_count   INTEGER,
             out_of_order_count  INTEGER,
             unknown_count       INTEGER,
-            utilisation_pct     REAL
+            utilisation_pct     REAL,
+            estimated_kwh       REAL
         );
 
         CREATE INDEX IF NOT EXISTS idx_snapshots_hub_time
@@ -138,6 +139,11 @@ def init_db() -> None:
             pass
     try:
         con.execute("ALTER TABLE hubs ADD COLUMN latest_devices_status TEXT DEFAULT NULL")
+        con.commit()
+    except Exception:
+        pass
+    try:
+        con.execute("ALTER TABLE snapshots ADD COLUMN estimated_kwh REAL")
         con.commit()
     except Exception:
         pass
@@ -203,8 +209,25 @@ def upsert_hubs(records: list[dict]) -> None:
     con.close()
 
 
+_KWH_COEFFICIENT = 0.7
+
+
 def insert_snapshots(records: list[dict]) -> None:
     con = _connect()
+
+    interval_hours = int(os.getenv("SCRAPE_INTERVAL_MINUTES", "15")) / 60.0
+
+    # Batch-fetch max_power_kw for records that don't carry it (db-only records)
+    uuids_needing_power = [r["uuid"] for r in records if "max_power_kw" not in r]
+    power_map: dict[str, float] = {}
+    if uuids_needing_power:
+        placeholders = ",".join("?" * len(uuids_needing_power))
+        rows_p = con.execute(
+            f"SELECT uuid, max_power_kw FROM hubs WHERE uuid IN ({placeholders})",
+            uuids_needing_power,
+        ).fetchall()
+        power_map = {row["uuid"]: (row["max_power_kw"] or 0.0) for row in rows_p}
+
     rows = []
     for r in records:
         charging    = r.get("charging_count")     or 0
@@ -214,6 +237,8 @@ def insert_snapshots(records: list[dict]) -> None:
         unknown     = r.get("unknown_count")      or 0
         total_status = available + charging + inoperative + oos + unknown
         util_pct = round(charging / total_status * 100, 2) if total_status > 0 else 0.0
+        max_kw = r.get("max_power_kw") or power_map.get(r["uuid"], 0.0)
+        estimated_kwh = round(charging * max_kw * interval_hours * _KWH_COEFFICIENT, 2)
         rows.append((
             r["uuid"],
             r["scraped_at"],
@@ -223,12 +248,14 @@ def insert_snapshots(records: list[dict]) -> None:
             r.get("out_of_order_count", 0),
             r.get("unknown_count", 0),
             util_pct,
+            estimated_kwh,
         ))
     con.executemany("""
         INSERT INTO snapshots
             (hub_uuid, scraped_at, available_count, charging_count,
-             inoperative_count, out_of_order_count, unknown_count, utilisation_pct)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+             inoperative_count, out_of_order_count, unknown_count, utilisation_pct,
+             estimated_kwh)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, rows)
     con.commit()
     con.close()
@@ -349,9 +376,10 @@ def get_all_history(hours: int = 24, hub_uuid: str | None = None,
             scraped_at,
             ROUND(100.0 * SUM(charging_count) /
                   NULLIF(SUM(available_count + charging_count + inoperative_count + out_of_order_count + unknown_count), 0), 2) AS avg_utilisation_pct,
-            SUM(charging_count)   AS total_charging,
-            SUM(available_count)  AS total_available,
-            COUNT(*)              AS hub_count
+            SUM(charging_count)              AS total_charging,
+            SUM(available_count)             AS total_available,
+            COUNT(*)                         AS hub_count,
+            ROUND(SUM(estimated_kwh), 1)     AS total_estimated_kwh
         FROM snapshots
         WHERE {where_time}{hub_filter}{hub_attr_filter}{hour_filter}
         GROUP BY scraped_at
@@ -667,6 +695,11 @@ def get_stats() -> dict:
         total_evses = 0
 
     snapshot_count = con.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
+    kwh_row = con.execute("""
+        SELECT ROUND(SUM(estimated_kwh), 1) FROM snapshots
+        WHERE scraped_at >= datetime('now', '-7 days')
+    """).fetchone()
+    estimated_kwh_7d = kwh_row[0] or 0.0
     con.close()
     return {
         "total_hubs": hub_count,
@@ -675,4 +708,5 @@ def get_stats() -> dict:
         "total_evses": total_evses,
         "last_scraped_at": last_scraped,
         "total_snapshots": snapshot_count,
+        "estimated_kwh_7d": estimated_kwh_7d,
     }

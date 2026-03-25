@@ -1,6 +1,6 @@
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, ReferenceLine, Brush,
+  ResponsiveContainer, ReferenceLine, Brush, Legend,
 } from 'recharts'
 
 function fmtTime(iso) {
@@ -11,8 +11,18 @@ function fmtTime(iso) {
   return `${hh}:${mm} UTC`
 }
 
+function fmtKwh(v) {
+  if (v == null) return null
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)} GWh`
+  if (v >= 1_000) return `${(v / 1_000).toFixed(1)} MWh`
+  return `${Math.round(v)} kWh`
+}
+
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
+  const util = payload.find(p => p.dataKey === 'avg_utilisation_pct')
+  const charging = payload.find(p => p.dataKey === 'total_charging')
+  const kwh = payload.find(p => p.dataKey === 'total_estimated_kwh')
   return (
     <div style={{
       background: '#0d1220', border: '1px solid #1c2840',
@@ -20,12 +30,19 @@ const CustomTooltip = ({ active, payload, label }) => {
       fontFamily: 'Outfit, sans-serif',
     }}>
       <div style={{ color: '#5c7a99', marginBottom: 4 }}>{label}</div>
-      <div style={{ color: '#22d3ee', fontWeight: 600 }}>
-        Avg utilisation: {payload[0].value}%
-      </div>
-      {payload[1] && (
+      {util && (
+        <div style={{ color: '#22d3ee', fontWeight: 600 }}>
+          Avg utilisation: {util.value}%
+        </div>
+      )}
+      {charging && (
         <div style={{ color: '#10b981' }}>
-          Charging: {payload[1].value}
+          Charging: {charging.value}
+        </div>
+      )}
+      {kwh && kwh.value != null && (
+        <div style={{ color: '#a78bfa' }}>
+          Est. energy: {fmtKwh(kwh.value)}
         </div>
       )}
     </div>
@@ -64,7 +81,12 @@ export default function UtilisationLine({ data }) {
           axisLine={false}
           tickLine={false}
         />
+        <YAxis yAxisId="kwh" orientation="right" hide />
         <Tooltip content={<CustomTooltip />} />
+        <Legend
+          wrapperStyle={{ fontSize: 11, fontFamily: 'Outfit, sans-serif', color: '#5c7a99', paddingBottom: 4 }}
+          formatter={(value) => value === 'Est. kWh' ? `${value} (±30–50%)` : value}
+        />
         <ReferenceLine yAxisId="pct" y={50} stroke="#f59e0b" strokeDasharray="4 4" opacity={0.4} />
         <ReferenceLine yAxisId="pct" y={80} stroke="#ef4444" strokeDasharray="4 4" opacity={0.4} />
         <Line
@@ -85,6 +107,16 @@ export default function UtilisationLine({ data }) {
           dot={false}
           strokeDasharray="4 2"
           name="Total charging"
+        />
+        <Line
+          yAxisId="kwh"
+          type="monotone"
+          dataKey="total_estimated_kwh"
+          stroke="#a78bfa"
+          strokeWidth={1.5}
+          dot={false}
+          strokeDasharray="2 3"
+          name="Est. kWh"
         />
         <Brush
           dataKey="time"
