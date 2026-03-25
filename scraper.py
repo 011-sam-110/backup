@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from playwright.async_api import async_playwright
+from playwright_stealth import stealth_async
 
 import db
 
@@ -244,6 +245,9 @@ async def scrape():
 
         page.on("response", handle_response)
 
+        # ── Apply stealth patches to bypass Cloudflare bot detection ─────────
+        await stealth_async(page)
+
         # ── Load zapmap.com/live/ ──────────────────────────────────────────────
         print("Loading zapmap.com...")
         await page.goto("https://www.zapmap.com/live/", wait_until="domcontentloaded", timeout=90_000)
@@ -298,21 +302,21 @@ async def scrape():
             print(f"  Zooming out to UK view (attempt {attempt + 1}/3)...")
             log.info("Zoom attempt %d/3 — locations so far: %d", attempt + 1, len(locations))
             await page.mouse.move(cx, cy)
-            await page.keyboard.down("Control")
-            for _ in range(10):
-                await page.mouse.wheel(0, 300)
-                await page.wait_for_timeout(300)
-            await page.keyboard.up("Control")
-            # Wait for bounding-box API response rather than a fixed sleep
+            # Set up response waiter BEFORE scrolling so we don't miss a fast response
+            async with page.expect_response(
+                lambda r: "bounding-box" in r.url, timeout=25_000
+            ) as resp_info:
+                await page.keyboard.down("Control")
+                for _ in range(10):
+                    await page.mouse.wheel(0, 300)
+                    await page.wait_for_timeout(300)
+                await page.keyboard.up("Control")
             try:
-                await page.wait_for_response(
-                    lambda r: "bounding-box" in r.url,
-                    timeout=20_000,
-                )
+                await resp_info.value
                 await page.wait_for_timeout(2_000)  # let subsequent pages trickle in
                 break
-            except Exception:
-                log.warning("No bounding-box response in 20 s (attempt %d/3)", attempt + 1)
+            except Exception as exc:
+                log.warning("No bounding-box response (attempt %d/3): %s", attempt + 1, exc)
 
         print(f"\nDiscovered {len(locations)} unique locations.")
         log.info("Page interaction complete — %d locations captured, bearer token: %s",
