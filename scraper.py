@@ -10,7 +10,6 @@ from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from playwright.async_api import async_playwright
-from playwright_stealth import stealth_async
 
 import db
 
@@ -246,7 +245,20 @@ async def scrape():
         page.on("response", handle_response)
 
         # ── Apply stealth patches to bypass Cloudflare bot detection ─────────
-        await stealth_async(page)
+        await page.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+            Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
+            Object.defineProperty(navigator, 'languages', {get: () => ['en-GB', 'en']});
+            Object.defineProperty(window, 'chrome', {
+                writable: true, enumerable: true, configurable: false,
+                value: {runtime: {}}
+            });
+            const _origQuery = window.navigator.permissions.query;
+            window.navigator.permissions.query = (p) =>
+                p.name === 'notifications'
+                    ? Promise.resolve({state: Notification.permission})
+                    : _origQuery(p);
+        """)
 
         # ── Load zapmap.com/live/ ──────────────────────────────────────────────
         print("Loading zapmap.com...")
