@@ -232,6 +232,9 @@ async def scrape():
         print("Loading zapmap.com...")
         await page.goto("https://www.zapmap.com/live/", wait_until="domcontentloaded", timeout=90_000)
 
+        # Give JS time to initialise before any interaction
+        await page.wait_for_timeout(3_000)
+
         # Dismiss cookie consent
         for selector in [
             "#onetrust-accept-btn-handler",
@@ -243,6 +246,7 @@ async def scrape():
             try:
                 await page.click(selector, timeout=5_000)
                 print("  Cookie consent dismissed.")
+                log.info("Cookie consent dismissed")
                 break
             except Exception:
                 pass
@@ -253,22 +257,34 @@ async def scrape():
             await page.mouse.wheel(0, 400)
             await page.wait_for_timeout(500)
 
-        # Zoom out with Ctrl+scroll to get a UK-wide view (fires bounding-box requests)
-        print("  Zooming out to UK view...")
+        # Let the page settle after scroll
+        await page.wait_for_timeout(3_000)
+
         viewport = page.viewport_size or {"width": 1280, "height": 800}
         cx = viewport["width"] // 2
         cy = viewport["height"] // 2
-        await page.mouse.move(cx, cy)
-        await page.keyboard.down("Control")
-        for _ in range(10):
-            await page.mouse.wheel(0, 300)
-            await page.wait_for_timeout(300)
-        await page.keyboard.up("Control")
 
-        # Wait for bounding-box requests triggered by the zoom to complete
-        print("  Waiting for map data to load...")
-        await page.wait_for_timeout(10_000)
+        # Click the map area to ensure it has focus before keyboard events
+        await page.mouse.click(cx, cy)
+        await page.wait_for_timeout(1_000)
+
+        # Zoom out with Ctrl+scroll — up to 3 rounds until we capture locations
+        for attempt in range(3):
+            if locations:
+                break
+            print(f"  Zooming out to UK view (attempt {attempt + 1}/3)...")
+            log.info("Zoom attempt %d/3 — locations so far: %d", attempt + 1, len(locations))
+            await page.mouse.move(cx, cy)
+            await page.keyboard.down("Control")
+            for _ in range(10):
+                await page.mouse.wheel(0, 300)
+                await page.wait_for_timeout(300)
+            await page.keyboard.up("Control")
+            await page.wait_for_timeout(8_000)
+
         print(f"\nDiscovered {len(locations)} unique locations.")
+        log.info("Page interaction complete — %d locations captured, bearer token: %s",
+                 len(locations), "YES" if bearer_token else "NO")
         print(f"  Bbox base URL: {_bbox_base_url}")
         print(f"  Last page: {_bbox_last_page}")
 
