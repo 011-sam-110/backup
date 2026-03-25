@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import * as XLSX from 'xlsx'
 import UtilisationLine from '../components/charts/UtilisationLine'
 import HubBarChart from '../components/charts/HubBarChart'
@@ -8,6 +8,8 @@ import HubDetailModal from '../components/HubDetailModal'
 import PageLoader from '../components/PageLoader'
 import CustomRangePanel from '../components/charts/CustomRangePanel'
 import { useFilters, applyFilters } from '../context/FilterContext'
+
+const REFRESH_MS = 60_000
 
 const CHARTS = [
   { key: 'hubs',        label: 'Hub Utilisation',    icon: '▦' },
@@ -49,7 +51,7 @@ export default function Graphs() {
 
   const abortRef = useRef(null)
 
-  async function load() {
+  const load = useCallback(async () => {
     if (abortRef.current) abortRef.current.abort()
     const controller = new AbortController()
     abortRef.current = controller
@@ -78,8 +80,15 @@ export default function Graphs() {
     } finally {
       if (!controller.signal.aborted) setLoading(false)
     }
-  }
+  }, [hubsUrl, analyticsParams, setAvailableOperators]) // eslint-disable-line
 
+  useEffect(() => {
+    load()
+    const id = setInterval(load, REFRESH_MS)
+    return () => clearInterval(id)
+  }, [load])
+
+  // Re-fetch when filters change
   useEffect(() => {
     load()
   }, [dateRange, operatorFilter, connectorFilter, minKw, maxKw, minEvses, maxEvses]) // eslint-disable-line

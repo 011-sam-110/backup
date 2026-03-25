@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { MapContainer, TileLayer, Marker, Tooltip, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import HubDetailModal from '../components/HubDetailModal'
@@ -32,6 +32,8 @@ function FlyTo({ target }) {
   return null
 }
 
+const REFRESH_MS = 60_000
+
 export default function MapView() {
   const [hubs, setHubs] = useState([])
   const [loading, setLoading] = useState(true)
@@ -41,7 +43,7 @@ export default function MapView() {
   const filters = useFilters()
   const { hubsUrl, setAvailableOperators, dateRange } = filters
 
-  useEffect(() => {
+  const load = useCallback(() => {
     setLoading(true)
     fetch(hubsUrl())
       .then(r => r.json())
@@ -52,6 +54,17 @@ export default function MapView() {
       })
       .catch(() => {})
       .finally(() => setLoading(false))
+  }, [hubsUrl, setAvailableOperators])
+
+  useEffect(() => {
+    load()
+    const id = setInterval(load, REFRESH_MS)
+    return () => clearInterval(id)
+  }, [load])
+
+  // Re-fetch when date range changes
+  useEffect(() => {
+    load()
   }, [dateRange]) // eslint-disable-line
 
   if (loading) return <PageLoader text="Loading map data…" />

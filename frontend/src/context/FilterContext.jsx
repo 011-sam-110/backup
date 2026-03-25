@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useState, useCallback } from 'react'
 
 const FilterContext = createContext(null)
 
@@ -65,12 +65,12 @@ export function FilterProvider({ children }) {
   }
 
   /** Returns URL query params object for /api/hubs date range filtering */
-  function hubsUrl() {
+  const hubsUrl = useCallback(() => {
     if (dateRange.start && dateRange.end) {
       return `/api/hubs?start_dt=${encodeURIComponent(dateRange.start.toISOString())}&end_dt=${encodeURIComponent(dateRange.end.toISOString())}`
     }
     return '/api/hubs'
-  }
+  }, [dateRange])
 
   return (
     <FilterContext.Provider value={{
