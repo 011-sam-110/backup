@@ -16,7 +16,6 @@ import db
 
 load_dotenv()
 INTERVAL_MINUTES = int(os.getenv("SCRAPE_INTERVAL_MINUTES", 15))
-OUTPUT_DIR = Path("output")
 DB_PATH = Path("chargers.db")
 
 colorama.init()
@@ -50,13 +49,6 @@ def fmt_bytes(n: int) -> str:
     if n >= 1_024:
         return f"{n / 1_024:.1f} KB"
     return f"{n} B"
-
-
-def dir_size(path: Path) -> tuple[int, int]:
-    if not path.exists():
-        return 0, 0
-    files = list(path.glob("*.json"))
-    return sum(f.stat().st_size for f in files), len(files)
 
 
 def util_colour(pct: float) -> str:
@@ -96,7 +88,6 @@ def build_status_card(n: int, duration: float) -> str:
     """Builds a static card string for a completed scrape run."""
     stats = db.get_stats()
     db_bytes = DB_PATH.stat().st_size if DB_PATH.exists() else 0
-    json_bytes, json_count = dir_size(OUTPUT_DIR)
 
     uptime_secs = (datetime.now(timezone.utc) - start_time).total_seconds()
     dur_str = fmt_uptime(duration)
@@ -125,9 +116,6 @@ def build_status_card(n: int, duration: float) -> str:
         "",
         f"  {section('STORAGE')}",
         f"    {lbl('chargers.db')}{val(fmt_bytes(db_bytes))}",
-        f"    {lbl(f'output/ ({json_count})')}{val(fmt_bytes(json_bytes))}",
-        f"    {Style.DIM}{'─' * 32}{Style.RESET_ALL}",
-        f"    {lbl('Total')}{val(fmt_bytes(db_bytes + json_bytes))}",
     ]
     return "\n".join(lines)
 

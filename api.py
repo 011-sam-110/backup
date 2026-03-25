@@ -21,8 +21,12 @@ Run with:
     uvicorn api:app --reload --port 8000
 """
 
-from fastapi import FastAPI, Query
+import os
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from typing import Optional
 
 import db
@@ -31,9 +35,10 @@ db.init_db()
 
 app = FastAPI(title="EV Hub Utilisation API")
 
+_cors_origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",")]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=_cors_origins,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
@@ -59,6 +64,14 @@ def hubs(start_dt: Optional[str] = Query(default=None),
     return db.get_latest_snapshot_per_hub()
 
 
+@app.get("/api/hubs/{uuid}")
+def hub_detail(uuid: str):
+    result = db.get_hub_detail(uuid)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Hub not found")
+    return result
+
+
 @app.get("/api/hubs/{uuid}/history")
 def hub_history(uuid: str,
                 hours: int = Query(default=24, ge=1, le=8760),
@@ -76,10 +89,13 @@ def history(hours: int = Query(default=24, ge=1, le=8760),
             connector: Optional[str] = Query(default=None),
             min_kw: Optional[float] = Query(default=None),
             max_kw: Optional[float] = Query(default=None),
+            min_evses: Optional[int] = Query(default=None),
+            max_evses: Optional[int] = Query(default=None),
             start_hour: Optional[int] = Query(default=None, ge=0, le=23),
             end_hour: Optional[int] = Query(default=None, ge=0, le=23)):
     return db.get_all_history(hours, hub_uuid=hub_uuid, start_dt=start_dt, end_dt=end_dt,
                               operator=operator, connector=connector, min_kw=min_kw, max_kw=max_kw,
+                              min_evses=min_evses, max_evses=max_evses,
                               start_hour=start_hour, end_hour=end_hour)
 
 
@@ -100,10 +116,13 @@ def hourly_pattern(hours: int = Query(default=168, ge=24, le=8760),
                    connector: Optional[str] = Query(default=None),
                    min_kw: Optional[float] = Query(default=None),
                    max_kw: Optional[float] = Query(default=None),
+                   min_evses: Optional[int] = Query(default=None),
+                   max_evses: Optional[int] = Query(default=None),
                    start_hour: Optional[int] = Query(default=None, ge=0, le=23),
                    end_hour: Optional[int] = Query(default=None, ge=0, le=23)):
     return db.get_hourly_pattern(hours, hub_uuid=hub_uuid, start_dt=start_dt, end_dt=end_dt,
                                  operator=operator, connector=connector, min_kw=min_kw, max_kw=max_kw,
+                                 min_evses=min_evses, max_evses=max_evses,
                                  start_hour=start_hour, end_hour=end_hour)
 
 
@@ -124,10 +143,13 @@ def reliability(hours: int = Query(default=168, ge=1, le=8760),
                 connector: Optional[str] = Query(default=None),
                 min_kw: Optional[float] = Query(default=None),
                 max_kw: Optional[float] = Query(default=None),
+                min_evses: Optional[int] = Query(default=None),
+                max_evses: Optional[int] = Query(default=None),
                 start_hour: Optional[int] = Query(default=None, ge=0, le=23),
                 end_hour: Optional[int] = Query(default=None, ge=0, le=23)):
     return db.get_reliability_trend(hours, hub_uuid=hub_uuid, start_dt=start_dt, end_dt=end_dt,
                                     operator=operator, connector=connector, min_kw=min_kw, max_kw=max_kw,
+                                    min_evses=min_evses, max_evses=max_evses,
                                     start_hour=start_hour, end_hour=end_hour)
 
 
@@ -141,3 +163,9 @@ def export_snapshots(hours: int = Query(default=24, ge=1, le=8760),
                      start_dt: Optional[str] = Query(default=None),
                      end_dt: Optional[str] = Query(default=None)):
     return db.get_all_snapshots(hours, start_dt=start_dt, end_dt=end_dt)
+
+
+# Serve built React frontend — must be last so /api/* routes take priority
+_frontend_dist = Path(__file__).parent / "frontend" / "dist"
+if _frontend_dist.exists():
+    app.mount("/", StaticFiles(directory=str(_frontend_dist), html=True), name="static")

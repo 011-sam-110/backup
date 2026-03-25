@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import random
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -11,28 +12,74 @@ from playwright.async_api import async_playwright
 import db
 
 load_dotenv()
-
-OUTPUT_DIR = Path("output")
 BASE_API = "https://api.zap-map.io/locations/v1"
 MIN_POWER_W = 100_000
-ENGLAND_LAT = (49.9, 55.8)
-ENGLAND_LNG = (-5.7, 1.8)
+GB_LAT = (49.9, 61.0)   # Scilly Isles → Shetland
+GB_LNG = (-8.7, 1.8)    # Outer Hebrides / W Scotland → East Anglia
+
+HEADLESS = os.getenv("HEADLESS", "true").lower() == "true"
+USE_PROXY = os.getenv("USE_PROXY", "false").lower() == "true"
+
+
+def _pick_proxy() -> str | None:
+    """Return a random proxy URL from proxies.txt, or None if disabled/empty."""
+    if not USE_PROXY:
+        return None
+    proxies_path = Path("proxies.txt")
+    if not proxies_path.exists():
+        return None
+    lines = [l.strip() for l in proxies_path.read_text().splitlines()
+             if l.strip() and not l.startswith("#")]
+    return random.choice(lines) if lines else None
 
 
 def max_power_w(location: dict) -> int:
     return max(location.get("power", [0]))
 
 
-def is_england(loc: dict) -> bool:
+def is_great_britain(loc: dict) -> bool:
     lat = loc["coordinates"]["latitude"]
     lng = loc["coordinates"]["longitude"]
-    return ENGLAND_LAT[0] <= lat <= ENGLAND_LAT[1] and ENGLAND_LNG[0] <= lng <= ENGLAND_LNG[1]
+    return GB_LAT[0] <= lat <= GB_LAT[1] and GB_LNG[0] <= lng <= GB_LNG[1]
+
+
+def _parse_status(status: dict) -> dict:
+    """Extract per-EVSE counts and device list from a raw status response."""
+    available = charging = inoperative = out_of_order = unknown = 0
+    devices_out = []
+    connector_types: set = set()
+    for device in (status or {}).get("devices", []):
+        evses_out = []
+        for evse in device.get("evses", []):
+            net = (evse.get("status") or {}).get("network") or {}
+            usr = (evse.get("status") or {}).get("user") or {}
+            net_status = net.get("status", "UNKNOWN")
+            connectors = evse.get("connectors", [])
+            connector_types.update(connectors)
+            s = net_status.upper()
+            if s == "AVAILABLE":    available += 1
+            elif s == "CHARGING":   charging += 1
+            elif s == "INOPERATIVE": inoperative += 1
+            elif s == "OUTOFORDER": out_of_order += 1
+            else:                   unknown += 1
+            evses_out.append({
+                "evse_uuid": evse.get("uuid"),
+                "connectors": connectors,
+                "network_status": net_status,
+                "network_updated_at": net.get("updated_at"),
+                "user_status": usr.get("status"),
+                "user_updated_at": usr.get("updated_at"),
+            })
+        devices_out.append({"device_uuid": device.get("uuid"), "evses": evses_out})
+    return {
+        "available": available, "charging": charging,
+        "inoperative": inoperative, "out_of_order": out_of_order, "unknown": unknown,
+        "devices_out": devices_out, "connector_types": sorted(connector_types),
+    }
 
 
 def build_record(loc: dict, status: dict | None, scraped_at: str, loc_detail: dict | None = None) -> dict:
-    devices_out = []
-    available = charging = inoperative = out_of_order = unknown = 0
-    connector_types: set = set()
+    parsed = _parse_status(status)
 
     ld = loc_detail or {}
     operator_obj = ld.get("operator") or {}
@@ -52,59 +99,21 @@ def build_record(loc: dict, status: dict | None, scraped_at: str, loc_detail: di
             pricing_set.add(pd_["pricing"])
         for m in (pd_.get("payment_methods") or []):
             pm_set.add(m)
-    pricing = sorted(pricing_set)
-    payment_methods = sorted(pm_set)
-    devices_raw_loc = ld.get("devices", [])
-
-    for device in (status or {}).get("devices", []):
-        evses_out = []
-        for evse in device.get("evses", []):
-            net = (evse.get("status") or {}).get("network") or {}
-            usr = (evse.get("status") or {}).get("user") or {}
-            net_status = net.get("status", "UNKNOWN")
-            connectors = evse.get("connectors", [])
-            connector_types.update(connectors)
-
-            s = net_status.upper()
-            if s == "AVAILABLE":
-                available += 1
-            elif s == "CHARGING":
-                charging += 1
-            elif s == "INOPERATIVE":
-                inoperative += 1
-            elif s == "OUTOFORDER":
-                out_of_order += 1
-            else:
-                unknown += 1
-
-            evses_out.append({
-                "evse_uuid": evse.get("uuid"),
-                "connectors": connectors,
-                "network_status": net_status,
-                "network_updated_at": net.get("updated_at"),
-                "user_status": usr.get("status"),
-                "user_updated_at": usr.get("updated_at"),
-            })
-        devices_out.append({
-            "device_uuid": device.get("uuid"),
-            "evses": evses_out,
-        })
 
     return {
         "uuid": loc["uuid"],
         "latitude": loc["coordinates"]["latitude"],
         "longitude": loc["coordinates"]["longitude"],
         "max_power_kw": round(max_power_w(loc) / 1000, 1),
-        "location_raw": loc,
-        "total_devices": len(devices_out),
-        "total_evses": sum(len(d["evses"]) for d in devices_out),
-        "connector_types": sorted(connector_types),
-        "available_count": available,
-        "charging_count": charging,
-        "inoperative_count": inoperative,
-        "out_of_order_count": out_of_order,
-        "unknown_count": unknown,
-        "devices": devices_out,
+        "total_devices": len(parsed["devices_out"]),
+        "total_evses": sum(len(d["evses"]) for d in parsed["devices_out"]),
+        "connector_types": parsed["connector_types"],
+        "available_count":    parsed["available"],
+        "charging_count":     parsed["charging"],
+        "inoperative_count":  parsed["inoperative"],
+        "out_of_order_count": parsed["out_of_order"],
+        "unknown_count":      parsed["unknown"],
+        "devices": parsed["devices_out"],
         "hub_name":          hub_name or None,
         "operator":          operator or None,
         "user_rating":       user_rating,
@@ -113,9 +122,8 @@ def build_record(loc: dict, status: dict | None, scraped_at: str, loc_detail: di
         "city":              city or None,
         "postal_code":       postal_code or None,
         "is_24_7":           is_24_7,
-        "pricing":           pricing,
-        "payment_methods":   payment_methods,
-        "devices_raw_loc":   devices_raw_loc,
+        "pricing":           sorted(pricing_set),
+        "payment_methods":   sorted(pm_set),
         "scraped_at": scraped_at,
     }
 
@@ -154,18 +162,26 @@ async def fetch_location_details(
 
 
 async def scrape():
-    OUTPUT_DIR.mkdir(exist_ok=True)
     locations: dict = {}
     bearer_token = None
     _bbox_base_url = None
     _bbox_last_page = None
 
     async with async_playwright() as p:
+        proxy_url = _pick_proxy()
+        if proxy_url:
+            print(f"  Using proxy: {proxy_url.split('@')[-1]}")
         browser = await p.chromium.launch(
-            headless=True,
-            args=["--disable-blink-features=AutomationControlled"],
+            headless=HEADLESS,
+            args=[
+                "--disable-blink-features=AutomationControlled",
+                "--no-sandbox",
+                "--disable-dev-shm-usage",
+            ],
+            proxy={"server": proxy_url} if proxy_url else None,
         )
         context = await browser.new_context(
+            viewport={"width": 1280, "height": 720},
             user_agent=(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -250,6 +266,8 @@ async def scrape():
         print("  Waiting for map data to load...")
         await page.wait_for_timeout(10_000)
         print(f"\nDiscovered {len(locations)} unique locations.")
+        print(f"  Bbox base URL: {_bbox_base_url}")
+        print(f"  Last page: {_bbox_last_page}")
 
         # ── Fetch any additional bounding-box pages not captured by intercept ──
         if _bbox_last_page is not None and _bbox_last_page > 1:
@@ -268,20 +286,23 @@ async def scrape():
         # ── Power filter + England filter ──────────────────────────────────────
         qualifying = [
             loc for loc in locations.values()
-            if is_england(loc) and max_power_w(loc) >= MIN_POWER_W
+            if is_great_britain(loc) and max_power_w(loc) >= MIN_POWER_W
         ]
-        print(f"Filtered to {len(qualifying)} England 100kW+ locations.")
+        print(f"Filtered to {len(qualifying)} GB 100kW+ locations.")
 
         if not qualifying:
             print("No qualifying chargers found. Exiting.")
             await browser.close()
             return
 
-        # ── Status via browser fetch (with auth header) ────────────────────────
-        uuids = [loc["uuid"] for loc in qualifying]
+        # ── Status via browser fetch — covers ALL tracked hubs ────────────────
+        qualifying_uuids = {loc["uuid"] for loc in qualifying}
+        db_hub_uuids = {h["uuid"] for h in db.get_all_hubs_for_scrape()}
+        all_status_uuids = list(qualifying_uuids | db_hub_uuids)
         status_map: dict = {}
-        chunks = [uuids[i:i + 50] for i in range(0, len(uuids), 50)]
-        print(f"Fetching status for {len(uuids)} locations ({len(chunks)} chunks)...")
+        chunks = [all_status_uuids[i:i + 50] for i in range(0, len(all_status_uuids), 50)]
+        print(f"Fetching status for {len(all_status_uuids)} locations ({len(chunks)} chunks) "
+              f"[{len(qualifying_uuids)} bounding-box + {len(db_hub_uuids - qualifying_uuids)} DB-only]...")
 
         if bearer_token:
             failed_chunks = 0
@@ -309,27 +330,40 @@ async def scrape():
 
         await browser.close()
 
-    # ── Merge + filter by EVSE count + write ───────────────────────────────────
+    # ── Build records ──────────────────────────────────────────────────────────
+    # Full records for bounding-box hubs (upsert static data + snapshot)
     all_records = [
         build_record(loc, status_map.get(loc["uuid"]), scraped_at,
                      loc_detail=loc_detail_map.get(loc["uuid"]))
         for loc in qualifying
     ]
 
-    results = all_records
-    print(f"Collected {len(results)} hubs.")
+    # Snapshot-only records for DB hubs not found in current bounding-box sweep
+    db_only_records = []
+    for uuid in db_hub_uuids - qualifying_uuids:
+        s = status_map.get(uuid)
+        if not s:
+            continue
+        parsed = _parse_status(s)
+        db_only_records.append({
+            "uuid": uuid,
+            "scraped_at": scraped_at,
+            "available_count":    parsed["available"],
+            "charging_count":     parsed["charging"],
+            "inoperative_count":  parsed["inoperative"],
+            "out_of_order_count": parsed["out_of_order"],
+            "unknown_count":      parsed["unknown"],
+            "devices":            parsed["devices_out"],
+        })
+
+    print(f"Collected {len(all_records)} bounding-box + {len(db_only_records)} DB-only hub records.")
 
     # Persist to SQLite
     db.init_db()
-    db.upsert_hubs(results)
-    db.insert_snapshots(results)
-    print(f"Saved {len(results)} hubs to database.")
-
-    # Also write JSON snapshot
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    out_path = OUTPUT_DIR / f"chargers_{timestamp}.json"
-    out_path.write_text(json.dumps(results, indent=2))
-    print(f"Wrote {len(results)} hubs → {out_path}")
+    db.upsert_hubs(all_records)
+    db.insert_snapshots(all_records + db_only_records)
+    db.update_latest_devices_status(db_only_records)
+    print(f"Saved {len(all_records) + len(db_only_records)} hub snapshots to database.")
 
 
 if __name__ == "__main__":

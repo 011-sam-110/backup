@@ -35,6 +35,8 @@ function StatRow({ label, value, valueClass = '' }) {
 export default function HubDetailModal({ hub, onClose }) {
   const [history, setHistory] = useState([])
   const [histLoading, setHistLoading] = useState(true)
+  const [detail, setDetail] = useState(null)
+  const [detailLoading, setDetailLoading] = useState(true)
 
   useEffect(() => {
     fetch(`/api/history?hub_uuid=${hub.uuid}&hours=24`)
@@ -42,6 +44,14 @@ export default function HubDetailModal({ hub, onClose }) {
       .then(d => setHistory(d))
       .catch(() => {})
       .finally(() => setHistLoading(false))
+  }, [hub.uuid])
+
+  useEffect(() => {
+    fetch(`/api/hubs/${hub.uuid}`)
+      .then(r => r.json())
+      .then(d => setDetail(d))
+      .catch(() => {})
+      .finally(() => setDetailLoading(false))
   }, [hub.uuid])
 
   const pct = hub.utilisation_pct ?? 0
@@ -156,14 +166,16 @@ export default function HubDetailModal({ hub, onClose }) {
           </ResponsiveContainer>
         )}
 
-        {hub.devices_raw_loc?.length > 0 && (() => {
+        {detailLoading ? (
+          <div className="loading" style={{ padding: '20px 0' }}>Loading chargepoints…</div>
+        ) : detail?.devices_raw_loc?.length > 0 && (() => {
           // Layer 1: device-uuid → evse-uuid map
           const liveMap = {}
           // Layer 2: flat evse-uuid map (handles device UUID mismatch between APIs)
           const liveByEvse = {}
           // Layer 3: positional map [devIdx][evseIdx] (handles all UUID mismatches)
           const liveByIndex = []
-          for (const d of hub.latest_devices_status || []) {
+          for (const d of detail.latest_devices_status || []) {
             liveMap[d.device_uuid] = liveMap[d.device_uuid] || {}
             const evseStatuses = []
             for (const e of d.evses || []) {
@@ -181,7 +193,7 @@ export default function HubDetailModal({ hub, onClose }) {
               || 'UNKNOWN'
           }
 
-          const cards = hub.devices_raw_loc.flatMap((dev, devIdx) => {
+          const cards = detail.devices_raw_loc.flatMap((dev, devIdx) => {
             const pd = dev.payment_details || {}
             return (dev.evses || []).map((evse, evseIdx) => {
               const status = getStatus(devIdx, evseIdx, dev.uuid, evse.uuid).toUpperCase().replace(/ /g, '')

@@ -47,6 +47,8 @@ export function FilterProvider({ children }) {
     if (connectorFilter !== 'all') parts.push(`connector=${encodeURIComponent(connectorFilter)}`)
     if (minKw) parts.push(`min_kw=${encodeURIComponent(minKw)}`)
     if (maxKw) parts.push(`max_kw=${encodeURIComponent(maxKw)}`)
+    if (minEvses) parts.push(`min_evses=${encodeURIComponent(minEvses)}`)
+    if (maxEvses) parts.push(`max_evses=${encodeURIComponent(maxEvses)}`)
     return parts.length ? '&' + parts.join('&') : ''
   }
 
@@ -57,6 +59,8 @@ export function FilterProvider({ children }) {
     if (connectorFilter !== 'all') parts.push(`connector=${encodeURIComponent(connectorFilter)}`)
     if (minKw) parts.push(`min_kw=${encodeURIComponent(minKw)}`)
     if (maxKw) parts.push(`max_kw=${encodeURIComponent(maxKw)}`)
+    if (minEvses) parts.push(`min_evses=${encodeURIComponent(minEvses)}`)
+    if (maxEvses) parts.push(`max_evses=${encodeURIComponent(maxEvses)}`)
     return parts.length ? '&' + parts.join('&') : ''
   }
 

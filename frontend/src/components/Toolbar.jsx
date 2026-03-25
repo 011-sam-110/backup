@@ -19,14 +19,14 @@ function Section({ title, icon, defaultOpen = true, children }) {
         style={{
           width: '100%', display: 'flex', alignItems: 'center', gap: 7,
           padding: '9px 12px', background: 'none', border: 'none',
-          color: 'var(--text-muted)', cursor: 'pointer',
-          fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+          color: '#ffffff', cursor: 'pointer',
+          fontSize: 12, fontWeight: 700, textTransform: 'uppercase',
           letterSpacing: '0.09em', userSelect: 'none',
           fontFamily: 'Outfit, inherit',
           transition: 'color 0.15s',
         }}
-        onMouseOver={e => e.currentTarget.style.color = 'var(--text)'}
-        onMouseOut={e => e.currentTarget.style.color = 'var(--text-muted)'}
+        onMouseOver={e => e.currentTarget.style.color = '#ffffff'}
+        onMouseOut={e => e.currentTarget.style.color = '#ffffff'}
       >
         <span style={{ fontSize: 12, opacity: 0.65 }}>{icon}</span>
         <span style={{ flex: 1, textAlign: 'left' }}>{title}</span>
@@ -43,7 +43,7 @@ function Section({ title, icon, defaultOpen = true, children }) {
 
 function Label({ children }) {
   return (
-    <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, marginTop: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+    <div style={{ fontSize: 12, color: '#ffffff', marginBottom: 4, marginTop: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
       {children}
     </div>
   )
@@ -55,6 +55,8 @@ export default function Toolbar() {
     search, setSearch,
     minKw, setMinKw,
     maxKw, setMaxKw,
+    minEvses, setMinEvses,
+    maxEvses, setMaxEvses,
     minUtil, setMinUtil,
     maxUtil, setMaxUtil,
     connectorFilter, setConnectorFilter,
@@ -66,7 +68,7 @@ export default function Toolbar() {
 
   const [showExport, setShowExport] = useState(false)
 
-  const hasFilters = search || minKw || maxKw || minUtil || maxUtil ||
+  const hasFilters = search || minKw || maxKw || minEvses || maxEvses || minUtil || maxUtil ||
     connectorFilter !== 'all' || operatorFilter !== 'all' ||
     dateRange.start
 
@@ -90,7 +92,7 @@ export default function Toolbar() {
           borderBottom: '1px solid var(--border)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'var(--text-muted)' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.09em', color: '#ffffff' }}>
             Filters
           </span>
           {hasFilters && (
@@ -177,6 +179,28 @@ export default function Toolbar() {
               min="0"
               value={maxKw}
               onChange={e => setMaxKw(e.target.value)}
+            />
+          </div>
+
+          <Label>EVSEs</Label>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <input
+              className="filter-input"
+              style={{ width: '50%', boxSizing: 'border-box' }}
+              type="number"
+              placeholder="Min"
+              min="0"
+              value={minEvses}
+              onChange={e => setMinEvses(e.target.value)}
+            />
+            <input
+              className="filter-input"
+              style={{ width: '50%', boxSizing: 'border-box' }}
+              type="number"
+              placeholder="Max"
+              min="0"
+              value={maxEvses}
+              onChange={e => setMaxEvses(e.target.value)}
             />
           </div>
 

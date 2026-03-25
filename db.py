@@ -7,11 +7,12 @@ Tables:
 """
 
 import json
+import os
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-DB_PATH = Path("chargers.db")
+DB_PATH = Path(os.getenv("DATABASE_PATH", "chargers.db"))
 
 
 def _connect() -> sqlite3.Connection:
@@ -36,7 +37,8 @@ def _hour_filter(params: list, start_hour: int | None, end_hour: int | None,
 
 
 def _hub_subquery(params: list, operator: str | None, connector: str | None,
-                  min_kw: float | None, max_kw: float | None) -> str:
+                  min_kw: float | None, max_kw: float | None,
+                  min_evses: int | None = None, max_evses: int | None = None) -> str:
     """Returns SQL fragment restricting snapshots to hub UUIDs matching the given attributes."""
     conditions = []
     if operator:
@@ -51,6 +53,12 @@ def _hub_subquery(params: list, operator: str | None, connector: str | None,
     if max_kw is not None:
         conditions.append("max_power_kw <= ?")
         params.append(max_kw)
+    if min_evses is not None:
+        conditions.append("total_evses >= ?")
+        params.append(min_evses)
+    if max_evses is not None:
+        conditions.append("total_evses <= ?")
+        params.append(max_evses)
     if not conditions:
         return ""
     return " AND hub_uuid IN (SELECT uuid FROM hubs WHERE " + " AND ".join(conditions) + ")"
@@ -143,20 +151,19 @@ def upsert_hubs(records: list[dict]) -> None:
     for r in records:
         con.execute("""
             INSERT INTO hubs (uuid, latitude, longitude, max_power_kw, total_evses,
-                              connector_types, location_raw, first_seen_at, last_seen_at,
+                              connector_types, first_seen_at, last_seen_at,
                               hub_name, operator,
                               address, city, postal_code,
                               user_rating, user_rating_count, is_24_7,
                               pricing, payment_methods, devices_raw_loc,
                               latest_devices_status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(uuid) DO UPDATE SET
                 latitude        = excluded.latitude,
                 longitude       = excluded.longitude,
                 max_power_kw    = excluded.max_power_kw,
                 total_evses     = excluded.total_evses,
                 connector_types = excluded.connector_types,
-                location_raw    = excluded.location_raw,
                 last_seen_at    = excluded.last_seen_at,
                 hub_name        = COALESCE(excluded.hub_name, hub_name),
                 operator        = COALESCE(excluded.operator, operator),
@@ -177,7 +184,6 @@ def upsert_hubs(records: list[dict]) -> None:
             r["max_power_kw"],
             r["total_evses"],
             json.dumps(r.get("connector_types", [])),
-            json.dumps(r.get("location_raw", {})),
             now,
             now,
             r.get("hub_name"),
@@ -190,7 +196,7 @@ def upsert_hubs(records: list[dict]) -> None:
             r.get("is_24_7"),
             json.dumps(r.get("pricing", [])),
             json.dumps(r.get("payment_methods", [])),
-            json.dumps(r.get("devices_raw_loc", [])),
+            json.dumps(r["devices_raw_loc"]) if r.get("devices_raw_loc") else None,
             json.dumps(r.get("devices", [])),
         ))
     con.commit()
@@ -230,11 +236,8 @@ def insert_snapshots(records: list[dict]) -> None:
 
 def _deserialise_hub(d: dict) -> dict:
     d["connector_types"] = json.loads(d["connector_types"] or "[]")
-    d["location_raw"] = json.loads(d["location_raw"] or "{}")
     d["pricing"] = json.loads(d["pricing"] or "[]")
     d["payment_methods"] = json.loads(d["payment_methods"] or "[]")
-    d["devices_raw_loc"] = json.loads(d["devices_raw_loc"] or "[]")
-    d["latest_devices_status"] = json.loads(d["latest_devices_status"] or "[]")
     return d
 
 
@@ -244,9 +247,9 @@ def get_latest_snapshot_per_hub() -> list[dict]:
     rows = con.execute("""
         SELECT
             h.uuid, h.hub_name, h.operator, h.latitude, h.longitude, h.max_power_kw,
-            h.total_evses, h.connector_types, h.location_raw,
+            h.total_evses, h.connector_types,
             h.address, h.city, h.postal_code, h.user_rating, h.user_rating_count,
-            h.is_24_7, h.pricing, h.payment_methods, h.devices_raw_loc, h.latest_devices_status,
+            h.is_24_7, h.pricing, h.payment_methods,
             s.scraped_at, s.available_count, s.charging_count,
             s.inoperative_count, s.out_of_order_count, s.unknown_count,
             s.utilisation_pct
@@ -272,9 +275,9 @@ def get_hub_averages(start_dt: str, end_dt: str,
     rows = con.execute(f"""
         SELECT
             h.uuid, h.hub_name, h.operator, h.latitude, h.longitude, h.max_power_kw,
-            h.total_evses, h.connector_types, h.location_raw,
+            h.total_evses, h.connector_types,
             h.address, h.city, h.postal_code, h.user_rating, h.user_rating_count,
-            h.is_24_7, h.pricing, h.payment_methods, h.devices_raw_loc, h.latest_devices_status,
+            h.is_24_7, h.pricing, h.payment_methods,
             MAX(s.scraped_at) AS scraped_at,
             ROUND(AVG(s.available_count))    AS available_count,
             ROUND(AVG(s.charging_count))     AS charging_count,
@@ -321,6 +324,7 @@ def get_all_history(hours: int = 24, hub_uuid: str | None = None,
                     start_dt: str | None = None, end_dt: str | None = None,
                     operator: str | None = None, connector: str | None = None,
                     min_kw: float | None = None, max_kw: float | None = None,
+                    min_evses: int | None = None, max_evses: int | None = None,
                     start_hour: int | None = None, end_hour: int | None = None) -> list[dict]:
     """
     Return one row per scrape run (keyed by scraped_at) with weighted average
@@ -337,7 +341,7 @@ def get_all_history(hours: int = 24, hub_uuid: str | None = None,
     if hub_uuid:
         hub_filter = " AND hub_uuid = ?"
         params.append(hub_uuid)
-    hub_attr_filter = _hub_subquery(params, operator, connector, min_kw, max_kw)
+    hub_attr_filter = _hub_subquery(params, operator, connector, min_kw, max_kw, min_evses, max_evses)
     hour_filter = _hour_filter(params, start_hour, end_hour)
     con = _connect()
     rows = con.execute(f"""
@@ -392,6 +396,7 @@ def get_hourly_pattern(hours: int = 168, hub_uuid: str | None = None,
                        start_dt: str | None = None, end_dt: str | None = None,
                        operator: str | None = None, connector: str | None = None,
                        min_kw: float | None = None, max_kw: float | None = None,
+                       min_evses: int | None = None, max_evses: int | None = None,
                        start_hour: int | None = None, end_hour: int | None = None) -> list[dict]:
     """
     Return average utilisation grouped by hour-of-day (0–23),
@@ -408,7 +413,7 @@ def get_hourly_pattern(hours: int = 168, hub_uuid: str | None = None,
     if hub_uuid:
         hub_filter = " AND hub_uuid = ?"
         params.append(hub_uuid)
-    hub_attr_filter = _hub_subquery(params, operator, connector, min_kw, max_kw)
+    hub_attr_filter = _hub_subquery(params, operator, connector, min_kw, max_kw, min_evses, max_evses)
     hour_filter = _hour_filter(params, start_hour, end_hour)
     con = _connect()
     rows = con.execute(f"""
@@ -464,6 +469,7 @@ def get_reliability_trend(hours: int = 168, hub_uuid: str | None = None,
                           start_dt: str | None = None, end_dt: str | None = None,
                           operator: str | None = None, connector: str | None = None,
                           min_kw: float | None = None, max_kw: float | None = None,
+                          min_evses: int | None = None, max_evses: int | None = None,
                           start_hour: int | None = None, end_hour: int | None = None) -> list[dict]:
     """
     One row per scrape run showing each status as % of total EVSEs across all hubs.
@@ -480,7 +486,7 @@ def get_reliability_trend(hours: int = 168, hub_uuid: str | None = None,
     if hub_uuid:
         hub_filter = " AND hub_uuid = ?"
         params.append(hub_uuid)
-    hub_attr_filter = _hub_subquery(params, operator, connector, min_kw, max_kw)
+    hub_attr_filter = _hub_subquery(params, operator, connector, min_kw, max_kw, min_evses, max_evses)
     hour_filter = _hour_filter(params, start_hour, end_hour)
     con = _connect()
     rows = con.execute(f"""
@@ -577,6 +583,57 @@ def get_all_snapshots(hours: int = 24,
         d["connector_types"] = json.loads(d["connector_types"] or "[]")
         result.append(d)
     return result
+
+
+def get_hub_detail(uuid: str) -> dict | None:
+    """Return full hub data for one hub including device blobs — used by the detail modal."""
+    con = _connect()
+    row = con.execute("""
+        SELECT h.uuid, h.hub_name, h.operator, h.latitude, h.longitude, h.max_power_kw,
+               h.total_evses, h.connector_types, h.address, h.city, h.postal_code,
+               h.user_rating, h.user_rating_count, h.is_24_7, h.pricing, h.payment_methods,
+               h.devices_raw_loc, h.latest_devices_status,
+               s.scraped_at, s.available_count, s.charging_count,
+               s.inoperative_count, s.out_of_order_count, s.unknown_count, s.utilisation_pct
+        FROM hubs h
+        LEFT JOIN snapshots s ON s.hub_uuid = h.uuid
+            AND s.scraped_at = (SELECT MAX(scraped_at) FROM snapshots WHERE hub_uuid = h.uuid)
+        WHERE h.uuid = ?
+    """, (uuid,)).fetchone()
+    con.close()
+    if not row:
+        return None
+    d = dict(row)
+    d["connector_types"]       = json.loads(d["connector_types"] or "[]")
+    d["pricing"]               = json.loads(d["pricing"] or "[]")
+    d["payment_methods"]       = json.loads(d["payment_methods"] or "[]")
+    d["devices_raw_loc"]       = json.loads(d["devices_raw_loc"] or "[]")
+    d["latest_devices_status"] = json.loads(d["latest_devices_status"] or "[]")
+    return d
+
+
+def update_latest_devices_status(records: list[dict]) -> None:
+    """Update only latest_devices_status for hubs that don't go through a full upsert."""
+    if not records:
+        return
+    con = _connect()
+    for r in records:
+        con.execute(
+            "UPDATE hubs SET latest_devices_status = ? WHERE uuid = ?",
+            (json.dumps(r.get("devices", [])), r["uuid"])
+        )
+    con.commit()
+    con.close()
+
+
+def get_all_hubs_for_scrape() -> list[dict]:
+    """Return all tracked hub UUIDs and key static fields."""
+    con = _connect()
+    rows = con.execute(
+        "SELECT uuid, latitude, longitude, max_power_kw, total_evses, connector_types FROM hubs"
+    ).fetchall()
+    con.close()
+    return [dict(r) for r in rows]
 
 
 def get_stats() -> dict:

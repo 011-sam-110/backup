@@ -42,7 +42,8 @@ export default function Graphs() {
 
   const filters = useFilters()
   const { analyticsParams, hubsUrl, setAvailableOperators,
-          dateRange, operatorFilter, connectorFilter, minKw, maxKw } = filters
+          dateRange, operatorFilter, connectorFilter, minKw, maxKw,
+          minEvses, maxEvses } = filters
 
   const enc = d => encodeURIComponent(d.toISOString())
 
@@ -81,7 +82,7 @@ export default function Graphs() {
 
   useEffect(() => {
     load()
-  }, [dateRange, operatorFilter, connectorFilter, minKw, maxKw]) // eslint-disable-line
+  }, [dateRange, operatorFilter, connectorFilter, minKw, maxKw, minEvses, maxEvses]) // eslint-disable-line
 
   if (loading) return <PageLoader text="Loading charts…" />
 

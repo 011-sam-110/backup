@@ -18,7 +18,7 @@ export default function App() {
               EV<span className="nav-wordmark-accent">Monitor</span>
             </span>
             <span style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: '0.12em', color: '#ffffff', lineHeight: 1 }}>
-              POWERED BY EVANTI
+              
             </span>
           </div>
         </div>

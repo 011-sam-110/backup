@@ -59,3 +59,23 @@ if __name__ == "__main__":
 
 
 #save only plotted datapoints into /ouput so we only save history + picked information
+
+
+
+"""
+saved web stats:
+453
+🔌
+Total EVSEs
+4593
+across all hubs
+⚡
+Charging Now
+771
+active sessions
+📊
+Avg Utilisation
+16.79%
+charging ÷ total EVSEs
+
+"""

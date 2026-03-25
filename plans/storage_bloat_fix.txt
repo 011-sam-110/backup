@@ -1,0 +1,80 @@
+PLAN: Fix Output Storage Bloat
+================================
+Date noted: 2026-03-25
+
+ROOT CAUSE
+----------
+Each JSON file in output/ embeds two raw API blobs per hub that are never
+used by the website or DB:
+
+  - location_raw     : full raw Zapmap location object (heavily nested)
+  - devices_raw_loc  : raw device list from the location detail API
+
+With ~150 hubs these dominate file size: ~6 MB/file × 96 scrapes/day = 2+ GB/day.
+The DB only stores the cleaned, structured fields — hence chargers.db is just 27 MB.
+
+WHAT IS LOST BY REMOVING THEM
+-------------------------------
+location_raw — mostly redundant with DB. Two fields not in DB:
+  - category (e.g. "PUBLIC")
+  - created_at (hub's Zapmap creation date)
+  Both are static and low-value for the current website.
+
+devices_raw_loc — static per-connector technical metadata NOT in DB:
+  - max_voltage, max_amperage, max_electric_power per connector
+  - format (CABLE vs SOCKET)
+  - power_type (DC vs AC)
+  - external_evse_id (OCPI-style: e.g. GB*TNM*EGL44*01*1509*01)
+  - per-device parking restrictions
+  - per-device pricing text / is_free flag
+  These are static (don't change between scrapes), so storing in every
+  snapshot is wasteful. Could be stored once in the hubs DB table if needed.
+
+STEPS
+-----
+1. scraper.py — remove from build_record() return dict:
+     "location_raw": loc,           (line 98)
+     "devices_raw_loc": devices_raw_loc,  (line 118)
+   Also remove dead assignment on line 57:
+     devices_raw_loc = ld.get("devices", [])
+
+   Expected result: each JSON ~500–700 KB instead of ~6 MB.
+   Growth rate: ~140 MB/day instead of ~2 GB/day.
+
+2. Delete existing output/*.json (2.2 GB) — all history needed by the
+   website is already in chargers.db.
+
+3. OPTIONAL: Add evse_snapshots table to DB if per-EVSE history is wanted:
+     CREATE TABLE IF NOT EXISTS evse_snapshots (
+         id INTEGER PRIMARY KEY,
+         hub_uuid TEXT NOT NULL,
+         evse_uuid TEXT NOT NULL,
+         device_uuid TEXT,
+         scraped_at TEXT NOT NULL,
+         network_status TEXT,
+         connectors TEXT
+     );
+   Adds ~10 MB/day. Enables "which specific charger was broken on Tuesday" queries.
+
+4. OPTIONAL: Rewrite to_excel.py to query DB instead of JSON files,
+   then JSON output can be removed entirely.
+
+HOSTING (after fix)
+-------------------
+DB grows ~27 MB/day = ~800 MB/month.
+
+  Hetzner VPS CX22   ~€4/mo   40 GB SSD   (~4 yrs before full)  ← recommended
+  DigitalOcean $6     $6/mo   25 GB SSD   (~2.5 yrs)
+  Fly.io + Volume    ~$2/mo   scalable
+  Render Disk       $0.25/GB  scalable
+  Railway Pro        $20/mo   100 GB
+
+Recommendation: Hetzner CX22. Run ryb.py (API + scheduler + frontend) on
+one server. Implement snapshots pruning strategy after ~2 years if needed.
+
+VERIFICATION
+------------
+1. Run: python scraper.py
+2. Check output/ — new file should be ~500–700 KB, not ~6 MB
+3. Confirm website still works (all data from DB, unchanged)
+4. Monitor output/ size over 24h

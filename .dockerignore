@@ -1,0 +1,13 @@
+.env
+*.db
+*.db-shm
+*.db-wal
+frontend/node_modules/
+__pycache__/
+*.pyc
+*.pyo
+output/
+pending_uuids.json
+discovery.har
+.git/
+plans/

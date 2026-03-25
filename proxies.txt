@@ -1,0 +1,9 @@
+# Proxy list for scraper rotation (USE_PROXY=true in .env to enable)
+# One proxy per line. Lines starting with # are ignored.
+# Supported formats:
+#   http://host:port
+#   http://user:password@host:port
+#   socks5://user:password@host:port
+#
+# Example:
+#   http://user:pass@proxy.example.com:8080
