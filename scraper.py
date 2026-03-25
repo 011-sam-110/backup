@@ -180,10 +180,7 @@ async def scrape():
                 "--disable-blink-features=AutomationControlled",
                 "--no-sandbox",
                 "--disable-dev-shm-usage",
-                "--disable-gpu",
-                "--use-gl=swiftshader",
-                "--no-first-run",
-                "--disable-background-timer-throttling",
+                "--enable-unsafe-swiftshader",
             ],
             proxy={"server": proxy_url} if proxy_url else None,
         )
@@ -207,6 +204,8 @@ async def scrape():
                 bearer_token = auth
 
         page.on("request", on_request)
+        page.on("console", lambda msg: log.debug("BROWSER %s: %s", msg.type, msg.text)
+                if msg.type == "error" else None)
         
 
         # ── Intercept all bounding-box responses ───────────────────────────────
@@ -240,6 +239,13 @@ async def scrape():
 
         # Give JS time to initialise before any interaction (longer on headless Linux)
         await page.wait_for_timeout(12_000)
+
+        webgl_ok = await page.evaluate(
+            "() => !!document.createElement('canvas').getContext('webgl')"
+        )
+        log.info("WebGL available: %s", webgl_ok)
+        if not webgl_ok:
+            log.warning("WebGL unavailable — Mapbox will not render, expect 0 locations")
 
         # Dismiss cookie consent
         for selector in [
