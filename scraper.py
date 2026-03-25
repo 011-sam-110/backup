@@ -215,6 +215,8 @@ async def scrape():
         page.on("request", on_request)
         page.on("console", lambda msg: log.debug("BROWSER %s: %s", msg.type, msg.text)
                 if msg.type == "error" else None)
+        page.on("requestfailed", lambda req: log.debug(
+                "REQUEST FAILED [%s]: %s", req.failure, req.url[:120]))
         
 
         # ── Intercept all bounding-box responses ───────────────────────────────
