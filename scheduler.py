@@ -21,6 +21,8 @@ load_dotenv()
 setup_logging()
 log = logging.getLogger("evanti.scheduler")
 INTERVAL_MINUTES = int(os.getenv("SCRAPE_INTERVAL_MINUTES", 15))
+MAX_RETRIES      = 3    # attempts per scrape run
+RETRY_DELAY_S    = 30   # seconds between retry attempts
 DB_PATH = Path("chargers.db")
 
 colorama.init()
@@ -166,6 +168,43 @@ def _refresh_loop() -> None:
         time.sleep(1)
 
 
+# ── Retry helpers ─────────────────────────────────────────────────────────────
+
+def _print_retry_warning(n: int, attempt: int, max_retries: int, delay: int, exc: Exception) -> None:
+    print(
+        Fore.YELLOW + Style.BRIGHT
+        + f"\n  ⚠  Scrape #{n} — attempt {attempt}/{max_retries} failed  ·  retrying in {delay}s"
+        + Style.RESET_ALL
+    )
+    print(Style.DIM + f"     {type(exc).__name__}: {exc}" + Style.RESET_ALL + "\n")
+
+
+def _print_failure_box(n: int, max_retries: int, duration: float, exc: Exception) -> None:
+    red_border = Fore.RED + Style.BRIGHT + "━" * W + Style.RESET_ALL
+    dur_str = fmt_uptime(duration)
+    print(f"\n{red_border}")
+    print(Fore.RED + Style.BRIGHT + f"  ✗  SCRAPE #{n} FAILED — all {max_retries} attempts exhausted  ({dur_str} total)" + Style.RESET_ALL)
+    print(red_border)
+    print(Style.DIM + f"     Last error : {type(exc).__name__}: {exc}" + Style.RESET_ALL)
+    print(Style.DIM + f"     Next scrape: in ~{INTERVAL_MINUTES} min" + Style.RESET_ALL)
+    print(f"{red_border}\n")
+
+
+def _build_failure_card(n: int, max_retries: int, duration: float, exc: Exception) -> str:
+    red_border = Fore.RED + "━" * W + Style.RESET_ALL
+    dur_str = fmt_uptime(duration)
+    err_msg = f"{type(exc).__name__}: {exc}"
+    if len(err_msg) > W - 5:
+        err_msg = err_msg[:W - 8] + "…"
+    lines = [
+        red_border,
+        Fore.RED + Style.BRIGHT + f"  ✗  Scrape #{n}  ·  FAILED  ·  all {max_retries} attempts  ·  {dur_str}" + Style.RESET_ALL,
+        Style.DIM + f"     {err_msg}" + Style.RESET_ALL,
+        red_border,
+    ]
+    return "\n".join(lines)
+
+
 # ── Job ───────────────────────────────────────────────────────────────────────
 
 def job():
@@ -175,23 +214,47 @@ def job():
     print_scrape_header(run_count)
     log.info("Scrape #%d started", run_count)
     t0 = time.monotonic()
-    try:
-        asyncio.run(scrape())
-        duration = time.monotonic() - t0
-        log.info("Scrape #%d done in %.0fs", run_count, duration)
-    except Exception as exc:
-        duration = time.monotonic() - t0
-        log.error(
-            "Scrape #%d FAILED after %.0fs — %s\n%s",
-            run_count, duration, exc, traceback.format_exc()
-        )
-        print(f"\n  ERROR: scrape() failed — see logs/scheduler.log\n  {exc}\n")
+
+    last_exc = None
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            asyncio.run(scrape())
+            last_exc = None
+            break                           # success — exit retry loop
+        except Exception as exc:
+            last_exc = exc
+            elapsed = time.monotonic() - t0
+            if attempt < MAX_RETRIES:
+                log.warning(
+                    "Scrape #%d attempt %d/%d failed after %.0fs — retrying in %ds | %s",
+                    run_count, attempt, MAX_RETRIES, elapsed, RETRY_DELAY_S, exc,
+                )
+                _print_retry_warning(run_count, attempt, MAX_RETRIES, RETRY_DELAY_S, exc)
+                time.sleep(RETRY_DELAY_S)
+            else:
+                log.error(
+                    "Scrape #%d FAILED all %d attempts after %.0fs — %s\n%s",
+                    run_count, MAX_RETRIES, elapsed, exc, traceback.format_exc(),
+                )
+
+    duration = time.monotonic() - t0
     next_run_at = datetime.now(timezone.utc) + timedelta(minutes=INTERVAL_MINUTES)
-    try:
-        card = build_status_card(run_count, duration)
-        history.append(card)
-    except Exception as exc:
-        log.error("build_status_card failed: %s", exc)
+
+    if last_exc is None:
+        log.info("Scrape #%d done in %.0fs", run_count, duration)
+        try:
+            card = build_status_card(run_count, duration)
+            history.append(card)
+        except Exception as exc:
+            log.error("build_status_card failed: %s", exc)
+    else:
+        _print_failure_box(run_count, MAX_RETRIES, duration, last_exc)
+        try:
+            card = _build_failure_card(run_count, MAX_RETRIES, duration, last_exc)
+            history.append(card)
+        except Exception as exc:
+            log.error("_build_failure_card failed: %s", exc)
+
     scraping = False          # re-enables auto-refresh
 
 
