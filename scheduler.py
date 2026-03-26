@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import sys
 import threading
 import time
 import traceback
@@ -33,6 +34,12 @@ start_time = datetime.now(timezone.utc)
 next_run_at: datetime | None = None
 run_count = 0
 scraping = False          # suppresses auto-refresh while live scraper output is printing
+
+_IS_TTY            = sys.stdout.isatty()  # True in interactive terminal, False in Docker/pipe
+_last_render_lines: int   = 0             # lines printed in last render_screen() call
+_cached_stats: dict | None = None         # last db.get_stats() result
+_stats_cached_at: float    = 0.0          # time.monotonic() when cache was filled
+STATS_CACHE_TTL = 30.0                    # seconds between DB queries in live display
 
 
 # ── Formatting helpers ────────────────────────────────────────────────────────
@@ -82,6 +89,18 @@ def section(text: str) -> str:
     return Fore.YELLOW + Style.BRIGHT + text + Style.RESET_ALL
 
 
+def _get_cached_stats() -> dict:
+    """Returns db stats, refreshing from DB at most every STATS_CACHE_TTL seconds."""
+    global _cached_stats, _stats_cached_at
+    if _cached_stats is None or (time.monotonic() - _stats_cached_at) > STATS_CACHE_TTL:
+        try:
+            _cached_stats = db.get_stats()
+        except Exception:
+            _cached_stats = _cached_stats or {}
+        _stats_cached_at = time.monotonic()
+    return _cached_stats
+
+
 # ── Display ───────────────────────────────────────────────────────────────────
 
 def print_scrape_header(n: int) -> None:
@@ -128,36 +147,70 @@ def build_status_card(n: int, duration: float) -> str:
 
 
 def render_screen() -> None:
-    """Clears the terminal and redraws banner + history cards + live countdown footer."""
-    os.system("cls" if os.name == "nt" else "clear")
+    """Redraws the live display. Uses ANSI cursor-up in TTY mode (flicker-free, preserves
+    scroll buffer). Falls back to os.system clear in non-TTY (Docker/pipe)."""
+    global _last_render_lines
 
-    # ── banner (uptime ticks each second) ────────────────────────────────────
     uptime_secs = (datetime.now(timezone.utc) - start_time).total_seconds()
     started = start_time.strftime("%d %b %Y %H:%M UTC")
-    print(border())
-    print(Fore.CYAN + Style.BRIGHT + "EVANTI EV Charger Monitor" + Style.RESET_ALL)
-    print(Style.DIM
-          + f"  Interval: {INTERVAL_MINUTES} min  ·  Started: {started}"
-          + f"  ·  Uptime: {fmt_uptime(uptime_secs)}"
-          + Style.RESET_ALL)
-    print(border())
-    print()
 
-    # ── history cards ─────────────────────────────────────────────────────────
+    # ── live stats (cached) ───────────────────────────────────────────────────
+    s = _get_cached_stats()
+    util      = s.get("avg_utilisation_pct") or 0.0
+    charging  = s.get("total_charging_evses") or 0
+    tot_evses = s.get("total_evses") or 0
+    hubs      = s.get("total_hubs") or 0
+    snapshots = s.get("total_snapshots") or 0
+    db_bytes  = DB_PATH.stat().st_size if DB_PATH.exists() else 0
+    uc = util_colour(util)
+
+    # ── assemble output ───────────────────────────────────────────────────────
+    parts = [
+        border(),
+        Fore.CYAN + Style.BRIGHT + "EVANTI EV Charger Monitor" + Style.RESET_ALL,
+        (Style.DIM
+         + f"  Interval: {INTERVAL_MINUTES} min  ·  Started: {started}"
+         + f"  ·  Uptime: {fmt_uptime(uptime_secs)}"
+         + Style.RESET_ALL),
+        border(),
+        "",
+        f"  {section('LIVE NETWORK')}",
+        (f"    {lbl('Hubs')}{val(f'{hubs:,}')}  "
+         + Style.DIM + f"·  {snapshots:,} snapshots  ·  {fmt_bytes(db_bytes)}" + Style.RESET_ALL),
+        (f"    {lbl('Utilisation')}{uc}{Style.BRIGHT}{util:.1f}%{Style.RESET_ALL}  "
+         + Style.DIM + f"{charging:,} charging  /  {tot_evses:,} EVSEs" + Style.RESET_ALL),
+        "",
+    ]
+
     for card in history:
-        print(card)
-        print()
+        parts.append(card)
+        parts.append("")
 
-    # ── countdown footer (ticks each second) ─────────────────────────────────
+    # ── countdown footer ──────────────────────────────────────────────────────
     if next_run_at:
         secs_until = max(0, (next_run_at - datetime.now(timezone.utc)).total_seconds())
         countdown = f"in {fmt_uptime(secs_until)}  ({next_run_at.strftime('%H:%M:%S UTC')})"
     else:
         countdown = "starting soon…"
 
-    print(border())
-    print(f"  {section('NEXT SCRAPE')}  {Fore.CYAN}{countdown}{Style.RESET_ALL}")
-    print(border())
+    parts += [
+        border(),
+        f"  {section('NEXT SCRAPE')}  {Fore.CYAN}{countdown}{Style.RESET_ALL}",
+        border(),
+    ]
+
+    output = "\n".join(parts)
+    line_count = output.count("\n") + 1
+
+    if _IS_TTY:
+        if _last_render_lines > 0:
+            sys.stdout.write(f"\033[{_last_render_lines}A\033[J")
+        sys.stdout.write(output + "\n")
+        sys.stdout.flush()
+        _last_render_lines = line_count
+    else:
+        os.system("cls" if os.name == "nt" else "clear")
+        print(output)
 
 
 def _refresh_loop() -> None:
@@ -208,9 +261,10 @@ def _build_failure_card(n: int, max_retries: int, duration: float, exc: Exceptio
 # ── Job ───────────────────────────────────────────────────────────────────────
 
 def job():
-    global run_count, next_run_at, scraping
+    global run_count, next_run_at, scraping, _last_render_lines, _stats_cached_at
     run_count += 1
     scraping = True
+    _last_render_lines = 0   # don't cursor-up into scraper output on next render
     print_scrape_header(run_count)
     log.info("Scrape #%d started", run_count)
     t0 = time.monotonic()
@@ -255,6 +309,7 @@ def job():
         except Exception as exc:
             log.error("_build_failure_card failed: %s", exc)
 
+    _stats_cached_at = 0.0   # force live stats to refresh immediately after scrape
     scraping = False          # re-enables auto-refresh
 
 
