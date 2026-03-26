@@ -193,6 +193,8 @@ export default function HubDetailModal({ hub, onClose }) {
           const liveByEvse = {}
           // Layer 3: positional map [devIdx][evseIdx] (handles all UUID mismatches)
           const liveByIndex = []
+          // Layer 4: evse-uuid → network_updated_at timestamp
+          const liveUpdatedAt = {}
           for (const d of detail.latest_devices_status || []) {
             liveMap[d.device_uuid] = liveMap[d.device_uuid] || {}
             const evseStatuses = []
@@ -200,9 +202,18 @@ export default function HubDetailModal({ hub, onClose }) {
               const s = (e.network_status || 'UNKNOWN').toUpperCase()
               liveMap[d.device_uuid][e.evse_uuid] = s
               liveByEvse[e.evse_uuid] = s
+              if (e.network_updated_at) liveUpdatedAt[e.evse_uuid] = e.network_updated_at
               evseStatuses.push(s)
             }
             liveByIndex.push(evseStatuses)
+          }
+          function fmtDuration(isoTs) {
+            if (!isoTs) return null
+            const mins = Math.floor((Date.now() - new Date(isoTs).getTime()) / 60000)
+            if (mins < 1) return '<1m'
+            if (mins < 60) return `${mins}m`
+            const h = Math.floor(mins / 60), m = mins % 60
+            return m > 0 ? `${h}h ${m}m` : `${h}h`
           }
           function getStatus(devIdx, evseIdx, devUuid, evseUuid) {
             return (liveMap[devUuid] && liveMap[devUuid][evseUuid])
@@ -218,7 +229,8 @@ export default function HubDetailModal({ hub, onClose }) {
               const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.UNKNOWN
               const kw = Math.round((evse.connectors?.[0]?.max_electric_power || 0) / 1000)
               const connector = CONNECTOR_SHORT[evse.connectors?.[0]?.standard] || evse.connectors?.[0]?.standard || '—'
-              return { devUuid: dev.uuid, evseUuid: evse.uuid, ref: dev.physical_reference, status, cfg, kw, connector, pd }
+              const updatedAt = liveUpdatedAt[evse.uuid] || null
+              return { devUuid: dev.uuid, evseUuid: evse.uuid, ref: dev.physical_reference, status, cfg, kw, connector, pd, updatedAt }
             })
           })
 
@@ -261,6 +273,11 @@ export default function HubDetailModal({ hub, onClose }) {
                     <div style={{ color: c.cfg.color, fontWeight: 600, fontSize: 11 }}>
                       {c.cfg.icon} {c.cfg.label}
                     </div>
+                    {c.status === 'CHARGING' && fmtDuration(c.updatedAt) && (
+                      <div style={{ color: c.cfg.color, fontSize: 10, opacity: 0.85 }}>
+                        ⏱ {fmtDuration(c.updatedAt)}
+                      </div>
+                    )}
                     <div style={{ color: 'var(--text-muted)', fontSize: 10 }}>{c.connector}</div>
                     {c.pd.pricing && (
                       <div style={{ color: '#f59e0b', fontSize: 10, marginTop: 2 }}>{c.pd.pricing}</div>
