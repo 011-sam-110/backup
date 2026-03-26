@@ -217,7 +217,24 @@ def create_group(body: dict = Body(...)):
     name = (body.get("name") or "").strip()
     if not name:
         raise HTTPException(status_code=400, detail="name is required")
-    return db.create_group(name)
+    filters = {}
+    for key in ("connector_filter", "operator_filter",
+                "min_kw", "max_kw", "min_evses", "max_evses", "min_util", "max_util"):
+        if key in body:
+            filters[key] = body[key] if body[key] != "" else None
+    return db.create_group(name, filters or None)
+
+
+@app.patch("/api/groups/{group_id}/filters")
+def save_group_filters(group_id: int, body: dict = Body(...)):
+    filters = {}
+    for key in ("connector_filter", "operator_filter",
+                "min_kw", "max_kw", "min_evses", "max_evses", "min_util", "max_util"):
+        filters[key] = body.get(key)
+    updated = db.update_group_filters(group_id, filters)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Group not found")
+    return updated
 
 
 @app.patch("/api/groups/{group_id}")

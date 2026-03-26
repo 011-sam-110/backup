@@ -71,6 +71,7 @@ export default function Toolbar() {
     groups, loadGroups,
     activeGroupIds, toggleGroup, clearGroups,
     assigningGroupId, toggleAssigningGroup,
+    groupFiltersActive,
   } = filters
 
   const [showExport, setShowExport] = useState(false)
@@ -115,20 +116,51 @@ export default function Toolbar() {
 
   useEffect(() => { loadGroups() }, [loadGroups])
 
+  const buildFilterPayload = () => {
+    const payload = {
+      connector_filter: connectorFilter !== 'all' ? connectorFilter : null,
+      operator_filter:  operatorFilter.size > 0 ? JSON.stringify([...operatorFilter]) : null,
+      min_kw:    minKw    !== '' ? parseFloat(minKw)    : null,
+      max_kw:    maxKw    !== '' ? parseFloat(maxKw)    : null,
+      min_evses: minEvses !== '' ? parseInt(minEvses)   : null,
+      max_evses: maxEvses !== '' ? parseInt(maxEvses)   : null,
+      min_util:  minUtil  !== '' ? parseFloat(minUtil)  : null,
+      max_util:  maxUtil  !== '' ? parseFloat(maxUtil)  : null,
+    }
+    return Object.values(payload).some(v => v !== null) ? payload : null
+  }
+
   const createGroup = async () => {
     const name = newGroupName.trim()
     if (!name || creatingGroup) return
     setCreatingGroup(true)
     try {
+      const filterPayload = buildFilterPayload()
       await authFetch('/api/groups', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, ...(filterPayload || {}) }),
       })
       setNewGroupName('')
       await loadGroups()
     } catch { /* ignore */ }
     setCreatingGroup(false)
+  }
+
+  const saveFiltersToGroup = async (id) => {
+    try {
+      const payload = buildFilterPayload() || {
+        connector_filter: null, operator_filter: null,
+        min_kw: null, max_kw: null, min_evses: null,
+        max_evses: null, min_util: null, max_util: null,
+      }
+      await authFetch(`/api/groups/${id}/filters`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      await loadGroups()
+    } catch { /* ignore */ }
   }
 
   const deleteGroup = async (id) => {
@@ -242,6 +274,10 @@ export default function Toolbar() {
                   <span
                     style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: groupColor(g.id) }}
                   />
+                  {(g.connector_filter || g.operator_filter || g.min_kw != null || g.max_kw != null ||
+                    g.min_evses != null || g.max_evses != null || g.min_util != null || g.max_util != null) && (
+                    <span title="Has saved filters" style={{ fontSize: 9, color: 'var(--accent)', opacity: 0.8, lineHeight: 1, flexShrink: 0 }}>▼</span>
+                  )}
                   <span
                     onClick={() => toggleGroup(g.id)}
                     style={{ flex: 1, fontSize: 12, cursor: 'pointer', userSelect: 'none',
@@ -252,6 +288,11 @@ export default function Toolbar() {
                     {g.name}
                   </span>
                   <span style={{ fontSize: 10, color: 'var(--text-dim)', marginRight: 2 }}>{g.hub_count}</span>
+                  <button
+                    onClick={() => saveFiltersToGroup(g.id)}
+                    title="Save current filters to group"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', fontSize: 11, padding: '0 1px', lineHeight: 1 }}
+                  >⊞</button>
                   <button
                     onClick={() => toggleAssigningGroup(g.id)}
                     title="Select hubs on map"
@@ -329,20 +370,27 @@ export default function Toolbar() {
         </Section>
 
         <Section title="Filters" icon="⊟" defaultOpen={true}>
+          {groupFiltersActive && (
+            <div style={{ fontSize: 10, color: 'var(--accent)', marginBottom: 6, fontStyle: 'italic', opacity: 0.8 }}>
+              Using group filters
+            </div>
+          )}
           <Label>Operator</Label>
           <OperatorDropdown
             operators={availableOperators}
             value={operatorFilter}
             onToggle={toggleOperator}
             onClearAll={clearOperators}
+            disabled={groupFiltersActive}
           />
 
           <Label>Connector</Label>
           <select
             className="filter-input"
-            style={{ width: '100%', boxSizing: 'border-box' }}
-            value={connectorFilter}
-            onChange={e => setConnectorFilter(e.target.value)}
+            style={{ width: '100%', boxSizing: 'border-box', opacity: groupFiltersActive ? 0.45 : 1, cursor: groupFiltersActive ? 'not-allowed' : 'auto' }}
+            value={groupFiltersActive ? 'all' : connectorFilter}
+            onChange={e => !groupFiltersActive && setConnectorFilter(e.target.value)}
+            disabled={groupFiltersActive}
           >
             {CONNECTOR_OPTIONS.map(c => (
               <option key={c.value} value={c.value}>{c.label}</option>
@@ -353,21 +401,23 @@ export default function Toolbar() {
           <div style={{ display: 'flex', gap: 4 }}>
             <input
               className="filter-input"
-              style={{ width: '50%', boxSizing: 'border-box' }}
+              style={{ width: '50%', boxSizing: 'border-box', opacity: groupFiltersActive ? 0.45 : 1, cursor: groupFiltersActive ? 'not-allowed' : 'auto' }}
               type="number"
-              placeholder="Min"
+              placeholder={groupFiltersActive ? 'Group filter' : 'Min'}
               min="0"
-              value={minKw}
-              onChange={e => setMinKw(e.target.value)}
+              value={groupFiltersActive ? '' : minKw}
+              disabled={groupFiltersActive}
+              onChange={e => !groupFiltersActive && setMinKw(e.target.value)}
             />
             <input
               className="filter-input"
-              style={{ width: '50%', boxSizing: 'border-box' }}
+              style={{ width: '50%', boxSizing: 'border-box', opacity: groupFiltersActive ? 0.45 : 1, cursor: groupFiltersActive ? 'not-allowed' : 'auto' }}
               type="number"
-              placeholder="Max"
+              placeholder={groupFiltersActive ? 'Group filter' : 'Max'}
               min="0"
-              value={maxKw}
-              onChange={e => setMaxKw(e.target.value)}
+              value={groupFiltersActive ? '' : maxKw}
+              disabled={groupFiltersActive}
+              onChange={e => !groupFiltersActive && setMaxKw(e.target.value)}
             />
           </div>
 
@@ -375,21 +425,23 @@ export default function Toolbar() {
           <div style={{ display: 'flex', gap: 4 }}>
             <input
               className="filter-input"
-              style={{ width: '50%', boxSizing: 'border-box' }}
+              style={{ width: '50%', boxSizing: 'border-box', opacity: groupFiltersActive ? 0.45 : 1, cursor: groupFiltersActive ? 'not-allowed' : 'auto' }}
               type="number"
-              placeholder="Min"
+              placeholder={groupFiltersActive ? 'Group filter' : 'Min'}
               min="0"
-              value={minEvses}
-              onChange={e => setMinEvses(e.target.value)}
+              value={groupFiltersActive ? '' : minEvses}
+              disabled={groupFiltersActive}
+              onChange={e => !groupFiltersActive && setMinEvses(e.target.value)}
             />
             <input
               className="filter-input"
-              style={{ width: '50%', boxSizing: 'border-box' }}
+              style={{ width: '50%', boxSizing: 'border-box', opacity: groupFiltersActive ? 0.45 : 1, cursor: groupFiltersActive ? 'not-allowed' : 'auto' }}
               type="number"
-              placeholder="Max"
+              placeholder={groupFiltersActive ? 'Group filter' : 'Max'}
               min="0"
-              value={maxEvses}
-              onChange={e => setMaxEvses(e.target.value)}
+              value={groupFiltersActive ? '' : maxEvses}
+              disabled={groupFiltersActive}
+              onChange={e => !groupFiltersActive && setMaxEvses(e.target.value)}
             />
           </div>
 
@@ -397,23 +449,25 @@ export default function Toolbar() {
           <div style={{ display: 'flex', gap: 4 }}>
             <input
               className="filter-input"
-              style={{ width: '50%', boxSizing: 'border-box' }}
+              style={{ width: '50%', boxSizing: 'border-box', opacity: groupFiltersActive ? 0.45 : 1, cursor: groupFiltersActive ? 'not-allowed' : 'auto' }}
               type="number"
-              placeholder="Min"
+              placeholder={groupFiltersActive ? 'Group filter' : 'Min'}
               min="0"
               max="100"
-              value={minUtil}
-              onChange={e => setMinUtil(e.target.value)}
+              value={groupFiltersActive ? '' : minUtil}
+              disabled={groupFiltersActive}
+              onChange={e => !groupFiltersActive && setMinUtil(e.target.value)}
             />
             <input
               className="filter-input"
-              style={{ width: '50%', boxSizing: 'border-box' }}
+              style={{ width: '50%', boxSizing: 'border-box', opacity: groupFiltersActive ? 0.45 : 1, cursor: groupFiltersActive ? 'not-allowed' : 'auto' }}
               type="number"
-              placeholder="Max"
+              placeholder={groupFiltersActive ? 'Group filter' : 'Max'}
               min="0"
               max="100"
-              value={maxUtil}
-              onChange={e => setMaxUtil(e.target.value)}
+              value={groupFiltersActive ? '' : maxUtil}
+              disabled={groupFiltersActive}
+              onChange={e => !groupFiltersActive && setMaxUtil(e.target.value)}
             />
           </div>
         </Section>

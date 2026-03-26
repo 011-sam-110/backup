@@ -186,6 +186,21 @@ def init_db() -> None:
         con.commit()
     except Exception:
         pass
+    for col, typedef in [
+        ("connector_filter", "TEXT DEFAULT NULL"),
+        ("operator_filter",  "TEXT DEFAULT NULL"),
+        ("min_kw",           "REAL DEFAULT NULL"),
+        ("max_kw",           "REAL DEFAULT NULL"),
+        ("min_evses",        "INTEGER DEFAULT NULL"),
+        ("max_evses",        "INTEGER DEFAULT NULL"),
+        ("min_util",         "REAL DEFAULT NULL"),
+        ("max_util",         "REAL DEFAULT NULL"),
+    ]:
+        try:
+            con.execute(f"ALTER TABLE groups ADD COLUMN {col} {typedef}")
+            con.commit()
+        except Exception:
+            pass
     con.commit()
     con.close()
     purge_non_gb_hubs()
@@ -816,11 +831,15 @@ def get_all_hubs_for_scrape() -> list[dict]:
 
 
 def get_groups() -> list[dict]:
-    """Return all groups with their hub counts."""
+    """Return all groups with their hub counts and saved filters."""
     con = _connect()
     rows = con.execute("""
         SELECT g.id, g.name, g.created_at,
-               COUNT(gh.hub_uuid) AS hub_count
+               COUNT(gh.hub_uuid) AS hub_count,
+               g.connector_filter, g.operator_filter,
+               g.min_kw, g.max_kw,
+               g.min_evses, g.max_evses,
+               g.min_util, g.max_util
         FROM groups g
         LEFT JOIN group_hubs gh ON gh.group_id = g.id
         GROUP BY g.id
@@ -830,17 +849,36 @@ def get_groups() -> list[dict]:
     return [dict(r) for r in rows]
 
 
-def create_group(name: str) -> dict:
-    """Create a new group and return it."""
+def create_group(name: str, filters: dict | None = None) -> dict:
+    """Create a new group and return it. Optionally saves filter settings with the group."""
     con = _connect()
     now = datetime.now(timezone.utc).isoformat()
+    f = filters or {}
     try:
         cur = con.execute(
-            "INSERT INTO groups (name, created_at) VALUES (?, ?)", (name.strip(), now)
+            """INSERT INTO groups
+               (name, created_at,
+                connector_filter, operator_filter,
+                min_kw, max_kw, min_evses, max_evses, min_util, max_util)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                name.strip(), now,
+                f.get("connector_filter"),
+                f.get("operator_filter"),
+                f.get("min_kw"),
+                f.get("max_kw"),
+                f.get("min_evses"),
+                f.get("max_evses"),
+                f.get("min_util"),
+                f.get("max_util"),
+            )
         )
         con.commit()
         row = con.execute(
-            "SELECT id, name, created_at, 0 AS hub_count FROM groups WHERE id = ?",
+            """SELECT id, name, created_at, 0 AS hub_count,
+                      connector_filter, operator_filter,
+                      min_kw, max_kw, min_evses, max_evses, min_util, max_util
+               FROM groups WHERE id = ?""",
             (cur.lastrowid,)
         ).fetchone()
         con.close()
@@ -848,6 +886,40 @@ def create_group(name: str) -> dict:
     except Exception:
         con.close()
         raise
+
+
+def update_group_filters(group_id: int, filters: dict) -> dict | None:
+    """Update the saved filter settings for a group."""
+    con = _connect()
+    cur = con.execute(
+        """UPDATE groups SET
+           connector_filter = ?,
+           operator_filter  = ?,
+           min_kw    = ?, max_kw    = ?,
+           min_evses = ?, max_evses = ?,
+           min_util  = ?, max_util  = ?
+           WHERE id = ?""",
+        (
+            filters.get("connector_filter"),
+            filters.get("operator_filter"),
+            filters.get("min_kw"),  filters.get("max_kw"),
+            filters.get("min_evses"), filters.get("max_evses"),
+            filters.get("min_util"),  filters.get("max_util"),
+            group_id,
+        )
+    )
+    con.commit()
+    if cur.rowcount == 0:
+        con.close()
+        return None
+    row = con.execute(
+        """SELECT id, name, created_at,
+                  connector_filter, operator_filter,
+                  min_kw, max_kw, min_evses, max_evses, min_util, max_util
+           FROM groups WHERE id = ?""", (group_id,)
+    ).fetchone()
+    con.close()
+    return dict(row) if row else None
 
 
 def rename_group(group_id: int, name: str) -> dict | None:
