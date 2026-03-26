@@ -125,7 +125,7 @@ export default function Toolbar() {
   return (
     <>
       <aside style={{
-        width: 224,
+        width: 280,
         flexShrink: 0,
         background: '#F1F3F5',
         borderRight: '1px solid var(--border)',
@@ -238,7 +238,8 @@ export default function Toolbar() {
               Clear groups
             </button>
           )}
-            <div style={{ display: 'flex', gap: 4, marginTop: 8, paddingRight: 4 }}>            <input
+          <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
+            <input
               value={newGroupName}
               onChange={e => setNewGroupName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && createGroup()}
