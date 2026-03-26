@@ -167,7 +167,7 @@ def render_screen() -> None:
     # ── assemble output ───────────────────────────────────────────────────────
     parts = [
         border(),
-        Fore.CYAN + Style.BRIGHT + "EVANTI EV Charger Monitor" + Style.RESET_ALL,
+        Fore.CYAN + Style.BRIGHT + "EV Charger Monitor" + Style.RESET_ALL,
         (Style.DIM
          + f"  Interval: {INTERVAL_MINUTES} min  ·  Started: {started}"
          + f"  ·  Uptime: {fmt_uptime(uptime_secs)}"

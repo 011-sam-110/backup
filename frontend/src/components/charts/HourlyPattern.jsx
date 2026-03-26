@@ -1,13 +1,13 @@
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell,
+  ResponsiveContainer, Cell, Legend,
 } from 'recharts'
-import { utilColor } from '../../utils/status'
+import { utilColor, fmtKw } from '../../utils/status'
 
 // Fill in missing hours with 0
 function fillHours(data) {
   const map = Object.fromEntries(data.map(d => [d.hour, d]))
-  return Array.from({ length: 24 }, (_, h) => map[h] ?? { hour: h, avg_utilisation_pct: 0, data_points: 0 })
+  return Array.from({ length: 24 }, (_, h) => map[h] ?? { hour: h, avg_utilisation_pct: 0, avg_est_kw: 0, data_points: 0 })
 }
 
 function fmtHour(h) {
@@ -34,6 +34,9 @@ const CustomTooltip = ({ active, payload }) => {
       <div style={{ color: barFill(d.avg_utilisation_pct), fontWeight: 600 }}>
         {d.avg_utilisation_pct}% avg utilisation
       </div>
+      {d.avg_est_kw > 0 && (
+        <div style={{ color: '#f59e0b', marginTop: 2 }}>Est. {fmtKw(d.avg_est_kw)}</div>
+      )}
       <div style={{ color: '#6B7280', fontSize: 11, marginTop: 2 }}>
         {d.data_points} data points
       </div>
@@ -61,7 +64,7 @@ export default function HourlyPattern({ data }) {
   if (!hasData) return <EmptyHourly />
 
   return (
-    <ResponsiveContainer width="100%" height={220}>
+    <ResponsiveContainer width="100%" height={240}>
       <BarChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
         <XAxis
@@ -73,18 +76,31 @@ export default function HourlyPattern({ data }) {
           interval={2}
         />
         <YAxis
+          yAxisId="pct"
           domain={[0, 100]}
           tick={{ fill: '#6B7280', fontSize: 11, fontFamily: 'Inter, sans-serif' }}
           axisLine={false}
           tickLine={false}
           tickFormatter={v => `${v}%`}
         />
+        <YAxis
+          yAxisId="kw"
+          orientation="right"
+          tick={false}
+          axisLine={false}
+          tickLine={false}
+        />
         <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
-        <Bar dataKey="avg_utilisation_pct" radius={[4, 4, 0, 0]} maxBarSize={20}>
+        <Legend
+          wrapperStyle={{ fontSize: 11, fontFamily: 'Inter, sans-serif', paddingTop: 4 }}
+          formatter={(value) => value === 'avg_utilisation_pct' ? 'Utilisation %' : 'Est. Load (kW)'}
+        />
+        <Bar yAxisId="pct" dataKey="avg_utilisation_pct" radius={[4, 4, 0, 0]} maxBarSize={10}>
           {chartData.map((d) => (
             <Cell key={d.hour} fill={barFill(d.avg_utilisation_pct)} />
           ))}
         </Bar>
+        <Bar yAxisId="kw" dataKey="avg_est_kw" fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={10} />
       </BarChart>
     </ResponsiveContainer>
   )

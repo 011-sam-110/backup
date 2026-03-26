@@ -13,6 +13,8 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+INTERVAL_MINUTES = int(os.getenv("SCRAPE_INTERVAL_MINUTES", 15))
+
 log = logging.getLogger("evanti.db")
 
 DB_PATH = Path(os.getenv("DATABASE_PATH", "chargers.db"))
@@ -434,7 +436,8 @@ def get_hourly_pattern(hours: int = 168, hub_uuid: str | None = None,
                        operator: str | None = None, connector: str | None = None,
                        min_kw: float | None = None, max_kw: float | None = None,
                        min_evses: int | None = None, max_evses: int | None = None,
-                       start_hour: int | None = None, end_hour: int | None = None) -> list[dict]:
+                       start_hour: int | None = None, end_hour: int | None = None,
+                       interval_minutes: int = INTERVAL_MINUTES) -> list[dict]:
     """
     Return average utilisation grouped by hour-of-day (0–23),
     built from the last N hours of data (default 7 days).
@@ -452,12 +455,14 @@ def get_hourly_pattern(hours: int = 168, hub_uuid: str | None = None,
         params.append(hub_uuid)
     hub_attr_filter = _hub_subquery(params, operator, connector, min_kw, max_kw, min_evses, max_evses)
     hour_filter = _hour_filter(params, start_hour, end_hour)
+    params.append(interval_minutes)
     con = _connect()
     rows = con.execute(f"""
         SELECT
             CAST(strftime('%H', scraped_at) AS INTEGER) AS hour,
             ROUND(100.0 * SUM(charging_count) /
                   NULLIF(SUM(available_count + charging_count + inoperative_count + out_of_order_count + unknown_count), 0), 2) AS avg_utilisation_pct,
+            ROUND(AVG(estimated_kwh) * (60.0 / ?), 1) AS avg_est_kw,
             COUNT(*) AS data_points
         FROM snapshots
         WHERE {where_time}{hub_filter}{hub_attr_filter}{hour_filter}

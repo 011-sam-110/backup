@@ -1,13 +1,12 @@
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell,
+  ResponsiveContainer, Cell, Legend,
 } from 'recharts'
 import { utilColor, fmtKw, hubEstKw } from '../../utils/status'
 
 const CustomTooltip = ({ active, payload }) => {
   if (!active || !payload?.length) return null
   const d = payload[0].payload
-  const estKw = hubEstKw(d)
   return (
     <div style={{
       background: '#FFFFFF', border: '1px solid #E5E7EB',
@@ -18,8 +17,8 @@ const CustomTooltip = ({ active, payload }) => {
       <div style={{ fontFamily: 'monospace', fontSize: 10, color: '#9CA3AF', marginBottom: 5 }}>{d.uuid}</div>
       <div style={{ color: utilColor(d.utilisation_pct), fontWeight: 600 }}>{d.utilisation_pct}% utilised</div>
       <div style={{ color: '#6B7280', marginTop: 2 }}>{d.charging_count} / {d.total_evses} charging</div>
-      {d.charging_count > 0 && (
-        <div style={{ color: '#f59e0b', marginTop: 2 }}>Est. load: {fmtKw(estKw)}</div>
+      {d.est_kw > 0 && (
+        <div style={{ color: '#f59e0b', marginTop: 2 }}>Est. load: {fmtKw(d.est_kw)}</div>
       )}
     </div>
   )
@@ -61,6 +60,7 @@ export default function HubBarChart({ hubs, onHubClick, label }) {
   const chartData = [...hubs]
     .filter(h => h.utilisation_pct != null)
     .sort((a, b) => b.utilisation_pct - a.utilisation_pct)
+    .map(h => ({ ...h, est_kw: hubEstKw(h) }))
 
   return (
     <div>
@@ -68,21 +68,33 @@ export default function HubBarChart({ hubs, onHubClick, label }) {
         {label ?? `All ${chartData.length} hubs · click a bar to see details`}
       </p>
       <div style={{ overflowY: 'auto', maxHeight: 560 }}>
-        <ResponsiveContainer width="100%" height={Math.max(300, chartData.length * 46)}>
+        <ResponsiveContainer width="100%" height={Math.max(300, chartData.length * 60)}>
           <BarChart
             layout="vertical"
             data={chartData}
-            margin={{ top: 5, right: 60, bottom: 5, left: 120 }}
+            margin={{ top: 20, right: 60, bottom: 5, left: 120 }}
             style={{ cursor: 'pointer' }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" horizontal={false} />
             <XAxis
+              xAxisId="pct"
               type="number"
               domain={[0, 100]}
               tick={{ fill: '#6B7280', fontSize: 11, fontFamily: 'Inter, sans-serif' }}
               axisLine={false}
               tickLine={false}
               tickFormatter={v => `${v}%`}
+              orientation="bottom"
+            />
+            <XAxis
+              xAxisId="kw"
+              type="number"
+              domain={[0, 'auto']}
+              tick={{ fill: '#f59e0b', fontSize: 10, fontFamily: 'Inter, sans-serif' }}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={v => fmtKw(v)}
+              orientation="top"
             />
             <YAxis
               type="category"
@@ -93,16 +105,28 @@ export default function HubBarChart({ hubs, onHubClick, label }) {
               width={160}
             />
             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
+            <Legend
+              wrapperStyle={{ fontSize: 11, fontFamily: 'Inter, sans-serif', paddingTop: 8 }}
+              formatter={(value) => value === 'utilisation_pct' ? 'Utilisation %' : 'Est. Load (kW)'}
+            />
             <Bar
+              xAxisId="pct"
               dataKey="utilisation_pct"
               radius={[0, 4, 4, 0]}
-              maxBarSize={18}
+              maxBarSize={14}
               onClick={(data) => onHubClick?.(data)}
             >
               {chartData.map((h) => (
                 <Cell key={h.uuid} fill="#2563EB" />
               ))}
             </Bar>
+            <Bar
+              xAxisId="kw"
+              dataKey="est_kw"
+              fill="#f59e0b"
+              radius={[0, 4, 4, 0]}
+              maxBarSize={14}
+            />
           </BarChart>
         </ResponsiveContainer>
       </div>

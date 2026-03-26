@@ -9,6 +9,7 @@ import PageLoader from '../components/PageLoader'
 import CustomRangePanel from '../components/charts/CustomRangePanel'
 import { useFilters, applyFilters } from '../context/FilterContext'
 import { authFetch } from '../context/AuthContext'
+import { hubEstKw, fmtKw, fmtKwh, fmtHour } from '../utils/status'
 
 const REFRESH_MS = 60_000
 
@@ -100,6 +101,33 @@ export default function Graphs() {
 
   const noData = history.length === 0 && hubs.length === 0
 
+  // Primary chart stat lines
+  const hubStat = filteredHubs.length > 0 ? (() => {
+    const avg = filteredHubs.reduce((s, h) => s + (h.utilisation_pct ?? 0), 0) / filteredHubs.length
+    const kw = filteredHubs.reduce((s, h) => s + hubEstKw(h), 0)
+    return <>Avg <strong style={{ color: 'var(--accent)' }}>{avg.toFixed(1)}%</strong> · Est. <strong style={{ color: '#f59e0b' }}>{fmtKw(kw)}</strong> across {filteredHubs.length} hubs</>
+  })() : null
+
+  const trendStat = history.length >= 2 ? (() => {
+    const avg = history.reduce((s, d) => s + (d.avg_utilisation_pct ?? 0), 0) / history.length
+    const totalKwh = history.reduce((s, d) => s + (d.total_estimated_kwh ?? 0), 0)
+    return <>Avg <strong style={{ color: 'var(--accent)' }}>{avg.toFixed(1)}%</strong>{fmtKwh(totalKwh) ? <> · Est. <strong style={{ color: '#f59e0b' }}>{fmtKwh(totalKwh)}</strong> over period</> : null}</>
+  })() : null
+
+  const reliabilityStat = reliabilityData.length >= 2 ? (() => {
+    const avgC = reliabilityData.reduce((s, d) => s + (d.charging_pct ?? 0), 0) / reliabilityData.length
+    const avgI = reliabilityData.reduce((s, d) => s + (d.inoperative_pct ?? 0) + (d.oos_pct ?? 0), 0) / reliabilityData.length
+    return <>Avg charging <strong style={{ color: 'var(--accent)' }}>{avgC.toFixed(1)}%</strong> · Avg inoperative <strong style={{ color: '#f59e0b' }}>{avgI.toFixed(1)}%</strong></>
+  })() : null
+
+  const hourlyStat = hourly.length > 0 ? (() => {
+    const avg = hourly.reduce((s, d) => s + (d.avg_utilisation_pct ?? 0), 0) / hourly.length
+    const peak = hourly.reduce((b, d) => (d.avg_utilisation_pct ?? 0) > (b.avg_utilisation_pct ?? 0) ? d : b, hourly[0])
+    return <>Avg <strong style={{ color: 'var(--accent)' }}>{avg.toFixed(1)}%</strong> · Peak at <strong style={{ color: 'var(--accent)' }}>{fmtHour(peak.hour)}</strong> ({peak.avg_utilisation_pct?.toFixed(1)}%)</>
+  })() : null
+
+  const statStyle = { fontSize: 12, color: 'var(--text-muted)' }
+
   return (
     <>
       <h1 className="page-meta-title" style={{ marginBottom: 28 }}>Analytics</h1>
@@ -122,12 +150,16 @@ export default function Graphs() {
           </div>
 
           <div className="chart-section">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 12 }}>
               <div className="chart-title" style={{ marginBottom: 0 }}>
                 {CHARTS.find(c => c.key === activeChart)?.label}
               </div>
+              {activeChart === 'hubs'        && hubStat        && <div style={statStyle}>{hubStat}</div>}
+              {activeChart === 'trend'       && trendStat      && <div style={statStyle}>{trendStat}</div>}
+              {activeChart === 'reliability' && reliabilityStat && <div style={statStyle}>{reliabilityStat}</div>}
+              {activeChart === 'hourly'      && hourlyStat     && <div style={statStyle}>{hourlyStat}</div>}
               {activeChart === 'trend' && history.length >= 2 && (
-                <button className="btn btn-outline" style={{ fontSize: 12, padding: '4px 12px' }} onClick={() => exportTrendData(history)}>
+                <button className="btn btn-outline" style={{ fontSize: 12, padding: '4px 12px', flexShrink: 0 }} onClick={() => exportTrendData(history)}>
                   ↓ Export
                 </button>
               )}
@@ -168,6 +200,7 @@ export default function Graphs() {
                   : <UtilisationLine data={history} />}
                 <CustomRangePanel
                   title="SECONDARY CUSTOM CHART"
+                  showOperator
                   buildUrl={(range, sh, eh, fp) => {
                     const dt = range.start && range.end
                       ? `&start_dt=${enc(range.start)}&end_dt=${enc(range.end)}`
@@ -178,7 +211,8 @@ export default function Graphs() {
                     if (!data || !data.length) return null
                     const avg = data.reduce((s, d) => s + (d.avg_utilisation_pct ?? 0), 0) / data.length
                     const totalCharging = data.reduce((s, d) => s + (d.total_charging ?? 0), 0)
-                    return <>Avg utilisation <strong style={{ color: 'var(--accent)' }}>{avg.toFixed(1)}%</strong> · {totalCharging.toLocaleString()} charging sessions</>
+                    const totalKwh = data.reduce((s, d) => s + (d.total_estimated_kwh ?? 0), 0)
+                    return <>Avg <strong style={{ color: 'var(--accent)' }}>{avg.toFixed(1)}%</strong> · {totalCharging.toLocaleString()} sessions{fmtKwh(totalKwh) ? <> · Est. <strong style={{ color: '#f59e0b' }}>{fmtKwh(totalKwh)}</strong></> : null}</>
                   }}
                   renderChart={(data) =>
                     !data || data.length < 2
@@ -194,6 +228,7 @@ export default function Graphs() {
                 <ReliabilityChart data={reliabilityData} />
                 <CustomRangePanel
                   title="SECONDARY CUSTOM CHART"
+                  showOperator
                   buildUrl={(range, sh, eh, fp) => {
                     const dt = range.start && range.end
                       ? `&start_dt=${enc(range.start)}&end_dt=${enc(range.end)}`
@@ -224,10 +259,10 @@ export default function Graphs() {
                   }}
                   renderStat={(data) => {
                     if (!data || !data.length) return null
-                    const peak = data.reduce((best, d) => (d.avg_utilisation_pct ?? 0) > (best.avg_utilisation_pct ?? 0) ? d : best, data[0])
                     const avg = data.reduce((s, d) => s + (d.avg_utilisation_pct ?? 0), 0) / data.length
-                    const peakLabel = peak.hour === 0 ? '12am' : peak.hour === 12 ? '12pm' : peak.hour < 12 ? `${peak.hour}am` : `${peak.hour - 12}pm`
-                    return <>Avg utilisation <strong style={{ color: 'var(--accent)' }}>{avg.toFixed(1)}%</strong> · Peak at <strong style={{ color: 'var(--accent)' }}>{peakLabel}</strong> ({peak.avg_utilisation_pct?.toFixed(1)}%)</>
+                    const peak = data.reduce((b, d) => (d.avg_utilisation_pct ?? 0) > (b.avg_utilisation_pct ?? 0) ? d : b, data[0])
+                    const peakKw = data.reduce((b, d) => (d.avg_est_kw ?? 0) > (b.avg_est_kw ?? 0) ? d : b, data[0])
+                    return <>Avg <strong style={{ color: 'var(--accent)' }}>{avg.toFixed(1)}%</strong> · Peak at <strong style={{ color: 'var(--accent)' }}>{fmtHour(peak.hour)}</strong> ({peak.avg_utilisation_pct?.toFixed(1)}%){peakKw.avg_est_kw > 0 ? <> · Peak kW at <strong style={{ color: '#f59e0b' }}>{fmtHour(peakKw.hour)}</strong></> : null}</>
                   }}
                   renderChart={(data) => <HourlyPattern data={data || []} />}
                 />

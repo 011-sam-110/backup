@@ -36,6 +36,8 @@ import db
 
 db.init_db()
 
+SCRAPE_INTERVAL_MINUTES = int(os.getenv("SCRAPE_INTERVAL_MINUTES", 15))
+
 app = FastAPI(title="EV Hub Utilisation API")
 
 _cors_origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",")]
@@ -149,7 +151,8 @@ def hourly_pattern(hours: int = Query(default=168, ge=24, le=8760),
     return db.get_hourly_pattern(hours, hub_uuid=hub_uuid, start_dt=start_dt, end_dt=end_dt,
                                  operator=operator, connector=connector, min_kw=min_kw, max_kw=max_kw,
                                  min_evses=min_evses, max_evses=max_evses,
-                                 start_hour=start_hour, end_hour=end_hour)
+                                 start_hour=start_hour, end_hour=end_hour,
+                                 interval_minutes=SCRAPE_INTERVAL_MINUTES)
 
 
 @app.get("/api/hourly-heatmap")

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import DateRangePicker from '../DateRangePicker'
 import { useFilters } from '../../context/FilterContext'
 import { authFetch } from '../../context/AuthContext'
+import OperatorDropdown from '../OperatorDropdown'
 
 const HOUR_OPTS = Array.from({ length: 24 }, (_, h) => ({
   value: h,
@@ -17,15 +18,21 @@ function defaultRange() {
   return { start, end }
 }
 
-export default function CustomRangePanel({ title = 'Custom Range', buildUrl, renderChart, renderStat }) {
+function withOperator(fp, op) {
+  const stripped = fp.replace(/(?:^|&)operator=[^&]*/g, '')
+  return op !== 'all' ? stripped + `&operator=${encodeURIComponent(op)}` : stripped
+}
+
+export default function CustomRangePanel({ title = 'Custom Range', buildUrl, renderChart, renderStat, showOperator = false }) {
   const [localRange, setLocalRange] = useState(defaultRange)
   const [startHour, setStartHour] = useState(0)
   const [endHour, setEndHour] = useState(23)
+  const [secOperator, setSecOperator] = useState('all')
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const abortRef = useRef(null)
 
-  const { operatorFilter, connectorFilter, minKw, maxKw, filterOnlyParams } = useFilters()
+  const { operatorFilter, connectorFilter, minKw, maxKw, filterOnlyParams, availableOperators } = useFilters()
 
   useEffect(() => {
     if (abortRef.current) abortRef.current.abort()
@@ -34,7 +41,7 @@ export default function CustomRangePanel({ title = 'Custom Range', buildUrl, ren
 
     const sh = Math.min(startHour, endHour)
     const eh = Math.max(startHour, endHour)
-    const fp = filterOnlyParams()
+    const fp = showOperator ? withOperator(filterOnlyParams(), secOperator) : filterOnlyParams()
     const url = buildUrl(localRange, sh, eh, fp)
     if (!url) {
       setData(null)
@@ -48,7 +55,7 @@ export default function CustomRangePanel({ title = 'Custom Range', buildUrl, ren
       .then(d => { if (!controller.signal.aborted) setData(d) })
       .catch(() => {})
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
-  }, [localRange, startHour, endHour, operatorFilter, connectorFilter, minKw, maxKw]) // eslint-disable-line
+  }, [localRange, startHour, endHour, operatorFilter, connectorFilter, minKw, maxKw, secOperator]) // eslint-disable-line
 
   const stat = !loading && data && renderStat ? renderStat(data) : null
 
@@ -57,6 +64,16 @@ export default function CustomRangePanel({ title = 'Custom Range', buildUrl, ren
       <div className="companion-title">{title}</div>
 
       <div className="companion-controls">
+        {showOperator && (
+          <div style={{ flex: '1 1 180px', maxWidth: 220 }}>
+            <OperatorDropdown
+              operators={availableOperators}
+              value={secOperator}
+              onChange={setSecOperator}
+            />
+          </div>
+        )}
+
         <div style={{ flex: '1 1 180px', maxWidth: 260 }}>
           <DateRangePicker value={localRange} onChange={setLocalRange} />
         </div>

@@ -43,6 +43,19 @@ export function hubEstKw(hub) {
   return (hub.charging_count ?? 0) * (hub.max_power_kw ?? 0) * 0.7
 }
 
+export function fmtKwh(v) {
+  if (v == null || v === 0) return null
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)} GWh`
+  if (v >= 1_000) return `${(v / 1_000).toFixed(1)} MWh`
+  return `${Math.round(v)} kWh`
+}
+
+export function fmtHour(h) {
+  if (h === 0) return '12am'
+  if (h === 12) return '12pm'
+  return h < 12 ? `${h}am` : `${h - 12}pm`
+}
+
 /** Bands used in the map legend */
 export const MAP_BANDS = [
   { color: '#22c55e', label: '0–14%',  min: 0,  max: 15 },

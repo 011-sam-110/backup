@@ -79,3 +79,10 @@ Avg Utilisation
 charging ÷ total EVSEs
 
 """
+
+"""
+#track how long EV's stay charing for. 
+
+"""
+
+
