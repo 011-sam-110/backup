@@ -41,14 +41,17 @@ def _hour_filter(params: list, start_hour: int | None, end_hour: int | None,
     return f" AND CAST(strftime('%H', {col}) AS INTEGER) BETWEEN ? AND ?"
 
 
-def _hub_subquery(params: list, operator: str | None, connector: str | None,
+def _hub_subquery(params: list, operator: str | list[str] | None, connector: str | None,
                   min_kw: float | None, max_kw: float | None,
                   min_evses: int | None = None, max_evses: int | None = None) -> str:
     """Returns SQL fragment restricting snapshots to hub UUIDs matching the given attributes."""
     conditions = []
     if operator:
-        conditions.append("LOWER(operator) = LOWER(?)")
-        params.append(operator)
+        ops = [operator] if isinstance(operator, str) else list(operator)
+        if ops:
+            placeholders = ",".join("?" * len(ops))
+            conditions.append(f"LOWER(operator) IN ({placeholders})")
+            params.extend(op.lower() for op in ops)
     if connector:
         conditions.append("connector_types LIKE ?")
         params.append(f'%{connector}%')

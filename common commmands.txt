@@ -6,4 +6,6 @@ common commands
   docker compose down                 # stop everything
   docker compose up -d                # start everything back up
   docker compose restart              # restart docker
-  docker compose build                # make docker file
+  docker compose build                # make docker file        modified:   frontend/src/App.jsx
+
+

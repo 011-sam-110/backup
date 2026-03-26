@@ -135,7 +135,7 @@ export default function LiveStatus() {
 
   const isFiltered = filters.search || filters.minEvses || filters.maxEvses ||
     filters.minUtil || filters.minKw || filters.maxKw ||
-    filters.connectorFilter !== 'all' || filters.operatorFilter !== 'all'
+    filters.connectorFilter !== 'all' || filters.operatorFilter.size > 0
   const filtered = applyFilters(hubs, filters)
 
   const utilDelta = deltas?.has_prior_data ? {

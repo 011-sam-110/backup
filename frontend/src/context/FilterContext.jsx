@@ -11,7 +11,7 @@ export function FilterProvider({ children }) {
   const [minKw, setMinKw] = useState('')
   const [maxKw, setMaxKw] = useState('')
   const [connectorFilter, setConnectorFilter] = useState('all')
-  const [operatorFilter, setOperatorFilter] = useState('all')
+  const [operatorFilter, setOperatorFilter] = useState(new Set())
   const [dateRange, setDateRange] = useState({ start: null, end: null })
   const [availableOperators, setAvailableOperators] = useState([])
 
@@ -24,8 +24,20 @@ export function FilterProvider({ children }) {
     setMinKw('')
     setMaxKw('')
     setConnectorFilter('all')
-    setOperatorFilter('all')
+    setOperatorFilter(new Set())
     setDateRange({ start: null, end: null })
+  }, [])
+
+  const toggleOperator = useCallback((op) => {
+    setOperatorFilter(prev => {
+      const next = new Set(prev)
+      next.has(op) ? next.delete(op) : next.add(op)
+      return next
+    })
+  }, [])
+
+  const clearOperators = useCallback(() => {
+    setOperatorFilter(new Set())
   }, [])
 
   /** Returns query-string suffix for API calls that support date range, e.g. "&start_dt=...&end_dt=..." */
@@ -43,7 +55,7 @@ export function FilterProvider({ children }) {
       parts.push(`start_dt=${encodeURIComponent(dateRange.start.toISOString())}`)
       parts.push(`end_dt=${encodeURIComponent(dateRange.end.toISOString())}`)
     }
-    if (operatorFilter !== 'all') parts.push(`operator=${encodeURIComponent(operatorFilter)}`)
+    operatorFilter.forEach(op => parts.push(`operator=${encodeURIComponent(op)}`))
     if (connectorFilter !== 'all') parts.push(`connector=${encodeURIComponent(connectorFilter)}`)
     if (minKw) parts.push(`min_kw=${encodeURIComponent(minKw)}`)
     if (maxKw) parts.push(`max_kw=${encodeURIComponent(maxKw)}`)
@@ -55,7 +67,7 @@ export function FilterProvider({ children }) {
   /** Query-string suffix for operator/connector/kW only (no date range). */
   const filterOnlyParams = useCallback(() => {
     const parts = []
-    if (operatorFilter !== 'all') parts.push(`operator=${encodeURIComponent(operatorFilter)}`)
+    operatorFilter.forEach(op => parts.push(`operator=${encodeURIComponent(op)}`))
     if (connectorFilter !== 'all') parts.push(`connector=${encodeURIComponent(connectorFilter)}`)
     if (minKw) parts.push(`min_kw=${encodeURIComponent(minKw)}`)
     if (maxKw) parts.push(`max_kw=${encodeURIComponent(maxKw)}`)
@@ -79,7 +91,7 @@ export function FilterProvider({ children }) {
       parts.push(`start_dt=${encodeURIComponent(dateRange.start.toISOString())}`)
       parts.push(`end_dt=${encodeURIComponent(dateRange.end.toISOString())}`)
     }
-    if (operatorFilter !== 'all') parts.push(`operator=${encodeURIComponent(operatorFilter)}`)
+    operatorFilter.forEach(op => parts.push(`operator=${encodeURIComponent(op)}`))
     if (connectorFilter !== 'all') parts.push(`connector=${encodeURIComponent(connectorFilter)}`)
     if (minKw) parts.push(`min_kw=${encodeURIComponent(minKw)}`)
     if (maxKw) parts.push(`max_kw=${encodeURIComponent(maxKw)}`)
@@ -98,10 +110,12 @@ export function FilterProvider({ children }) {
       minKw, setMinKw,
       maxKw, setMaxKw,
       connectorFilter, setConnectorFilter,
-      operatorFilter, setOperatorFilter,
+      operatorFilter,
       dateRange, setDateRange,
       availableOperators, setAvailableOperators,
       clearFilters,
+      toggleOperator,
+      clearOperators,
       apiDateParams,
       analyticsParams,
       filterOnlyParams,
@@ -134,7 +148,7 @@ export function applyFilters(hubs, { search, minEvses, maxEvses, minUtil, maxUti
     if (minKw    && (h.max_power_kw ?? 0) < parseFloat(minKw)) return false
     if (maxKw    && (h.max_power_kw ?? 0) > parseFloat(maxKw)) return false
     if (connectorFilter !== 'all' && !(h.connector_types || []).includes(connectorFilter)) return false
-    if (operatorFilter !== 'all' && (h.operator || '').toLowerCase() !== operatorFilter.toLowerCase())
+    if (operatorFilter.size > 0 && !operatorFilter.has(h.operator || ''))
       return false
     return true
   })

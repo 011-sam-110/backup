@@ -31,7 +31,7 @@ from fastapi import FastAPI, HTTPException, Query, Request, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from typing import Optional
+from typing import Optional, List
 
 import db
 
@@ -114,7 +114,7 @@ def history(hours: int = Query(default=24, ge=1, le=8760),
             hub_uuid: Optional[str] = Query(default=None),
             start_dt: Optional[str] = Query(default=None),
             end_dt: Optional[str] = Query(default=None),
-            operator: Optional[str] = Query(default=None),
+            operator: Optional[List[str]] = Query(default=None),
             connector: Optional[str] = Query(default=None),
             min_kw: Optional[float] = Query(default=None),
             max_kw: Optional[float] = Query(default=None),
@@ -141,7 +141,7 @@ def hourly_pattern(hours: int = Query(default=168, ge=24, le=8760),
                    hub_uuid: Optional[str] = Query(default=None),
                    start_dt: Optional[str] = Query(default=None),
                    end_dt: Optional[str] = Query(default=None),
-                   operator: Optional[str] = Query(default=None),
+                   operator: Optional[List[str]] = Query(default=None),
                    connector: Optional[str] = Query(default=None),
                    min_kw: Optional[float] = Query(default=None),
                    max_kw: Optional[float] = Query(default=None),
@@ -169,7 +169,7 @@ def reliability(hours: int = Query(default=168, ge=1, le=8760),
                 hub_uuid: Optional[str] = Query(default=None),
                 start_dt: Optional[str] = Query(default=None),
                 end_dt: Optional[str] = Query(default=None),
-                operator: Optional[str] = Query(default=None),
+                operator: Optional[List[str]] = Query(default=None),
                 connector: Optional[str] = Query(default=None),
                 min_kw: Optional[float] = Query(default=None),
                 max_kw: Optional[float] = Query(default=None),
@@ -186,7 +186,7 @@ def reliability(hours: int = Query(default=168, ge=1, le=8760),
 @app.get("/api/visits")
 def visits(start_dt: Optional[str] = Query(default=None),
            end_dt: Optional[str] = Query(default=None),
-           operator: Optional[str] = Query(default=None),
+           operator: Optional[List[str]] = Query(default=None),
            connector: Optional[str] = Query(default=None),
            min_kw: Optional[float] = Query(default=None),
            max_kw: Optional[float] = Query(default=None),

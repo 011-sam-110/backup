@@ -61,7 +61,7 @@ export default function Toolbar() {
     minUtil, setMinUtil,
     maxUtil, setMaxUtil,
     connectorFilter, setConnectorFilter,
-    operatorFilter, setOperatorFilter,
+    operatorFilter, toggleOperator, clearOperators,
     dateRange, setDateRange,
     availableOperators,
     clearFilters,
@@ -70,7 +70,7 @@ export default function Toolbar() {
   const [showExport, setShowExport] = useState(false)
 
   const hasFilters = search || minKw || maxKw || minEvses || maxEvses || minUtil || maxUtil ||
-    connectorFilter !== 'all' || operatorFilter !== 'all' ||
+    connectorFilter !== 'all' || operatorFilter.size > 0 ||
     dateRange.start
 
 
@@ -141,7 +141,8 @@ export default function Toolbar() {
           <OperatorDropdown
             operators={availableOperators}
             value={operatorFilter}
-            onChange={setOperatorFilter}
+            onToggle={toggleOperator}
+            onClearAll={clearOperators}
           />
 
           <Label>Connector</Label>

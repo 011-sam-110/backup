@@ -48,7 +48,7 @@ export default function ExportModal({ onClose }) {
 
   const hasFilters = filters.search || filters.minKw || filters.maxKw ||
     filters.minUtil || filters.maxUtil || filters.connectorFilter !== 'all' ||
-    filters.operatorFilter !== 'all' || filters.dateRange?.start
+    filters.operatorFilter.size > 0 || filters.dateRange?.start
 
   const [scope, setScope] = useState('current')
   const [hubScope, setHubScope] = useState('all')
