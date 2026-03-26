@@ -49,8 +49,8 @@ export default function MapView() {
   const filters = useFilters()
   const { hubsUrl, setAvailableOperators, dateRange } = filters
 
-  const load = useCallback(() => {
-    setLoading(true)
+  const load = useCallback((showSpinner = false) => {
+    if (showSpinner) setLoading(true)
     authFetch(hubsUrl())
       .then(r => r.json())
       .then(d => {
@@ -63,14 +63,14 @@ export default function MapView() {
   }, [hubsUrl, setAvailableOperators])
 
   useEffect(() => {
-    load()
-    const id = setInterval(load, REFRESH_MS)
+    load(true)
+    const id = setInterval(() => load(false), REFRESH_MS)
     return () => clearInterval(id)
   }, [load])
 
   // Re-fetch when date range changes
   useEffect(() => {
-    load()
+    load(false)
   }, [dateRange]) // eslint-disable-line
 
   if (loading) return <PageLoader text="Loading map data…" />

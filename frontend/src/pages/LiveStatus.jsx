@@ -85,7 +85,8 @@ export default function LiveStatus() {
   const filters = useFilters()
   const { hubsUrl, visitsUrl, setAvailableOperators, dateRange } = filters
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (showSpinner = false) => {
+    if (showSpinner) setLoading(true)
     try {
       const [statsRes, hubsRes, deltasRes, sparkRes, visitsRes] = await Promise.all([
         authFetch('/api/stats'),
@@ -120,15 +121,14 @@ export default function LiveStatus() {
   }, [hubsUrl, visitsUrl, setAvailableOperators]) // eslint-disable-line
 
   useEffect(() => {
-    load()
-    const id = setInterval(load, REFRESH_MS)
+    load(true)
+    const id = setInterval(() => load(false), REFRESH_MS)
     return () => clearInterval(id)
   }, [load])
 
-  // Re-fetch when date range changes
+  // Re-fetch when date range changes — no spinner, silent refresh
   useEffect(() => {
-    setLoading(true)
-    load()
+    load(false)
   }, [dateRange]) // eslint-disable-line
 
   const fmtTime = (d) => d ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'

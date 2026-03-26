@@ -53,11 +53,11 @@ export default function Graphs() {
 
   const abortRef = useRef(null)
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (showSpinner = false) => {
     if (abortRef.current) abortRef.current.abort()
     const controller = new AbortController()
     abortRef.current = controller
-    setLoading(true)
+    if (showSpinner) setLoading(true)
     try {
       const ap = analyticsParams()
       const [histRes, hubsRes, hourlyRes, relRes, statsRes, deltasRes] = await Promise.all([
@@ -85,14 +85,14 @@ export default function Graphs() {
   }, [hubsUrl, analyticsParams, setAvailableOperators]) // eslint-disable-line
 
   useEffect(() => {
-    load()
-    const id = setInterval(load, REFRESH_MS)
+    load(true)
+    const id = setInterval(() => load(false), REFRESH_MS)
     return () => clearInterval(id)
   }, [load])
 
   // Re-fetch when filters change
   useEffect(() => {
-    load()
+    load(false)
   }, [dateRange, operatorFilter, connectorFilter, minKw, maxKw, minEvses, maxEvses]) // eslint-disable-line
 
   if (loading) return <PageLoader text="Loading charts…" />
