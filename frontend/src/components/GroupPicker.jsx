@@ -3,8 +3,8 @@ import { authFetch } from '../context/AuthContext'
 import { useFilters } from '../context/FilterContext'
 
 /**
- * Inline dropdown/popover for picking or creating groups.
- * Used in HubDetailModal to assign a hub to one or more groups.
+ * Popover for adding/removing a hub from existing groups.
+ * Create groups via the sidebar toolbar.
  *
  * Props:
  *   hubUuid   – the hub being added
@@ -12,8 +12,7 @@ import { useFilters } from '../context/FilterContext'
  */
 export default function GroupPicker({ hubUuid, onClose }) {
   const { groups, loadGroups } = useFilters()
-  const [newName, setNewName] = useState('')
-  const [saving, setSaving] = useState(null) // group id being saved, or 'new'
+  const [saving, setSaving] = useState(null) // group id currently being saved
   const [hubGroups, setHubGroups] = useState(null) // Set of group IDs this hub is in
   const ref = useRef(null)
 
@@ -53,28 +52,6 @@ export default function GroupPicker({ hubUuid, onClose }) {
     setSaving(null)
   }
 
-  const createAndAdd = async () => {
-    const name = newName.trim()
-    if (!name || saving) return
-    setSaving('new')
-    try {
-      const group = await authFetch('/api/groups', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name }),
-      }).then(r => r.json())
-      await authFetch(`/api/groups/${group.id}/hubs`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hub_uuids: [hubUuid] }),
-      })
-      setHubGroups(prev => new Set([...prev, group.id]))
-      setNewName('')
-      await loadGroups()
-    } catch { /* ignore */ }
-    setSaving(null)
-  }
-
   const popoverStyle = {
     position: 'absolute', top: '100%', right: 0, zIndex: 200,
     background: 'var(--surface)', border: '1px solid var(--border)',
@@ -89,11 +66,9 @@ export default function GroupPicker({ hubUuid, onClose }) {
         Add to Group
       </div>
 
-      {groups.length === 0 && (
-        <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 10 }}>No groups yet.</div>
-      )}
-
-      {groups.map(g => {
+      {groups.length === 0 ? (
+        <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>Create a group in the sidebar first.</div>
+      ) : groups.map(g => {
         const inGroup = hubGroups?.has(g.id)
         const isSaving = saving === g.id
         return (
@@ -125,32 +100,6 @@ export default function GroupPicker({ hubUuid, onClose }) {
           </div>
         )
       })}
-
-      <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border)', display: 'flex', gap: 6 }}>
-        <input
-          value={newName}
-          onChange={e => setNewName(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && createAndAdd()}
-          placeholder="New group name…"
-          style={{
-            flex: 1, background: 'var(--bg)', border: '1px solid var(--border)',
-            borderRadius: 6, padding: '5px 8px', fontSize: 12,
-            color: 'var(--text)', outline: 'none',
-          }}
-        />
-        <button
-          onClick={createAndAdd}
-          disabled={!newName.trim() || !!saving}
-          style={{
-            background: 'var(--accent)', color: '#fff', border: 'none',
-            borderRadius: 6, padding: '5px 10px', fontSize: 12,
-            cursor: newName.trim() && !saving ? 'pointer' : 'not-allowed',
-            opacity: newName.trim() && !saving ? 1 : 0.5,
-          }}
-        >
-          Create
-        </button>
-      </div>
     </div>
   )
 }

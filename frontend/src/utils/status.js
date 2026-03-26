@@ -56,6 +56,19 @@ export function fmtHour(h) {
   return h < 12 ? `${h}am` : `${h - 12}pm`
 }
 
+/** Stable color palette for group pins on the map */
+export const GROUP_COLORS = [
+  '#7c3aed', // violet
+  '#0d9488', // teal
+  '#db2777', // pink
+  '#d97706', // amber-dark
+  '#059669', // emerald
+  '#dc2626', // red
+]
+export function groupColor(groupId) {
+  return GROUP_COLORS[groupId % GROUP_COLORS.length]
+}
+
 /** Bands used in the map legend */
 export const MAP_BANDS = [
   { color: '#22c55e', label: '0–14%',  min: 0,  max: 15 },

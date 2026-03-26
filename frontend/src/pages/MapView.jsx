@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { MapContainer, TileLayer, Marker, Tooltip, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import HubDetailModal from '../components/HubDetailModal'
-import { MAP_BANDS } from '../utils/status'
+import { MAP_BANDS, groupColor } from '../utils/status'
 import PageLoader from '../components/PageLoader'
 import { useFilters, applyFilters } from '../context/FilterContext'
 import { authFetch } from '../context/AuthContext'
@@ -47,7 +47,7 @@ export default function MapView() {
   const [flyTarget, setFlyTarget] = useState(null)
 
   const filters = useFilters()
-  const { hubsUrl, setAvailableOperators, dateRange } = filters
+  const { hubsUrl, setAvailableOperators, dateRange, activeGroupIds, groupHubs } = filters
 
   const load = useCallback((showSpinner = false) => {
     if (showSpinner) setLoading(true)
@@ -73,6 +73,16 @@ export default function MapView() {
     load(false)
   }, [dateRange]) // eslint-disable-line
 
+  // Build uuid→color map for active groups so pins show their group color
+  const groupColorMap = useMemo(() => {
+    const m = new Map()
+    activeGroupIds.forEach(id => {
+      const color = groupColor(id)
+      ;(groupHubs.get(id) || []).forEach(uuid => m.set(uuid, color))
+    })
+    return m
+  }, [activeGroupIds, groupHubs])
+
   if (loading) return <PageLoader text="Loading map data…" />
 
   const filtered = applyFilters(hubs, filters)
@@ -97,7 +107,7 @@ export default function MapView() {
               <Marker
                 key={hub.uuid}
                 position={[hub.latitude, hub.longitude]}
-                icon={makePin(bandColor(hub.utilisation_pct ?? 0))}
+                icon={makePin(groupColorMap.get(hub.uuid) ?? bandColor(hub.utilisation_pct ?? 0))}
                 eventHandlers={{ click: () => setSelectedHub(hub) }}
               >
                 <Tooltip direction="top" offset={[0, -28]} opacity={1}>

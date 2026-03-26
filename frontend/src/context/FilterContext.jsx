@@ -44,14 +44,11 @@ export function FilterProvider({ children }) {
       next.has(id) ? next.delete(id) : next.add(id)
       return next
     })
-    // Lazy-load hub UUIDs for this group if not already fetched
-    setGroupHubs(prev => {
-      if (prev.has(id)) return prev
-      authFetch(`/api/groups/${id}/hubs`).then(r => r.json()).then(uuids => {
-        setGroupHubs(m => { const n = new Map(m); n.set(id, uuids); return n })
-      }).catch(() => {})
-      return prev
-    })
+    // Always re-fetch so newly added hubs are picked up
+    try {
+      const uuids = await authFetch(`/api/groups/${id}/hubs`).then(r => r.json())
+      setGroupHubs(m => { const n = new Map(m); n.set(id, uuids); return n })
+    } catch { /* ignore */ }
   }, [])
 
   const clearGroups = useCallback(() => {
@@ -178,7 +175,7 @@ export function FilterProvider({ children }) {
       visitsUrl,
       groups, loadGroups,
       activeGroupIds, toggleGroup, clearGroups,
-      activeGroupUuids,
+      activeGroupUuids, groupHubs,
     }}>
       {children}
     </FilterContext.Provider>

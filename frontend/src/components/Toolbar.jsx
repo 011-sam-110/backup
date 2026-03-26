@@ -4,6 +4,7 @@ import DateRangePicker from './DateRangePicker'
 import ExportModal from './ExportModal'
 import OperatorDropdown from './OperatorDropdown'
 import { authFetch } from '../context/AuthContext'
+import { groupColor } from '../utils/status'
 
 const CONNECTOR_OPTIONS = [
   { value: 'all',              label: 'All connectors' },
@@ -124,7 +125,7 @@ export default function Toolbar() {
   return (
     <>
       <aside style={{
-        width: 220,
+        width: 224,
         flexShrink: 0,
         background: '#F1F3F5',
         borderRight: '1px solid var(--border)',
@@ -202,6 +203,9 @@ export default function Toolbar() {
                       </svg>
                     )}
                   </span>
+                  <span
+                    style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: groupColor(g.id) }}
+                  />
                   <span
                     onClick={() => toggleGroup(g.id)}
                     style={{ flex: 1, fontSize: 12, cursor: 'pointer', userSelect: 'none',
