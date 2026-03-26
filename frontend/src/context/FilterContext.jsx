@@ -55,6 +55,46 @@ export function FilterProvider({ children }) {
     setActiveGroupIds(new Set())
   }, [])
 
+  const [assigningGroupId, setAssigningGroupId] = useState(null)
+
+  const toggleAssigningGroup = useCallback((id) => {
+    setAssigningGroupId(prev => prev === id ? null : id)
+    // Pre-load hub UUIDs if not yet cached
+    setGroupHubs(prev => {
+      if (prev.has(id)) return prev
+      authFetch(`/api/groups/${id}/hubs`).then(r => r.json()).then(uuids => {
+        setGroupHubs(m => { const n = new Map(m); n.set(id, uuids); return n })
+      }).catch(() => {})
+      return prev
+    })
+  }, [])
+
+  const toggleHubInGroup = useCallback(async (groupId, hubUuid) => {
+    const inGroup = (groupHubs.get(groupId) || []).includes(hubUuid)
+    try {
+      if (inGroup) {
+        await authFetch(`/api/groups/${groupId}/hubs/${hubUuid}`, { method: 'DELETE' })
+        setGroupHubs(m => {
+          const n = new Map(m)
+          n.set(groupId, (m.get(groupId) || []).filter(u => u !== hubUuid))
+          return n
+        })
+      } else {
+        await authFetch(`/api/groups/${groupId}/hubs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ hub_uuids: [hubUuid] }),
+        })
+        setGroupHubs(m => {
+          const n = new Map(m)
+          n.set(groupId, [...(m.get(groupId) || []), hubUuid])
+          return n
+        })
+      }
+      loadGroups() // refresh hub_count in sidebar
+    } catch { /* ignore */ }
+  }, [groupHubs, loadGroups])
+
   const clearFilters = useCallback(() => {
     setSearch('')
     setMinEvses('')
@@ -176,6 +216,7 @@ export function FilterProvider({ children }) {
       groups, loadGroups,
       activeGroupIds, toggleGroup, clearGroups,
       activeGroupUuids, groupHubs,
+      assigningGroupId, toggleAssigningGroup, toggleHubInGroup,
     }}>
       {children}
     </FilterContext.Provider>

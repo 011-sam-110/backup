@@ -5,6 +5,7 @@ import ExportModal from './ExportModal'
 import OperatorDropdown from './OperatorDropdown'
 import { authFetch } from '../context/AuthContext'
 import { groupColor } from '../utils/status'
+import * as XLSX from 'xlsx'
 
 const CONNECTOR_OPTIONS = [
   { value: 'all',              label: 'All connectors' },
@@ -69,6 +70,7 @@ export default function Toolbar() {
     clearFilters,
     groups, loadGroups,
     activeGroupIds, toggleGroup, clearGroups,
+    assigningGroupId, toggleAssigningGroup,
   } = filters
 
   const [showExport, setShowExport] = useState(false)
@@ -76,6 +78,40 @@ export default function Toolbar() {
   const [creatingGroup, setCreatingGroup] = useState(false)
   const [renamingId, setRenamingId] = useState(null)
   const [renameVal, setRenameVal] = useState('')
+  const [exportingGroups, setExportingGroups] = useState(false)
+
+  const handleExportGroups = async () => {
+    if (exportingGroups || groups.length === 0) return
+    setExportingGroups(true)
+    try {
+      const allHubs = await authFetch('/api/hubs').then(r => r.json())
+      const hubMap = new Map(allHubs.map(h => [h.uuid, h]))
+      const wb = XLSX.utils.book_new()
+      for (const g of groups) {
+        const uuids = await authFetch(`/api/groups/${g.id}/hubs`).then(r => r.json())
+        const rows = uuids.map(uuid => {
+          const h = hubMap.get(uuid) || {}
+          return {
+            'Hub Name':        h.hub_name || uuid,
+            'Operator':        h.operator || '—',
+            'UUID':            uuid,
+            'Max Power (kW)':  h.max_power_kw ?? '',
+            'Total EVSEs':     h.total_evses ?? '',
+            'Connector Types': (h.connector_types || []).join(', '),
+            'Utilisation %':   h.utilisation_pct ?? '',
+            'Charging':        h.charging_count ?? '',
+            'Available':       h.available_count ?? '',
+            'Inoperative':     h.inoperative_count ?? '',
+            'Last Updated':    h.scraped_at || '',
+          }
+        })
+        const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{ 'Hub Name': '(empty group)' }])
+        XLSX.utils.book_append_sheet(wb, ws, g.name.slice(0, 31))
+      }
+      XLSX.writeFile(wb, `groups_export_${new Date().toISOString().slice(0, 10)}.xlsx`)
+    } catch { /* ignore */ }
+    setExportingGroups(false)
+  }
 
   useEffect(() => { loadGroups() }, [loadGroups])
 
@@ -216,6 +252,16 @@ export default function Toolbar() {
                     {g.name}
                   </span>
                   <span style={{ fontSize: 10, color: 'var(--text-dim)', marginRight: 2 }}>{g.hub_count}</span>
+                  <button
+                    onClick={() => toggleAssigningGroup(g.id)}
+                    title="Select hubs on map"
+                    style={{
+                      background: assigningGroupId === g.id ? groupColor(g.id) : 'none',
+                      color: assigningGroupId === g.id ? '#fff' : 'var(--text-dim)',
+                      border: 'none', cursor: 'pointer', fontSize: 11,
+                      borderRadius: 4, padding: '0 2px', lineHeight: 1,
+                    }}
+                  >◎</button>
                   <button
                     onClick={() => { setRenamingId(g.id); setRenameVal(g.name) }}
                     title="Rename"
@@ -380,6 +426,16 @@ export default function Toolbar() {
           >
             ↓ Export to Excel
           </button>
+          {groups.length > 0 && (
+            <button
+              className="btn btn-outline"
+              style={{ width: '100%', marginTop: 6 }}
+              onClick={handleExportGroups}
+              disabled={exportingGroups}
+            >
+              {exportingGroups ? 'Exporting…' : '↓ Export Groups'}
+            </button>
+          )}
         </Section>
 
         {/* Spacer */}

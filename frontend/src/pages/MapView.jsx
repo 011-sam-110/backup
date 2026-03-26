@@ -47,7 +47,8 @@ export default function MapView() {
   const [flyTarget, setFlyTarget] = useState(null)
 
   const filters = useFilters()
-  const { hubsUrl, setAvailableOperators, dateRange, activeGroupIds, groupHubs } = filters
+  const { hubsUrl, setAvailableOperators, dateRange, activeGroupIds, groupHubs,
+          assigningGroupId, toggleAssigningGroup, toggleHubInGroup, groups } = filters
 
   const load = useCallback((showSpinner = false) => {
     if (showSpinner) setLoading(true)
@@ -73,24 +74,48 @@ export default function MapView() {
     load(false)
   }, [dateRange]) // eslint-disable-line
 
-  // Build uuid→color map for active groups so pins show their group color
+  // Build uuid→color map for active groups + assigning group so pins show their group color
   const groupColorMap = useMemo(() => {
     const m = new Map()
-    activeGroupIds.forEach(id => {
+    const ids = assigningGroupId ? new Set([...activeGroupIds, assigningGroupId]) : activeGroupIds
+    ids.forEach(id => {
       const color = groupColor(id)
       ;(groupHubs.get(id) || []).forEach(uuid => m.set(uuid, color))
     })
     return m
-  }, [activeGroupIds, groupHubs])
+  }, [activeGroupIds, groupHubs, assigningGroupId])
 
   if (loading) return <PageLoader text="Loading map data…" />
 
   const filtered = applyFilters(hubs, filters)
   const hubLabel = h => h.hub_name || h.uuid
 
+  const assigningGroup = assigningGroupId ? groups.find(g => g.id === assigningGroupId) : null
+
   return (
     <>
-      <div className="map-page">
+      <div className="map-page" style={{ position: 'relative' }}>
+        {assigningGroupId && (
+          <div style={{
+            position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)',
+            zIndex: 1000, background: 'var(--surface)', border: `1px solid ${groupColor(assigningGroupId)}`,
+            borderRadius: 10, padding: '8px 16px', display: 'flex', alignItems: 'center',
+            gap: 12, boxShadow: '0 4px 16px rgba(0,0,0,0.4)', fontSize: 13, whiteSpace: 'nowrap',
+          }}>
+            <span style={{ color: groupColor(assigningGroupId), fontWeight: 700 }}>◎</span>
+            <span>Click pins to add/remove from <strong>{assigningGroup?.name}</strong></span>
+            <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>
+              {(groupHubs.get(assigningGroupId) || []).length} hubs
+            </span>
+            <button
+              onClick={() => toggleAssigningGroup(assigningGroupId)}
+              style={{
+                background: groupColor(assigningGroupId), color: '#fff', border: 'none',
+                borderRadius: 6, padding: '3px 10px', fontSize: 12, cursor: 'pointer',
+              }}
+            >Done</button>
+          </div>
+        )}
         <div className="map-container">
           <MapContainer
             center={[52.5, -1.5]}
@@ -108,7 +133,15 @@ export default function MapView() {
                 key={hub.uuid}
                 position={[hub.latitude, hub.longitude]}
                 icon={makePin(groupColorMap.get(hub.uuid) ?? bandColor(hub.utilisation_pct ?? 0))}
-                eventHandlers={{ click: () => setSelectedHub(hub) }}
+                eventHandlers={{
+                  click: () => {
+                    if (assigningGroupId) {
+                      toggleHubInGroup(assigningGroupId, hub.uuid)
+                    } else {
+                      setSelectedHub(hub)
+                    }
+                  }
+                }}
               >
                 <Tooltip direction="top" offset={[0, -28]} opacity={1}>
                   <div style={{ fontFamily: 'sans-serif', fontSize: 12, lineHeight: 1.4 }}>
