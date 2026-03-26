@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useMemo } from 'react'
+import { authFetch } from './AuthContext'
 
 const FilterContext = createContext(null)
 
@@ -14,6 +15,48 @@ export function FilterProvider({ children }) {
   const [operatorFilter, setOperatorFilter] = useState(new Set())
   const [dateRange, setDateRange] = useState({ start: null, end: null })
   const [availableOperators, setAvailableOperators] = useState([])
+
+  // Groups
+  const [groups, setGroups] = useState([])
+  const [activeGroupIds, setActiveGroupIds] = useState(new Set())
+  const [groupHubs, setGroupHubs] = useState(new Map()) // group_id → string[]
+
+  const activeGroupUuids = useMemo(() => {
+    if (activeGroupIds.size === 0) return new Set()
+    const uuids = new Set()
+    activeGroupIds.forEach(id => {
+      const list = groupHubs.get(id) || []
+      list.forEach(u => uuids.add(u))
+    })
+    return uuids
+  }, [activeGroupIds, groupHubs])
+
+  const loadGroups = useCallback(async () => {
+    try {
+      const data = await authFetch('/api/groups').then(r => r.json())
+      setGroups(data)
+    } catch { /* ignore */ }
+  }, [])
+
+  const toggleGroup = useCallback(async (id) => {
+    setActiveGroupIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+    // Lazy-load hub UUIDs for this group if not already fetched
+    setGroupHubs(prev => {
+      if (prev.has(id)) return prev
+      authFetch(`/api/groups/${id}/hubs`).then(r => r.json()).then(uuids => {
+        setGroupHubs(m => { const n = new Map(m); n.set(id, uuids); return n })
+      }).catch(() => {})
+      return prev
+    })
+  }, [])
+
+  const clearGroups = useCallback(() => {
+    setActiveGroupIds(new Set())
+  }, [])
 
   const clearFilters = useCallback(() => {
     setSearch('')
@@ -48,33 +91,41 @@ export function FilterProvider({ children }) {
     return ''
   }, [dateRange])
 
-  /** Returns query-string suffix for analytics endpoints (date range + operator/connector/kW) */
+  /** Returns query-string suffix for analytics endpoints (date range + operator/connector/kW/groups) */
   const analyticsParams = useCallback(() => {
     const parts = []
     if (dateRange.start && dateRange.end) {
       parts.push(`start_dt=${encodeURIComponent(dateRange.start.toISOString())}`)
       parts.push(`end_dt=${encodeURIComponent(dateRange.end.toISOString())}`)
     }
-    operatorFilter.forEach(op => parts.push(`operator=${encodeURIComponent(op)}`))
-    if (connectorFilter !== 'all') parts.push(`connector=${encodeURIComponent(connectorFilter)}`)
+    if (activeGroupIds.size > 0) {
+      activeGroupIds.forEach(id => parts.push(`group_id=${id}`))
+    } else {
+      operatorFilter.forEach(op => parts.push(`operator=${encodeURIComponent(op)}`))
+      if (connectorFilter !== 'all') parts.push(`connector=${encodeURIComponent(connectorFilter)}`)
+    }
     if (minKw) parts.push(`min_kw=${encodeURIComponent(minKw)}`)
     if (maxKw) parts.push(`max_kw=${encodeURIComponent(maxKw)}`)
     if (minEvses) parts.push(`min_evses=${encodeURIComponent(minEvses)}`)
     if (maxEvses) parts.push(`max_evses=${encodeURIComponent(maxEvses)}`)
     return parts.length ? '&' + parts.join('&') : ''
-  }, [dateRange, operatorFilter, connectorFilter, minKw, maxKw, minEvses, maxEvses])
+  }, [dateRange, operatorFilter, connectorFilter, minKw, maxKw, minEvses, maxEvses, activeGroupIds])
 
-  /** Query-string suffix for operator/connector/kW only (no date range). */
+  /** Query-string suffix for operator/connector/kW/groups only (no date range). */
   const filterOnlyParams = useCallback(() => {
     const parts = []
-    operatorFilter.forEach(op => parts.push(`operator=${encodeURIComponent(op)}`))
-    if (connectorFilter !== 'all') parts.push(`connector=${encodeURIComponent(connectorFilter)}`)
+    if (activeGroupIds.size > 0) {
+      activeGroupIds.forEach(id => parts.push(`group_id=${id}`))
+    } else {
+      operatorFilter.forEach(op => parts.push(`operator=${encodeURIComponent(op)}`))
+      if (connectorFilter !== 'all') parts.push(`connector=${encodeURIComponent(connectorFilter)}`)
+    }
     if (minKw) parts.push(`min_kw=${encodeURIComponent(minKw)}`)
     if (maxKw) parts.push(`max_kw=${encodeURIComponent(maxKw)}`)
     if (minEvses) parts.push(`min_evses=${encodeURIComponent(minEvses)}`)
     if (maxEvses) parts.push(`max_evses=${encodeURIComponent(maxEvses)}`)
     return parts.length ? '&' + parts.join('&') : ''
-  }, [operatorFilter, connectorFilter, minKw, maxKw, minEvses, maxEvses])
+  }, [operatorFilter, connectorFilter, minKw, maxKw, minEvses, maxEvses, activeGroupIds])
 
   /** Returns URL query params object for /api/hubs date range filtering */
   const hubsUrl = useCallback(() => {
@@ -91,14 +142,18 @@ export function FilterProvider({ children }) {
       parts.push(`start_dt=${encodeURIComponent(dateRange.start.toISOString())}`)
       parts.push(`end_dt=${encodeURIComponent(dateRange.end.toISOString())}`)
     }
-    operatorFilter.forEach(op => parts.push(`operator=${encodeURIComponent(op)}`))
-    if (connectorFilter !== 'all') parts.push(`connector=${encodeURIComponent(connectorFilter)}`)
+    if (activeGroupIds.size > 0) {
+      activeGroupIds.forEach(id => parts.push(`group_id=${id}`))
+    } else {
+      operatorFilter.forEach(op => parts.push(`operator=${encodeURIComponent(op)}`))
+      if (connectorFilter !== 'all') parts.push(`connector=${encodeURIComponent(connectorFilter)}`)
+    }
     if (minKw) parts.push(`min_kw=${encodeURIComponent(minKw)}`)
     if (maxKw) parts.push(`max_kw=${encodeURIComponent(maxKw)}`)
     if (minEvses) parts.push(`min_evses=${encodeURIComponent(minEvses)}`)
     if (maxEvses) parts.push(`max_evses=${encodeURIComponent(maxEvses)}`)
     return `/api/visits${parts.length ? '?' + parts.join('&') : ''}`
-  }, [dateRange, operatorFilter, connectorFilter, minKw, maxKw, minEvses, maxEvses])
+  }, [dateRange, operatorFilter, connectorFilter, minKw, maxKw, minEvses, maxEvses, activeGroupIds])
 
   return (
     <FilterContext.Provider value={{
@@ -121,6 +176,9 @@ export function FilterProvider({ children }) {
       filterOnlyParams,
       hubsUrl,
       visitsUrl,
+      groups, loadGroups,
+      activeGroupIds, toggleGroup, clearGroups,
+      activeGroupUuids,
     }}>
       {children}
     </FilterContext.Provider>
@@ -131,7 +189,7 @@ export function useFilters() {
   return useContext(FilterContext)
 }
 
-export function applyFilters(hubs, { search, minEvses, maxEvses, minUtil, maxUtil, minKw, maxKw, connectorFilter, operatorFilter }) {
+export function applyFilters(hubs, { search, minEvses, maxEvses, minUtil, maxUtil, minKw, maxKw, connectorFilter, operatorFilter, activeGroupIds, activeGroupUuids }) {
   return hubs.filter(h => {
     if (search) {
       const q = search.toLowerCase()
@@ -147,9 +205,12 @@ export function applyFilters(hubs, { search, minEvses, maxEvses, minUtil, maxUti
     if (maxUtil  && (h.utilisation_pct ?? 0) > parseFloat(maxUtil)) return false
     if (minKw    && (h.max_power_kw ?? 0) < parseFloat(minKw)) return false
     if (maxKw    && (h.max_power_kw ?? 0) > parseFloat(maxKw)) return false
-    if (connectorFilter !== 'all' && !(h.connector_types || []).includes(connectorFilter)) return false
-    if (operatorFilter.size > 0 && !operatorFilter.has(h.operator || ''))
-      return false
+    if (activeGroupIds?.size > 0) {
+      if (!activeGroupUuids?.has(h.uuid)) return false
+    } else {
+      if (connectorFilter !== 'all' && !(h.connector_types || []).includes(connectorFilter)) return false
+      if (operatorFilter.size > 0 && !operatorFilter.has(h.operator || '')) return false
+    }
     return true
   })
 }

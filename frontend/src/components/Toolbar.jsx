@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useFilters, applyFilters } from '../context/FilterContext'
 import DateRangePicker from './DateRangePicker'
 import ExportModal from './ExportModal'
 import OperatorDropdown from './OperatorDropdown'
+import { authFetch } from '../context/AuthContext'
 
 const CONNECTOR_OPTIONS = [
   { value: 'all',              label: 'All connectors' },
@@ -65,9 +66,55 @@ export default function Toolbar() {
     dateRange, setDateRange,
     availableOperators,
     clearFilters,
+    groups, loadGroups,
+    activeGroupIds, toggleGroup, clearGroups,
   } = filters
 
   const [showExport, setShowExport] = useState(false)
+  const [newGroupName, setNewGroupName] = useState('')
+  const [creatingGroup, setCreatingGroup] = useState(false)
+  const [renamingId, setRenamingId] = useState(null)
+  const [renameVal, setRenameVal] = useState('')
+
+  useEffect(() => { loadGroups() }, [loadGroups])
+
+  const createGroup = async () => {
+    const name = newGroupName.trim()
+    if (!name || creatingGroup) return
+    setCreatingGroup(true)
+    try {
+      await authFetch('/api/groups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      })
+      setNewGroupName('')
+      await loadGroups()
+    } catch { /* ignore */ }
+    setCreatingGroup(false)
+  }
+
+  const deleteGroup = async (id) => {
+    try {
+      await authFetch(`/api/groups/${id}`, { method: 'DELETE' })
+      clearGroups()
+      await loadGroups()
+    } catch { /* ignore */ }
+  }
+
+  const renameGroup = async (id) => {
+    const name = renameVal.trim()
+    if (!name) return
+    try {
+      await authFetch(`/api/groups/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      })
+      setRenamingId(null)
+      await loadGroups()
+    } catch { /* ignore */ }
+  }
 
   const hasFilters = search || minKw || maxKw || minEvses || maxEvses || minUtil || maxUtil ||
     connectorFilter !== 'all' || operatorFilter.size > 0 ||
@@ -113,6 +160,101 @@ export default function Toolbar() {
             </button>
           )}
         </div>
+
+        <Section title="Groups" icon="◈" defaultOpen={true}>
+          {groups.length === 0 && (
+            <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 8 }}>
+              No groups yet. Create one below.
+            </div>
+          )}
+          {groups.map(g => (
+            <div key={g.id} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              {renamingId === g.id ? (
+                <>
+                  <input
+                    value={renameVal}
+                    onChange={e => setRenameVal(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') renameGroup(g.id); if (e.key === 'Escape') setRenamingId(null) }}
+                    autoFocus
+                    style={{
+                      flex: 1, background: 'var(--bg)', border: '1px solid var(--border)',
+                      borderRadius: 5, padding: '3px 6px', fontSize: 12,
+                      color: 'var(--text)', outline: 'none',
+                    }}
+                  />
+                  <button onClick={() => renameGroup(g.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)', fontSize: 12 }}>✓</button>
+                  <button onClick={() => setRenamingId(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', fontSize: 12 }}>✕</button>
+                </>
+              ) : (
+                <>
+                  <span
+                    onClick={() => toggleGroup(g.id)}
+                    style={{
+                      width: 14, height: 14, borderRadius: 3, flexShrink: 0,
+                      border: `1.5px solid ${activeGroupIds.has(g.id) ? 'var(--accent)' : 'var(--border)'}`,
+                      background: activeGroupIds.has(g.id) ? 'var(--accent)' : 'transparent',
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    {activeGroupIds.has(g.id) && (
+                      <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
+                        <path d="M1.5 4.5L3.5 6.5L7.5 2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </span>
+                  <span
+                    onClick={() => toggleGroup(g.id)}
+                    style={{ flex: 1, fontSize: 12, cursor: 'pointer', userSelect: 'none',
+                      color: activeGroupIds.has(g.id) ? 'var(--accent)' : 'var(--text)',
+                      fontWeight: activeGroupIds.has(g.id) ? 600 : 400,
+                    }}
+                  >
+                    {g.name}
+                  </span>
+                  <span style={{ fontSize: 10, color: 'var(--text-dim)', marginRight: 2 }}>{g.hub_count}</span>
+                  <button
+                    onClick={() => { setRenamingId(g.id); setRenameVal(g.name) }}
+                    title="Rename"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', fontSize: 11, padding: '0 1px', lineHeight: 1 }}
+                  >✎</button>
+                  <button
+                    onClick={() => deleteGroup(g.id)}
+                    title="Delete group"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', fontSize: 11, padding: '0 1px', lineHeight: 1 }}
+                  >✕</button>
+                </>
+              )}
+            </div>
+          ))}
+          {activeGroupIds.size > 0 && (
+            <button
+              onClick={clearGroups}
+              style={{ fontSize: 10, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)', padding: '4px 0', fontFamily: 'Inter, inherit', fontWeight: 600 }}
+            >
+              Clear groups
+            </button>
+          )}
+          <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
+            <input
+              value={newGroupName}
+              onChange={e => setNewGroupName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && createGroup()}
+              placeholder="New group…"
+              className="filter-input"
+              style={{ flex: 1, boxSizing: 'border-box' }}
+            />
+            <button
+              onClick={createGroup}
+              disabled={!newGroupName.trim() || creatingGroup}
+              style={{
+                background: 'var(--accent)', color: '#fff', border: 'none',
+                borderRadius: 6, padding: '4px 8px', fontSize: 12,
+                cursor: newGroupName.trim() && !creatingGroup ? 'pointer' : 'not-allowed',
+                opacity: newGroupName.trim() && !creatingGroup ? 1 : 0.5,
+              }}
+            >+</button>
+          </div>
+        </Section>
 
         <Section title="Search" icon="⌕" defaultOpen={true}>
           <input

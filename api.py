@@ -45,7 +45,7 @@ _cors_origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",")]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE"],
     allow_headers=["*"],
 )
 
@@ -101,6 +101,11 @@ def hub_detail(uuid: str):
     return result
 
 
+@app.get("/api/hubs/{uuid}/groups")
+def hub_groups(uuid: str):
+    return db.get_hub_group_ids(uuid)
+
+
 @app.get("/api/hubs/{uuid}/history")
 def hub_history(uuid: str,
                 hours: int = Query(default=24, ge=1, le=8760),
@@ -121,11 +126,13 @@ def history(hours: int = Query(default=24, ge=1, le=8760),
             min_evses: Optional[int] = Query(default=None),
             max_evses: Optional[int] = Query(default=None),
             start_hour: Optional[int] = Query(default=None, ge=0, le=23),
-            end_hour: Optional[int] = Query(default=None, ge=0, le=23)):
+            end_hour: Optional[int] = Query(default=None, ge=0, le=23),
+            group_id: Optional[List[int]] = Query(default=None)):
     return db.get_all_history(hours, hub_uuid=hub_uuid, start_dt=start_dt, end_dt=end_dt,
                               operator=operator, connector=connector, min_kw=min_kw, max_kw=max_kw,
                               min_evses=min_evses, max_evses=max_evses,
-                              start_hour=start_hour, end_hour=end_hour)
+                              start_hour=start_hour, end_hour=end_hour,
+                              group_ids=group_id or None)
 
 
 @app.get("/api/history/daily")
@@ -148,12 +155,14 @@ def hourly_pattern(hours: int = Query(default=168, ge=24, le=8760),
                    min_evses: Optional[int] = Query(default=None),
                    max_evses: Optional[int] = Query(default=None),
                    start_hour: Optional[int] = Query(default=None, ge=0, le=23),
-                   end_hour: Optional[int] = Query(default=None, ge=0, le=23)):
+                   end_hour: Optional[int] = Query(default=None, ge=0, le=23),
+                   group_id: Optional[List[int]] = Query(default=None)):
     return db.get_hourly_pattern(hours, hub_uuid=hub_uuid, start_dt=start_dt, end_dt=end_dt,
                                  operator=operator, connector=connector, min_kw=min_kw, max_kw=max_kw,
                                  min_evses=min_evses, max_evses=max_evses,
                                  start_hour=start_hour, end_hour=end_hour,
-                                 interval_minutes=SCRAPE_INTERVAL_MINUTES)
+                                 interval_minutes=SCRAPE_INTERVAL_MINUTES,
+                                 group_ids=group_id or None)
 
 
 @app.get("/api/hourly-heatmap")
@@ -176,11 +185,13 @@ def reliability(hours: int = Query(default=168, ge=1, le=8760),
                 min_evses: Optional[int] = Query(default=None),
                 max_evses: Optional[int] = Query(default=None),
                 start_hour: Optional[int] = Query(default=None, ge=0, le=23),
-                end_hour: Optional[int] = Query(default=None, ge=0, le=23)):
+                end_hour: Optional[int] = Query(default=None, ge=0, le=23),
+                group_id: Optional[List[int]] = Query(default=None)):
     return db.get_reliability_trend(hours, hub_uuid=hub_uuid, start_dt=start_dt, end_dt=end_dt,
                                     operator=operator, connector=connector, min_kw=min_kw, max_kw=max_kw,
                                     min_evses=min_evses, max_evses=max_evses,
-                                    start_hour=start_hour, end_hour=end_hour)
+                                    start_hour=start_hour, end_hour=end_hour,
+                                    group_ids=group_id or None)
 
 
 @app.get("/api/visits")
@@ -191,12 +202,61 @@ def visits(start_dt: Optional[str] = Query(default=None),
            min_kw: Optional[float] = Query(default=None),
            max_kw: Optional[float] = Query(default=None),
            min_evses: Optional[int] = Query(default=None),
-           max_evses: Optional[int] = Query(default=None)):
+           max_evses: Optional[int] = Query(default=None),
+           group_id: Optional[List[int]] = Query(default=None)):
     if not start_dt or not end_dt:
         today = datetime.now(timezone.utc).date()
         start_dt = datetime(today.year, today.month, today.day, tzinfo=timezone.utc).isoformat()
         end_dt = datetime.now(timezone.utc).isoformat()
-    return db.get_visit_stats(start_dt, end_dt, operator, connector, min_kw, max_kw, min_evses, max_evses)
+    return db.get_visit_stats(start_dt, end_dt, operator, connector, min_kw, max_kw, min_evses, max_evses,
+                              group_ids=group_id or None)
+
+
+@app.get("/api/groups")
+def list_groups():
+    return db.get_groups()
+
+
+@app.post("/api/groups", status_code=201)
+def create_group(body: dict = Body(...)):
+    name = (body.get("name") or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="name is required")
+    return db.create_group(name)
+
+
+@app.patch("/api/groups/{group_id}")
+def rename_group(group_id: int, body: dict = Body(...)):
+    name = (body.get("name") or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="name is required")
+    updated = db.rename_group(group_id, name)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Group not found")
+    return updated
+
+
+@app.delete("/api/groups/{group_id}", status_code=204)
+def delete_group(group_id: int):
+    db.delete_group(group_id)
+
+
+@app.get("/api/groups/{group_id}/hubs")
+def get_group_hubs(group_id: int):
+    return db.get_group_hub_uuids(group_id)
+
+
+@app.post("/api/groups/{group_id}/hubs", status_code=204)
+def add_hubs_to_group(group_id: int, body: dict = Body(...)):
+    hub_uuids = body.get("hub_uuids") or []
+    if not isinstance(hub_uuids, list):
+        raise HTTPException(status_code=400, detail="hub_uuids must be a list")
+    db.add_hubs_to_group(group_id, hub_uuids)
+
+
+@app.delete("/api/groups/{group_id}/hubs/{hub_uuid}", status_code=204)
+def remove_hub_from_group(group_id: int, hub_uuid: str):
+    db.remove_hub_from_group(group_id, hub_uuid)
 
 
 @app.get("/api/sparkline")

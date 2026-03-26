@@ -43,7 +43,8 @@ def _hour_filter(params: list, start_hour: int | None, end_hour: int | None,
 
 def _hub_subquery(params: list, operator: str | list[str] | None, connector: str | None,
                   min_kw: float | None, max_kw: float | None,
-                  min_evses: int | None = None, max_evses: int | None = None) -> str:
+                  min_evses: int | None = None, max_evses: int | None = None,
+                  group_ids: list[int] | None = None) -> str:
     """Returns SQL fragment restricting snapshots to hub UUIDs matching the given attributes."""
     conditions = []
     if operator:
@@ -67,6 +68,10 @@ def _hub_subquery(params: list, operator: str | list[str] | None, connector: str
     if max_evses is not None:
         conditions.append("total_evses <= ?")
         params.append(max_evses)
+    if group_ids:
+        gp = ",".join("?" * len(group_ids))
+        conditions.append(f"uuid IN (SELECT hub_uuid FROM group_hubs WHERE group_id IN ({gp}))")
+        params.extend(group_ids)
     if not conditions:
         return ""
     return " AND hub_uuid IN (SELECT uuid FROM hubs WHERE " + " AND ".join(conditions) + ")"
@@ -128,6 +133,21 @@ def init_db() -> None:
 
         CREATE INDEX IF NOT EXISTS idx_visits_hub_start
             ON visits(hub_uuid, started_at);
+
+        CREATE TABLE IF NOT EXISTS groups (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            name       TEXT NOT NULL UNIQUE,
+            created_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS group_hubs (
+            group_id INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+            hub_uuid TEXT    NOT NULL REFERENCES hubs(uuid) ON DELETE CASCADE,
+            PRIMARY KEY (group_id, hub_uuid)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_group_hubs_group
+            ON group_hubs(group_id);
     """)
     # Migration guard for existing databases
     try:
@@ -450,7 +470,8 @@ def get_all_history(hours: int = 24, hub_uuid: str | None = None,
                     operator: str | None = None, connector: str | None = None,
                     min_kw: float | None = None, max_kw: float | None = None,
                     min_evses: int | None = None, max_evses: int | None = None,
-                    start_hour: int | None = None, end_hour: int | None = None) -> list[dict]:
+                    start_hour: int | None = None, end_hour: int | None = None,
+                    group_ids: list[int] | None = None) -> list[dict]:
     """
     Return one row per scrape run (keyed by scraped_at) with weighted average
     utilisation and totals across all hubs.
@@ -466,7 +487,7 @@ def get_all_history(hours: int = 24, hub_uuid: str | None = None,
     if hub_uuid:
         hub_filter = " AND hub_uuid = ?"
         params.append(hub_uuid)
-    hub_attr_filter = _hub_subquery(params, operator, connector, min_kw, max_kw, min_evses, max_evses)
+    hub_attr_filter = _hub_subquery(params, operator, connector, min_kw, max_kw, min_evses, max_evses, group_ids=group_ids)
     hour_filter = _hour_filter(params, start_hour, end_hour)
     con = _connect()
     rows = con.execute(f"""
@@ -524,7 +545,8 @@ def get_hourly_pattern(hours: int = 168, hub_uuid: str | None = None,
                        min_kw: float | None = None, max_kw: float | None = None,
                        min_evses: int | None = None, max_evses: int | None = None,
                        start_hour: int | None = None, end_hour: int | None = None,
-                       interval_minutes: int = INTERVAL_MINUTES) -> list[dict]:
+                       interval_minutes: int = INTERVAL_MINUTES,
+                       group_ids: list[int] | None = None) -> list[dict]:
     """
     Return average utilisation grouped by hour-of-day (0–23),
     built from the last N hours of data (default 7 days).
@@ -540,7 +562,7 @@ def get_hourly_pattern(hours: int = 168, hub_uuid: str | None = None,
     if hub_uuid:
         hub_filter = " AND hub_uuid = ?"
         params.append(hub_uuid)
-    hub_attr_filter = _hub_subquery(params, operator, connector, min_kw, max_kw, min_evses, max_evses)
+    hub_attr_filter = _hub_subquery(params, operator, connector, min_kw, max_kw, min_evses, max_evses, group_ids=group_ids)
     hour_filter = _hour_filter(params, start_hour, end_hour)
     params.append(interval_minutes)
     con = _connect()
@@ -626,7 +648,8 @@ def get_reliability_trend(hours: int = 168, hub_uuid: str | None = None,
                           operator: str | None = None, connector: str | None = None,
                           min_kw: float | None = None, max_kw: float | None = None,
                           min_evses: int | None = None, max_evses: int | None = None,
-                          start_hour: int | None = None, end_hour: int | None = None) -> list[dict]:
+                          start_hour: int | None = None, end_hour: int | None = None,
+                          group_ids: list[int] | None = None) -> list[dict]:
     """
     One row per scrape run showing each status as % of total EVSEs across all hubs.
     Uses snapshot-time counts as denominator (no join with hubs required).
@@ -642,7 +665,7 @@ def get_reliability_trend(hours: int = 168, hub_uuid: str | None = None,
     if hub_uuid:
         hub_filter = " AND hub_uuid = ?"
         params.append(hub_uuid)
-    hub_attr_filter = _hub_subquery(params, operator, connector, min_kw, max_kw, min_evses, max_evses)
+    hub_attr_filter = _hub_subquery(params, operator, connector, min_kw, max_kw, min_evses, max_evses, group_ids=group_ids)
     hour_filter = _hour_filter(params, start_hour, end_hour)
     con = _connect()
     rows = con.execute(f"""
@@ -792,15 +815,112 @@ def get_all_hubs_for_scrape() -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def get_groups() -> list[dict]:
+    """Return all groups with their hub counts."""
+    con = _connect()
+    rows = con.execute("""
+        SELECT g.id, g.name, g.created_at,
+               COUNT(gh.hub_uuid) AS hub_count
+        FROM groups g
+        LEFT JOIN group_hubs gh ON gh.group_id = g.id
+        GROUP BY g.id
+        ORDER BY g.created_at
+    """).fetchall()
+    con.close()
+    return [dict(r) for r in rows]
+
+
+def create_group(name: str) -> dict:
+    """Create a new group and return it."""
+    con = _connect()
+    now = datetime.now(timezone.utc).isoformat()
+    try:
+        cur = con.execute(
+            "INSERT INTO groups (name, created_at) VALUES (?, ?)", (name.strip(), now)
+        )
+        con.commit()
+        row = con.execute(
+            "SELECT id, name, created_at, 0 AS hub_count FROM groups WHERE id = ?",
+            (cur.lastrowid,)
+        ).fetchone()
+        con.close()
+        return dict(row)
+    except Exception:
+        con.close()
+        raise
+
+
+def rename_group(group_id: int, name: str) -> dict | None:
+    con = _connect()
+    cur = con.execute("UPDATE groups SET name = ? WHERE id = ?", (name.strip(), group_id))
+    con.commit()
+    if cur.rowcount == 0:
+        con.close()
+        return None
+    row = con.execute(
+        "SELECT id, name, created_at FROM groups WHERE id = ?", (group_id,)
+    ).fetchone()
+    con.close()
+    return dict(row) if row else None
+
+
+def delete_group(group_id: int) -> None:
+    con = _connect()
+    con.execute("DELETE FROM group_hubs WHERE group_id = ?", (group_id,))
+    con.execute("DELETE FROM groups WHERE id = ?", (group_id,))
+    con.commit()
+    con.close()
+
+
+def add_hubs_to_group(group_id: int, hub_uuids: list[str]) -> None:
+    con = _connect()
+    con.executemany(
+        "INSERT OR IGNORE INTO group_hubs (group_id, hub_uuid) VALUES (?, ?)",
+        [(group_id, uuid) for uuid in hub_uuids],
+    )
+    con.commit()
+    con.close()
+
+
+def remove_hub_from_group(group_id: int, hub_uuid: str) -> None:
+    con = _connect()
+    con.execute(
+        "DELETE FROM group_hubs WHERE group_id = ? AND hub_uuid = ?",
+        (group_id, hub_uuid),
+    )
+    con.commit()
+    con.close()
+
+
+def get_group_hub_uuids(group_id: int) -> list[str]:
+    con = _connect()
+    rows = con.execute(
+        "SELECT hub_uuid FROM group_hubs WHERE group_id = ?", (group_id,)
+    ).fetchall()
+    con.close()
+    return [r["hub_uuid"] for r in rows]
+
+
+def get_hub_group_ids(hub_uuid: str) -> list[int]:
+    """Return the group IDs that a hub belongs to."""
+    con = _connect()
+    rows = con.execute(
+        "SELECT group_id FROM group_hubs WHERE hub_uuid = ?", (hub_uuid,)
+    ).fetchall()
+    con.close()
+    return [r["group_id"] for r in rows]
+
+
 def get_visit_stats(start_dt: str, end_dt: str,
                     operator: str | None = None, connector: str | None = None,
                     min_kw: float | None = None, max_kw: float | None = None,
-                    min_evses: int | None = None, max_evses: int | None = None) -> list[dict]:
+                    min_evses: int | None = None, max_evses: int | None = None,
+                    group_ids: list[int] | None = None) -> list[dict]:
     """Per-hub visit counts and average dwell time for a date range."""
     s = _parse_dt(start_dt)
     e = _parse_dt(end_dt)
     params: list = [s, e]
-    hub_filter = _hub_subquery(params, operator, connector, min_kw, max_kw, min_evses, max_evses)
+    hub_filter = _hub_subquery(params, operator, connector, min_kw, max_kw, min_evses, max_evses, group_ids=group_ids)
     con = _connect()
     rows = con.execute(f"""
         SELECT

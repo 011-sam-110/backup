@@ -4,6 +4,7 @@ import {
 } from 'recharts'
 import { utilClass } from '../utils/status'
 import { authFetch } from '../context/AuthContext'
+import GroupPicker from './GroupPicker'
 
 function fmtTime(iso) {
   if (!iso) return '—'
@@ -38,6 +39,7 @@ export default function HubDetailModal({ hub, onClose }) {
   const [histLoading, setHistLoading] = useState(true)
   const [detail, setDetail] = useState(null)
   const [detailLoading, setDetailLoading] = useState(true)
+  const [showGroupPicker, setShowGroupPicker] = useState(false)
 
   useEffect(() => {
     authFetch(`/api/history?hub_uuid=${hub.uuid}&hours=24`)
@@ -73,7 +75,22 @@ export default function HubDetailModal({ hub, onClose }) {
               <div className="mono" style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>{hub.uuid}</div>
             )}
           </div>
-          <button className="modal-close" onClick={onClose}>×</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative' }}>
+            <button
+              onClick={() => setShowGroupPicker(v => !v)}
+              style={{
+                background: 'var(--accent-dim)', border: '1px solid rgba(0,86,179,0.3)',
+                color: 'var(--accent)', borderRadius: 7, padding: '4px 10px',
+                fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, inherit',
+              }}
+            >
+              + Group
+            </button>
+            {showGroupPicker && (
+              <GroupPicker hubUuid={hub.uuid} onClose={() => setShowGroupPicker(false)} />
+            )}
+            <button className="modal-close" onClick={onClose}>×</button>
+          </div>
         </div>
 
         {/* Stats */}
