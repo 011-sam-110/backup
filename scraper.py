@@ -24,6 +24,22 @@ GB_LNG = (-8.7, 1.8)    # Outer Hebrides / W Scotland → East Anglia
 HEADLESS = os.getenv("HEADLESS", "true").lower() == "true"
 USE_PROXY = os.getenv("USE_PROXY", "false").lower() == "true"
 
+# ── Bandwidth reduction — block resources that are never needed ───────────────
+_BLOCK_TYPES = {"image", "font", "media", "stylesheet"}
+_BLOCK_DOMAINS = (
+    "google-analytics.com", "googletagmanager.com", "googlesyndication.com",
+    "doubleclick.net", "hotjar.com", "pagead",
+    "fonts.googleapis.com", "fonts.gstatic.com",
+    "tiles.mapbox.com", "events.mapbox.com", "api.mapbox.com/events",
+)
+
+async def _block_junk(route):
+    req = route.request
+    if req.resource_type in _BLOCK_TYPES or any(d in req.url for d in _BLOCK_DOMAINS):
+        await route.abort()
+    else:
+        await route.continue_()
+
 
 def _pick_proxy() -> dict | None:
     """Return a Playwright proxy dict from proxies.txt, or None if disabled/empty."""
@@ -210,6 +226,7 @@ async def scrape():
                 )
             )
             page = await context.new_page()
+            await page.route("**/*", _block_junk)
 
             # ── Capture Bearer token from outgoing requests ────────────────────
             def on_request(request):
