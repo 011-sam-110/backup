@@ -911,16 +911,22 @@ def get_hub_group_ids(hub_uuid: str) -> list[int]:
     return [r["group_id"] for r in rows]
 
 
-def get_visit_stats(start_dt: str, end_dt: str,
+def get_visit_stats(start_dt: str | None = None, end_dt: str | None = None,
                     operator: str | None = None, connector: str | None = None,
                     min_kw: float | None = None, max_kw: float | None = None,
                     min_evses: int | None = None, max_evses: int | None = None,
                     group_ids: list[int] | None = None) -> list[dict]:
-    """Per-hub visit counts and average dwell time for a date range."""
-    s = _parse_dt(start_dt)
-    e = _parse_dt(end_dt)
-    params: list = [s, e]
+    """Per-hub visit counts and average dwell time for a date range (or all time if no dates given)."""
+    params: list = []
+    date_filter = ""
+    if start_dt and end_dt:
+        s = _parse_dt(start_dt)
+        e = _parse_dt(end_dt)
+        params = [s, e]
+        date_filter = "started_at >= ? AND started_at <= ?"
     hub_filter = _hub_subquery(params, operator, connector, min_kw, max_kw, min_evses, max_evses, group_ids=group_ids)
+    where = " AND ".join(filter(None, [date_filter, hub_filter.lstrip(" AND ")]))
+    where_clause = f"WHERE {where}" if where else ""
     con = _connect()
     rows = con.execute(f"""
         SELECT
@@ -930,7 +936,7 @@ def get_visit_stats(start_dt: str, end_dt: str,
                            THEN dwell_min END))                    AS avg_dwell_min,
             COUNT(CASE WHEN ended_at IS NULL THEN 1 END)           AS active_visits
         FROM visits
-        WHERE started_at >= ? AND started_at <= ?{hub_filter}
+        {where_clause}
         GROUP BY hub_uuid
     """, params).fetchall()
     con.close()

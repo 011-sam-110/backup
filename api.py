@@ -24,7 +24,6 @@ Run with:
 import os
 import secrets
 import asyncio
-from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query, Request, Body
@@ -204,11 +203,7 @@ def visits(start_dt: Optional[str] = Query(default=None),
            min_evses: Optional[int] = Query(default=None),
            max_evses: Optional[int] = Query(default=None),
            group_id: Optional[List[int]] = Query(default=None)):
-    if not start_dt or not end_dt:
-        today = datetime.now(timezone.utc).date()
-        start_dt = datetime(today.year, today.month, today.day, tzinfo=timezone.utc).isoformat()
-        end_dt = datetime.now(timezone.utc).isoformat()
-    return db.get_visit_stats(start_dt, end_dt, operator, connector, min_kw, max_kw, min_evses, max_evses,
+    return db.get_visit_stats(start_dt or None, end_dt or None, operator, connector, min_kw, max_kw, min_evses, max_evses,
                               group_ids=group_id or None)
 
 
