@@ -79,6 +79,7 @@ export default function Toolbar() {
   const [renamingId, setRenamingId] = useState(null)
   const [renameVal, setRenameVal] = useState('')
   const [exportingGroups, setExportingGroups] = useState(false)
+  const [addingToGroup, setAddingToGroup] = useState(null)
 
   const handleExportGroups = async () => {
     if (exportingGroups || groups.length === 0) return
@@ -129,6 +130,25 @@ export default function Toolbar() {
       await loadGroups()
     } catch { /* ignore */ }
     setCreatingGroup(false)
+  }
+
+  const addFilteredToGroup = async (groupId) => {
+    if (addingToGroup) return
+    setAddingToGroup(groupId)
+    try {
+      const hubs = await authFetch(filters.hubsUrl()).then(r => r.json())
+      const filtered = applyFilters(hubs, filters)
+      const uuids = filtered.map(h => h.uuid)
+      if (uuids.length > 0) {
+        await authFetch(`/api/groups/${groupId}/hubs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ hub_uuids: uuids }),
+        })
+        await loadGroups()
+      }
+    } catch { /* ignore */ }
+    setAddingToGroup(null)
   }
 
   const deleteGroup = async (id) => {
@@ -252,6 +272,16 @@ export default function Toolbar() {
                     {g.name}
                   </span>
                   <span style={{ fontSize: 10, color: 'var(--text-dim)', marginRight: 2 }}>{g.hub_count}</span>
+                  <button
+                    onClick={() => addFilteredToGroup(g.id)}
+                    title="Add all visible hubs to this group"
+                    disabled={!!addingToGroup}
+                    style={{
+                      background: 'none', border: 'none', cursor: addingToGroup ? 'default' : 'pointer',
+                      color: addingToGroup === g.id ? 'var(--accent)' : 'var(--text-dim)',
+                      fontSize: 12, padding: '0 2px', lineHeight: 1, opacity: addingToGroup && addingToGroup !== g.id ? 0.4 : 1,
+                    }}
+                  >{addingToGroup === g.id ? '…' : '⊕'}</button>
                   <button
                     onClick={() => toggleAssigningGroup(g.id)}
                     title="Select hubs on map"
