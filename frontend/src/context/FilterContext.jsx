@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useMemo, useRef } from 'react'
+import { createContext, useContext, useState, useCallback, useMemo } from 'react'
 import { authFetch } from './AuthContext'
 
 const FilterContext = createContext(null)
@@ -20,9 +20,6 @@ export function FilterProvider({ children }) {
   const [groups, setGroups] = useState([])
   const [activeGroupIds, setActiveGroupIds] = useState(new Set())
   const [groupHubs, setGroupHubs] = useState(new Map()) // group_id → string[]
-  const [activeGroupFilters, setActiveGroupFilters] = useState(new Map()) // group_id → filter object
-  const groupsRef = useRef(groups)
-
   const activeGroupUuids = useMemo(() => {
     if (activeGroupIds.size === 0) return new Set()
     const uuids = new Set()
@@ -33,56 +30,17 @@ export function FilterProvider({ children }) {
     return uuids
   }, [activeGroupIds, groupHubs])
 
-  const mergedGroupFilters = useMemo(() => {
-    if (activeGroupFilters.size === 0) return null
-    const merged = {}
-    activeGroupFilters.forEach(f => {
-      if (f.connector_filter) merged.connector_filter = f.connector_filter
-      if (f.operator_filter)  merged.operator_filter  = f.operator_filter
-      if (f.min_kw   != null) merged.min_kw   = f.min_kw
-      if (f.max_kw   != null) merged.max_kw   = f.max_kw
-      if (f.min_evses != null) merged.min_evses = f.min_evses
-      if (f.max_evses != null) merged.max_evses = f.max_evses
-      if (f.min_util  != null) merged.min_util  = f.min_util
-      if (f.max_util  != null) merged.max_util  = f.max_util
-    })
-    return Object.keys(merged).length ? merged : null
-  }, [activeGroupFilters])
-
-  const groupFiltersActive = activeGroupIds.size > 0 && mergedGroupFilters !== null
-
   const loadGroups = useCallback(async () => {
     try {
       const data = await authFetch('/api/groups').then(r => r.json())
       setGroups(data)
-      groupsRef.current = data
     } catch { /* ignore */ }
   }, [])
 
   const toggleGroup = useCallback(async (id) => {
     setActiveGroupIds(prev => {
-      const isOn = prev.has(id)
       const next = new Set(prev)
-      isOn ? next.delete(id) : next.add(id)
-
-      // Update activeGroupFilters in sync with toggle
-      setActiveGroupFilters(m => {
-        const n = new Map(m)
-        if (isOn) {
-          n.delete(id)
-        } else {
-          const grp = groupsRef.current.find(g => g.id === id)
-          if (grp) {
-            const hasAny = grp.connector_filter || grp.operator_filter ||
-              grp.min_kw != null || grp.max_kw != null ||
-              grp.min_evses != null || grp.max_evses != null ||
-              grp.min_util != null || grp.max_util != null
-            if (hasAny) n.set(id, grp)
-          }
-        }
-        return n
-      })
-
+      next.has(id) ? next.delete(id) : next.add(id)
       return next
     })
     // Always re-fetch so newly added hubs are picked up
@@ -94,7 +52,6 @@ export function FilterProvider({ children }) {
 
   const clearGroups = useCallback(() => {
     setActiveGroupIds(new Set())
-    setActiveGroupFilters(new Map())
   }, [])
 
   const [assigningGroupId, setAssigningGroupId] = useState(null)
@@ -183,16 +140,12 @@ export function FilterProvider({ children }) {
       operatorFilter.forEach(op => parts.push(`operator=${encodeURIComponent(op)}`))
       if (connectorFilter !== 'all') parts.push(`connector=${encodeURIComponent(connectorFilter)}`)
     }
-    const rMinKw    = groupFiltersActive ? mergedGroupFilters?.min_kw    : minKw
-    const rMaxKw    = groupFiltersActive ? mergedGroupFilters?.max_kw    : maxKw
-    const rMinEvses = groupFiltersActive ? mergedGroupFilters?.min_evses : minEvses
-    const rMaxEvses = groupFiltersActive ? mergedGroupFilters?.max_evses : maxEvses
-    if (rMinKw    != null && rMinKw    !== '') parts.push(`min_kw=${encodeURIComponent(rMinKw)}`)
-    if (rMaxKw    != null && rMaxKw    !== '') parts.push(`max_kw=${encodeURIComponent(rMaxKw)}`)
-    if (rMinEvses != null && rMinEvses !== '') parts.push(`min_evses=${encodeURIComponent(rMinEvses)}`)
-    if (rMaxEvses != null && rMaxEvses !== '') parts.push(`max_evses=${encodeURIComponent(rMaxEvses)}`)
+    if (minKw) parts.push(`min_kw=${encodeURIComponent(minKw)}`)
+    if (maxKw) parts.push(`max_kw=${encodeURIComponent(maxKw)}`)
+    if (minEvses) parts.push(`min_evses=${encodeURIComponent(minEvses)}`)
+    if (maxEvses) parts.push(`max_evses=${encodeURIComponent(maxEvses)}`)
     return parts.length ? '&' + parts.join('&') : ''
-  }, [dateRange, operatorFilter, connectorFilter, minKw, maxKw, minEvses, maxEvses, activeGroupIds, groupFiltersActive, mergedGroupFilters])
+  }, [dateRange, operatorFilter, connectorFilter, minKw, maxKw, minEvses, maxEvses, activeGroupIds])
 
   /** Query-string suffix for operator/connector/kW/groups only (no date range). */
   const filterOnlyParams = useCallback(() => {
@@ -203,16 +156,12 @@ export function FilterProvider({ children }) {
       operatorFilter.forEach(op => parts.push(`operator=${encodeURIComponent(op)}`))
       if (connectorFilter !== 'all') parts.push(`connector=${encodeURIComponent(connectorFilter)}`)
     }
-    const rMinKw    = groupFiltersActive ? mergedGroupFilters?.min_kw    : minKw
-    const rMaxKw    = groupFiltersActive ? mergedGroupFilters?.max_kw    : maxKw
-    const rMinEvses = groupFiltersActive ? mergedGroupFilters?.min_evses : minEvses
-    const rMaxEvses = groupFiltersActive ? mergedGroupFilters?.max_evses : maxEvses
-    if (rMinKw    != null && rMinKw    !== '') parts.push(`min_kw=${encodeURIComponent(rMinKw)}`)
-    if (rMaxKw    != null && rMaxKw    !== '') parts.push(`max_kw=${encodeURIComponent(rMaxKw)}`)
-    if (rMinEvses != null && rMinEvses !== '') parts.push(`min_evses=${encodeURIComponent(rMinEvses)}`)
-    if (rMaxEvses != null && rMaxEvses !== '') parts.push(`max_evses=${encodeURIComponent(rMaxEvses)}`)
+    if (minKw) parts.push(`min_kw=${encodeURIComponent(minKw)}`)
+    if (maxKw) parts.push(`max_kw=${encodeURIComponent(maxKw)}`)
+    if (minEvses) parts.push(`min_evses=${encodeURIComponent(minEvses)}`)
+    if (maxEvses) parts.push(`max_evses=${encodeURIComponent(maxEvses)}`)
     return parts.length ? '&' + parts.join('&') : ''
-  }, [operatorFilter, connectorFilter, minKw, maxKw, minEvses, maxEvses, activeGroupIds, groupFiltersActive, mergedGroupFilters])
+  }, [operatorFilter, connectorFilter, minKw, maxKw, minEvses, maxEvses, activeGroupIds])
 
   /** Returns URL query params object for /api/hubs date range filtering */
   const hubsUrl = useCallback(() => {
@@ -235,16 +184,12 @@ export function FilterProvider({ children }) {
       operatorFilter.forEach(op => parts.push(`operator=${encodeURIComponent(op)}`))
       if (connectorFilter !== 'all') parts.push(`connector=${encodeURIComponent(connectorFilter)}`)
     }
-    const rMinKw    = groupFiltersActive ? mergedGroupFilters?.min_kw    : minKw
-    const rMaxKw    = groupFiltersActive ? mergedGroupFilters?.max_kw    : maxKw
-    const rMinEvses = groupFiltersActive ? mergedGroupFilters?.min_evses : minEvses
-    const rMaxEvses = groupFiltersActive ? mergedGroupFilters?.max_evses : maxEvses
-    if (rMinKw    != null && rMinKw    !== '') parts.push(`min_kw=${encodeURIComponent(rMinKw)}`)
-    if (rMaxKw    != null && rMaxKw    !== '') parts.push(`max_kw=${encodeURIComponent(rMaxKw)}`)
-    if (rMinEvses != null && rMinEvses !== '') parts.push(`min_evses=${encodeURIComponent(rMinEvses)}`)
-    if (rMaxEvses != null && rMaxEvses !== '') parts.push(`max_evses=${encodeURIComponent(rMaxEvses)}`)
+    if (minKw) parts.push(`min_kw=${encodeURIComponent(minKw)}`)
+    if (maxKw) parts.push(`max_kw=${encodeURIComponent(maxKw)}`)
+    if (minEvses) parts.push(`min_evses=${encodeURIComponent(minEvses)}`)
+    if (maxEvses) parts.push(`max_evses=${encodeURIComponent(maxEvses)}`)
     return `/api/visits${parts.length ? '?' + parts.join('&') : ''}`
-  }, [dateRange, operatorFilter, connectorFilter, minKw, maxKw, minEvses, maxEvses, activeGroupIds, groupFiltersActive, mergedGroupFilters])
+  }, [dateRange, operatorFilter, connectorFilter, minKw, maxKw, minEvses, maxEvses, activeGroupIds])
 
   return (
     <FilterContext.Provider value={{
@@ -270,7 +215,6 @@ export function FilterProvider({ children }) {
       groups, loadGroups,
       activeGroupIds, toggleGroup, clearGroups,
       activeGroupUuids, groupHubs,
-      activeGroupFilters, mergedGroupFilters, groupFiltersActive,
       assigningGroupId, toggleAssigningGroup, toggleHubInGroup,
     }}>
       {children}
@@ -282,7 +226,7 @@ export function useFilters() {
   return useContext(FilterContext)
 }
 
-export function applyFilters(hubs, { search, minEvses, maxEvses, minUtil, maxUtil, minKw, maxKw, connectorFilter, operatorFilter, activeGroupIds, activeGroupUuids, mergedGroupFilters, groupFiltersActive }) {
+export function applyFilters(hubs, { search, minEvses, maxEvses, minUtil, maxUtil, minKw, maxKw, connectorFilter, operatorFilter, activeGroupIds, activeGroupUuids }) {
   return hubs.filter(h => {
     if (search) {
       const q = search.toLowerCase()
@@ -292,28 +236,14 @@ export function applyFilters(hubs, { search, minEvses, maxEvses, minUtil, maxUti
           !(h.connector_types || []).join(' ').toLowerCase().includes(q))
         return false
     }
-    const gf = groupFiltersActive && mergedGroupFilters ? mergedGroupFilters : null
-    const rMinEvses = gf ? gf.min_evses : minEvses
-    const rMaxEvses = gf ? gf.max_evses : maxEvses
-    const rMinUtil  = gf ? gf.min_util  : minUtil
-    const rMaxUtil  = gf ? gf.max_util  : maxUtil
-    const rMinKw    = gf ? gf.min_kw    : minKw
-    const rMaxKw    = gf ? gf.max_kw    : maxKw
-    if (rMinEvses != null && rMinEvses !== '' && h.total_evses < parseInt(rMinEvses)) return false
-    if (rMaxEvses != null && rMaxEvses !== '' && h.total_evses > parseInt(rMaxEvses)) return false
-    if (rMinUtil  != null && rMinUtil  !== '' && (h.utilisation_pct ?? 0) < parseFloat(rMinUtil)) return false
-    if (rMaxUtil  != null && rMaxUtil  !== '' && (h.utilisation_pct ?? 0) > parseFloat(rMaxUtil)) return false
-    if (rMinKw    != null && rMinKw    !== '' && (h.max_power_kw ?? 0) < parseFloat(rMinKw)) return false
-    if (rMaxKw    != null && rMaxKw    !== '' && (h.max_power_kw ?? 0) > parseFloat(rMaxKw)) return false
+    if (minEvses && h.total_evses < parseInt(minEvses)) return false
+    if (maxEvses && h.total_evses > parseInt(maxEvses)) return false
+    if (minUtil  && (h.utilisation_pct ?? 0) < parseFloat(minUtil)) return false
+    if (maxUtil  && (h.utilisation_pct ?? 0) > parseFloat(maxUtil)) return false
+    if (minKw    && (h.max_power_kw ?? 0) < parseFloat(minKw)) return false
+    if (maxKw    && (h.max_power_kw ?? 0) > parseFloat(maxKw)) return false
     if (activeGroupIds?.size > 0) {
       if (!activeGroupUuids?.has(h.uuid)) return false
-      if (gf?.connector_filter && !(h.connector_types || []).includes(gf.connector_filter)) return false
-      if (gf?.operator_filter) {
-        try {
-          const ops = JSON.parse(gf.operator_filter)
-          if (ops.length > 0 && !ops.map(o => o.toLowerCase()).includes((h.operator || '').toLowerCase())) return false
-        } catch { /* ignore malformed */ }
-      }
     } else {
       if (connectorFilter !== 'all' && !(h.connector_types || []).includes(connectorFilter)) return false
       if (operatorFilter.size > 0 && !operatorFilter.has(h.operator || '')) return false
