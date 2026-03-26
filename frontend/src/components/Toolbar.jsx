@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useFilters, applyFilters } from '../context/FilterContext'
 import DateRangePicker from './DateRangePicker'
 import ExportModal from './ExportModal'
+import OperatorDropdown from './OperatorDropdown'
 
 const CONNECTOR_OPTIONS = [
   { value: 'all',              label: 'All connectors' },
@@ -72,7 +73,6 @@ export default function Toolbar() {
     connectorFilter !== 'all' || operatorFilter !== 'all' ||
     dateRange.start
 
-  const operatorOptions = ['all', ...availableOperators]
 
   return (
     <>
@@ -138,16 +138,11 @@ export default function Toolbar() {
 
         <Section title="Filters" icon="⊟" defaultOpen={true}>
           <Label>Operator</Label>
-          <select
-            className="filter-input"
-            style={{ width: '100%', boxSizing: 'border-box' }}
+          <OperatorDropdown
+            operators={availableOperators}
             value={operatorFilter}
-            onChange={e => setOperatorFilter(e.target.value)}
-          >
-            {operatorOptions.map(o => (
-              <option key={o} value={o}>{o === 'all' ? 'All operators' : o}</option>
-            ))}
-          </select>
+            onChange={setOperatorFilter}
+          />
 
           <Label>Connector</Label>
           <select
