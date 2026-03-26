@@ -238,8 +238,7 @@ export default function Toolbar() {
               Clear groups
             </button>
           )}
-          <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
-            <input
+            <div style={{ display: 'flex', gap: 4, marginTop: 8, paddingRight: 4 }}>            <input
               value={newGroupName}
               onChange={e => setNewGroupName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && createGroup()}
