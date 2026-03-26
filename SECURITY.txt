@@ -1,0 +1,78 @@
+EVMONITOR DASHBOARD — SECURITY OVERVIEW
+========================================
+Last updated: 2026-03-26
+
+
+AUTHENTICATION
+--------------
+- Single shared password gates all access to the dashboard.
+- Password is stored in the .env file on the server as DASHBOARD_PASSWORD.
+  It is never hardcoded in source code and never committed to git.
+- On login, the password is compared server-side using secrets.compare_digest()
+  (Python stdlib). This function is timing-attack safe — it always takes the
+  same amount of time regardless of how close the guess is, preventing
+  attackers from measuring response time to narrow down the password.
+- A 1-second delay is enforced on every failed login attempt, slowing down
+  brute force attacks significantly.
+- On success, the password value is used as a bearer token and stored in the
+  browser's sessionStorage (not localStorage). sessionStorage is automatically
+  cleared when the tab or browser is closed, so sessions do not persist.
+
+
+API PROTECTION
+--------------
+- Every API endpoint (/api/*) is protected by HTTP middleware that checks for
+  a valid Authorization: Bearer <token> header on every request.
+- The login endpoint (/api/auth) is the only route exempt from this check.
+- Direct API calls without a valid token (e.g. via curl or a script) receive
+  a 401 Unauthorized response and no data.
+- This means the protection is at the data layer, not just the UI layer.
+  Bypassing the frontend does not grant access to the data.
+
+
+FRONTEND
+--------
+- The React app checks sessionStorage on load. If no valid token is present,
+  the login page is shown before any part of the dashboard renders.
+- All API calls from the frontend use an authFetch() wrapper that
+  automatically injects the Authorization header on every request.
+- This covers all data-fetching components: Live Status, Analytics, Map,
+  Hub Detail modal, Custom Range panels, and the Excel export.
+- The static HTML/CSS/JS files (the app shell) are served without auth.
+  This is intentional and safe — no sensitive data lives in the frontend
+  bundle itself.
+
+
+WHAT IS NOT COVERED (KNOWN LIMITATIONS)
+----------------------------------------
+- HTTPS / TLS: Credentials and tokens travel in plaintext over HTTP unless
+  a reverse proxy (e.g. nginx) with TLS is configured at the server level.
+  This is a server infrastructure concern, not an application concern.
+  It is strongly recommended to run behind HTTPS in production.
+
+- Single shared password: There are no individual user accounts, no roles,
+  and no audit log of who accessed what. If the password is compromised,
+  it must be changed in .env and the API server restarted.
+
+- No token expiry: The bearer token does not expire on the server side.
+  It remains valid until DASHBOARD_PASSWORD is changed in .env. Closing
+  the browser tab clears the token from sessionStorage on the client side.
+
+- Rate limiting: The 1-second delay on failed logins is a basic deterrent,
+  not a full rate limiter. A determined attacker could still make ~60
+  attempts per minute. A stronger solution would use IP-based rate limiting
+  at the nginx/proxy layer.
+
+- CORS: The API allows all origins by default (CORS_ORIGINS=*). To lock
+  this down, set CORS_ORIGINS to the exact domain(s) the dashboard is
+  served from in .env.
+
+
+RECOMMENDATIONS
+---------------
+1. Change DASHBOARD_PASSWORD in .env to a strong, random passphrase.
+2. Put the server behind nginx with a TLS certificate (e.g. Let's Encrypt).
+3. Set CORS_ORIGINS in .env to your specific domain once on HTTPS.
+4. Add logs/scheduler.log to .gitignore to prevent future git merge conflicts.
+
+git add 
