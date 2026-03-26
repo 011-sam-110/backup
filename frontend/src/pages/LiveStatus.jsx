@@ -83,19 +83,28 @@ export default function LiveStatus() {
   const [selectedHub, setSelectedHub] = useState(null)
 
   const filters = useFilters()
-  const { hubsUrl, setAvailableOperators, dateRange } = filters
+  const { hubsUrl, visitsUrl, setAvailableOperators, dateRange } = filters
 
   const load = useCallback(async () => {
     try {
-      const [statsRes, hubsRes, deltasRes, sparkRes] = await Promise.all([
+      const [statsRes, hubsRes, deltasRes, sparkRes, visitsRes] = await Promise.all([
         authFetch('/api/stats'),
         authFetch(hubsUrl()),
         authFetch('/api/stats/deltas'),
         authFetch('/api/sparkline?days=7'),
+        authFetch(visitsUrl()),
       ])
       const hubData = await hubsRes.json()
+      const visitsData = await visitsRes.json()
+      const visitMap = new Map(visitsData.map(v => [v.hub_uuid, v]))
+
       setStats(await statsRes.json())
-      setHubs(hubData)
+      setHubs(hubData.map(h => ({
+        ...h,
+        visit_count: visitMap.get(h.uuid)?.visit_count ?? 0,
+        avg_dwell_min: visitMap.get(h.uuid)?.avg_dwell_min ?? null,
+        active_visits: visitMap.get(h.uuid)?.active_visits ?? 0,
+      })))
       setDeltas(await deltasRes.json())
       setSparkline(await sparkRes.json())
       setLastUpdated(new Date())
@@ -108,7 +117,7 @@ export default function LiveStatus() {
     } finally {
       setLoading(false)
     }
-  }, [hubsUrl, setAvailableOperators]) // eslint-disable-line
+  }, [hubsUrl, visitsUrl, setAvailableOperators]) // eslint-disable-line
 
   useEffect(() => {
     load()

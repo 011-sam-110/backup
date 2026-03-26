@@ -72,6 +72,22 @@ export function FilterProvider({ children }) {
     return '/api/hubs'
   }, [dateRange])
 
+  /** Returns URL for /api/visits with date range + all toolbar filters */
+  const visitsUrl = useCallback(() => {
+    const parts = []
+    if (dateRange.start && dateRange.end) {
+      parts.push(`start_dt=${encodeURIComponent(dateRange.start.toISOString())}`)
+      parts.push(`end_dt=${encodeURIComponent(dateRange.end.toISOString())}`)
+    }
+    if (operatorFilter !== 'all') parts.push(`operator=${encodeURIComponent(operatorFilter)}`)
+    if (connectorFilter !== 'all') parts.push(`connector=${encodeURIComponent(connectorFilter)}`)
+    if (minKw) parts.push(`min_kw=${encodeURIComponent(minKw)}`)
+    if (maxKw) parts.push(`max_kw=${encodeURIComponent(maxKw)}`)
+    if (minEvses) parts.push(`min_evses=${encodeURIComponent(minEvses)}`)
+    if (maxEvses) parts.push(`max_evses=${encodeURIComponent(maxEvses)}`)
+    return `/api/visits${parts.length ? '?' + parts.join('&') : ''}`
+  }, [dateRange, operatorFilter, connectorFilter, minKw, maxKw, minEvses, maxEvses])
+
   return (
     <FilterContext.Provider value={{
       search, setSearch,
@@ -90,6 +106,7 @@ export function FilterProvider({ children }) {
       analyticsParams,
       filterOnlyParams,
       hubsUrl,
+      visitsUrl,
     }}>
       {children}
     </FilterContext.Provider>

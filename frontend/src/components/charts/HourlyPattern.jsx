@@ -7,7 +7,7 @@ import { utilColor, fmtKw } from '../../utils/status'
 // Fill in missing hours with 0
 function fillHours(data) {
   const map = Object.fromEntries(data.map(d => [d.hour, d]))
-  return Array.from({ length: 24 }, (_, h) => map[h] ?? { hour: h, avg_utilisation_pct: 0, avg_est_kw: 0, data_points: 0 })
+  return Array.from({ length: 24 }, (_, h) => map[h] ?? { hour: h, avg_utilisation_pct: 0, avg_est_kw: 0, avg_visit_starts: 0, data_points: 0 })
 }
 
 function fmtHour(h) {
@@ -36,6 +36,9 @@ const CustomTooltip = ({ active, payload }) => {
       </div>
       {d.avg_est_kw > 0 && (
         <div style={{ color: '#f59e0b', marginTop: 2 }}>Est. {fmtKw(d.avg_est_kw)}</div>
+      )}
+      {d.avg_visit_starts > 0 && (
+        <div style={{ color: '#818CF8', marginTop: 2 }}>{d.avg_visit_starts} avg visit starts</div>
       )}
       <div style={{ color: '#6B7280', fontSize: 11, marginTop: 2 }}>
         {d.data_points} data points
@@ -90,10 +93,24 @@ export default function HourlyPattern({ data }) {
           axisLine={false}
           tickLine={false}
         />
+        <YAxis
+          yAxisId="visits"
+          orientation="right"
+          tick={{ fill: '#818CF8', fontSize: 10, fontFamily: 'Inter, sans-serif' }}
+          axisLine={false}
+          tickLine={false}
+          tickFormatter={v => v > 0 ? v : ''}
+          width={28}
+        />
         <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
         <Legend
           wrapperStyle={{ fontSize: 11, fontFamily: 'Inter, sans-serif', paddingTop: 4 }}
-          formatter={(value) => value === 'avg_utilisation_pct' ? 'Utilisation %' : 'Est. Load (kW)'}
+          formatter={(value) => {
+            if (value === 'avg_utilisation_pct') return 'Utilisation %'
+            if (value === 'avg_est_kw') return 'Est. Load (kW)'
+            if (value === 'avg_visit_starts') return 'Avg Visit Starts'
+            return value
+          }}
         />
         <Bar yAxisId="pct" dataKey="avg_utilisation_pct" radius={[4, 4, 0, 0]} maxBarSize={10}>
           {chartData.map((d) => (
@@ -101,6 +118,7 @@ export default function HourlyPattern({ data }) {
           ))}
         </Bar>
         <Bar yAxisId="kw" dataKey="avg_est_kw" fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={10} />
+        <Bar yAxisId="visits" dataKey="avg_visit_starts" fill="#818CF8" radius={[4, 4, 0, 0]} maxBarSize={10} />
       </BarChart>
     </ResponsiveContainer>
   )

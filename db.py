@@ -114,6 +114,17 @@ def init_db() -> None:
 
         CREATE INDEX IF NOT EXISTS idx_snapshots_time
             ON snapshots(scraped_at);
+
+        CREATE TABLE IF NOT EXISTS visits (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            hub_uuid    TEXT NOT NULL REFERENCES hubs(uuid),
+            started_at  TEXT NOT NULL,
+            ended_at    TEXT,
+            dwell_min   INTEGER
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_visits_hub_start
+            ON visits(hub_uuid, started_at);
     """)
     # Migration guard for existing databases
     try:
@@ -269,7 +280,51 @@ def insert_snapshots(records: list[dict]) -> None:
     con.commit()
     count_after = con.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
     log.info("insert_snapshots: %d → %d (+%d)", count_before, count_after, count_after - count_before)
+    _detect_visits(records, con)
     con.close()
+
+
+def _detect_visits(records: list[dict], con: sqlite3.Connection) -> None:
+    """Infer visit starts/ends from changes in charging_count between consecutive snapshots."""
+    for r in records:
+        uuid = r["uuid"]
+        scraped_at = r["scraped_at"]
+        curr_charging = r.get("charging_count") or 0
+
+        prev_row = con.execute("""
+            SELECT charging_count FROM snapshots
+            WHERE hub_uuid = ? AND scraped_at < ?
+            ORDER BY scraped_at DESC LIMIT 1
+        """, (uuid, scraped_at)).fetchone()
+
+        if prev_row is None:
+            continue
+
+        prev_charging = prev_row["charging_count"] or 0
+        delta = curr_charging - prev_charging
+
+        if delta > 0:
+            con.executemany(
+                "INSERT INTO visits (hub_uuid, started_at) VALUES (?, ?)",
+                [(uuid, scraped_at)] * delta,
+            )
+        elif delta < 0:
+            open_visits = con.execute("""
+                SELECT id, started_at FROM visits
+                WHERE hub_uuid = ? AND ended_at IS NULL
+                ORDER BY started_at ASC
+                LIMIT ?
+            """, (uuid, abs(delta))).fetchall()
+            for v in open_visits:
+                start = datetime.fromisoformat(v["started_at"].replace('Z', '+00:00'))
+                end = datetime.fromisoformat(scraped_at.replace('Z', '+00:00'))
+                dwell_min = round((end - start).total_seconds() / 60)
+                con.execute(
+                    "UPDATE visits SET ended_at = ?, dwell_min = ? WHERE id = ?",
+                    (scraped_at, dwell_min, v["id"]),
+                )
+
+    con.commit()
 
 
 def _deserialise_hub(d: dict) -> dict:
@@ -469,8 +524,35 @@ def get_hourly_pattern(hours: int = 168, hub_uuid: str | None = None,
         GROUP BY hour
         ORDER BY hour
     """, params).fetchall()
+    result = [dict(r) for r in rows]
+
+    # Merge avg visit starts per hour from visits table
+    if start_dt and end_dt:
+        v_start = _parse_dt(start_dt)
+        v_end = _parse_dt(end_dt)
+    else:
+        v_start = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+        v_end = datetime.now(timezone.utc).isoformat()
+    vp: list = [v_start, v_end]
+    v_hub_filter = _hub_subquery(vp, operator, connector, min_kw, max_kw, min_evses, max_evses)
+    if hub_uuid:
+        v_hub_filter += " AND hub_uuid = ?"
+        vp.append(hub_uuid)
+    visit_rows = con.execute(f"""
+        SELECT
+            CAST(strftime('%H', started_at) AS INTEGER) AS hour,
+            COUNT(*) AS total_starts,
+            COUNT(DISTINCT DATE(started_at)) AS day_count
+        FROM visits
+        WHERE started_at >= ? AND started_at <= ?{v_hub_filter}
+        GROUP BY hour
+    """, vp).fetchall()
+    visit_map = {r["hour"]: round(r["total_starts"] / max(r["day_count"], 1), 1) for r in visit_rows}
+    for row in result:
+        row["avg_visit_starts"] = visit_map.get(row["hour"], 0)
+
     con.close()
-    return [dict(r) for r in rows]
+    return result
 
 
 def get_hourly_heatmap(hours: int = 336, hub_uuid: str | None = None,
@@ -674,6 +756,31 @@ def get_all_hubs_for_scrape() -> list[dict]:
     rows = con.execute(
         "SELECT uuid, latitude, longitude, max_power_kw, total_evses, connector_types FROM hubs"
     ).fetchall()
+    con.close()
+    return [dict(r) for r in rows]
+
+
+def get_visit_stats(start_dt: str, end_dt: str,
+                    operator: str | None = None, connector: str | None = None,
+                    min_kw: float | None = None, max_kw: float | None = None,
+                    min_evses: int | None = None, max_evses: int | None = None) -> list[dict]:
+    """Per-hub visit counts and average dwell time for a date range."""
+    s = _parse_dt(start_dt)
+    e = _parse_dt(end_dt)
+    params: list = [s, e]
+    hub_filter = _hub_subquery(params, operator, connector, min_kw, max_kw, min_evses, max_evses)
+    con = _connect()
+    rows = con.execute(f"""
+        SELECT
+            hub_uuid,
+            COUNT(CASE WHEN ended_at IS NOT NULL THEN 1 END)       AS visit_count,
+            ROUND(AVG(CASE WHEN ended_at IS NOT NULL
+                           THEN dwell_min END))                    AS avg_dwell_min,
+            COUNT(CASE WHEN ended_at IS NULL THEN 1 END)           AS active_visits
+        FROM visits
+        WHERE started_at >= ? AND started_at <= ?{hub_filter}
+        GROUP BY hub_uuid
+    """, params).fetchall()
     con.close()
     return [dict(r) for r in rows]
 

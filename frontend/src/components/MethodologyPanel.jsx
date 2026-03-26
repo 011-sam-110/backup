@@ -63,6 +63,19 @@ export default function MethodologyPanel() {
               <b> 30–50% lower</b> than shown.
             </span>
           </ROW>
+
+          <ROW label="Visits & dwell time">
+            <span>
+              A visit is inferred when <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: 4, fontSize: 11 }}>charging_count</code> increases
+              between two consecutive 5-minute snapshots — each unit of increase is counted as one visit start.
+              When the count decreases, the oldest open visits are closed first (FIFO) and dwell time is recorded.
+              Only <b>completed</b> visits are included in the average dwell; active sessions are excluded.{' '}
+              <b>Limitation:</b> any session that both starts and ends within a single 5-minute polling window
+              is invisible to this method. Dwell times represent the time between when a start and end were
+              detected, so they are lower bounds for very short sessions and may over- or under-count when
+              multiple arrivals and departures coincide in the same window.
+            </span>
+          </ROW>
         </div>
       )}
     </div>
