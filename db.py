@@ -168,6 +168,35 @@ def init_db() -> None:
         pass
     con.commit()
     con.close()
+    purge_non_gb_hubs()
+
+
+def purge_non_gb_hubs() -> int:
+    """
+    Remove hubs (and all their snapshots + visits) that fall outside the
+    current Great Britain filter — tightened western/eastern bounds and
+    Isle of Man exclusion zone. Returns the number of hubs deleted.
+    """
+    con = _connect()
+    bad_uuids = con.execute("""
+        SELECT uuid FROM hubs
+        WHERE
+            -- Outside tightened bounding box
+            latitude  < 49.9  OR latitude  > 61.0
+            OR longitude < -5.85 OR longitude > 1.75
+            -- Isle of Man exclusion zone
+            OR (latitude BETWEEN 53.9 AND 54.5 AND longitude BETWEEN -4.9 AND -4.0)
+    """).fetchall()
+    uuids = [r["uuid"] for r in bad_uuids]
+    if uuids:
+        placeholders = ",".join("?" * len(uuids))
+        con.execute(f"DELETE FROM visits    WHERE hub_uuid IN ({placeholders})", uuids)
+        con.execute(f"DELETE FROM snapshots WHERE hub_uuid IN ({placeholders})", uuids)
+        con.execute(f"DELETE FROM hubs      WHERE uuid     IN ({placeholders})", uuids)
+        con.commit()
+        log.info("purge_non_gb_hubs: removed %d hubs outside valid GB area", len(uuids))
+    con.close()
+    return len(uuids)
 
 
 def upsert_hubs(records: list[dict]) -> None:

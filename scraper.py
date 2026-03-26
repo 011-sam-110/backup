@@ -18,8 +18,8 @@ log = logging.getLogger("evanti.scraper")
 load_dotenv()
 BASE_API = "https://api.zap-map.io/locations/v1"
 MIN_POWER_W = 100_000
-GB_LAT = (49.9, 61.0)   # Scilly Isles → Shetland
-GB_LNG = (-8.7, 1.8)    # Outer Hebrides / W Scotland → East Anglia
+GB_LAT = (49.9, 61.0)    # Scilly Isles → Shetland
+GB_LNG = (-5.85, 1.75)  # SW Scotland / Land's End → East Anglia (excludes Ireland, French coast)
 
 HEADLESS = os.getenv("HEADLESS", "true").lower() == "true"
 USE_PROXY = os.getenv("USE_PROXY", "false").lower() == "true"
@@ -65,10 +65,19 @@ def max_power_w(location: dict) -> int:
     return max(location.get("power", [0]))
 
 
+_IOM_LAT = (53.9, 54.5)
+_IOM_LNG = (-4.9, -4.0)
+
+
 def is_great_britain(loc: dict) -> bool:
     lat = loc["coordinates"]["latitude"]
     lng = loc["coordinates"]["longitude"]
-    return GB_LAT[0] <= lat <= GB_LAT[1] and GB_LNG[0] <= lng <= GB_LNG[1]
+    if not (GB_LAT[0] <= lat <= GB_LAT[1] and GB_LNG[0] <= lng <= GB_LNG[1]):
+        return False
+    # Exclude Isle of Man
+    if _IOM_LAT[0] <= lat <= _IOM_LAT[1] and _IOM_LNG[0] <= lng <= _IOM_LNG[1]:
+        return False
+    return True
 
 
 def _parse_status(status: dict) -> dict:
