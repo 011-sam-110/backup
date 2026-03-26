@@ -44,14 +44,6 @@ export default function MethodologyPanel() {
             Data Methodology
           </div>
 
-          <ROW label="Data source">
-            Zapmap live map API, scraped via headless Chromium. Covers GB 100 kW+ hubs only.
-          </ROW>
-
-          <ROW label="Scrape interval">
-            Every 5 minutes. Each scrape fetches the live EVSE status for all tracked hubs.
-          </ROW>
-
           <ROW label="Utilisation %">
             Charging EVSEs ÷ total EVSEs (available + charging + inoperative + out-of-order + unknown) × 100.
           </ROW>
@@ -61,11 +53,6 @@ export default function MethodologyPanel() {
               <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: 4, fontSize: 11 }}>
                 charging_count × hub_max_kW × 0.7
               </code>
-              <br />
-              <span style={{ color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
-                The 0.7 factor accounts for the EV charging curve (vehicles slow charge as the battery fills),
-                thermal derating, and load balancing across shared connections. Applied per hub.
-              </span>
             </span>
           </ROW>
 
@@ -76,20 +63,6 @@ export default function MethodologyPanel() {
               <b> 30–50% lower</b> than shown.
             </span>
           </ROW>
-
-          <ROW label="Best used for">
-            Relative comparisons, trend identification, and directional analysis. Not suitable for billing,
-            grid planning, or regulatory reporting.
-          </ROW>
-
-          <div style={{
-            marginTop: 14, paddingTop: 12,
-            borderTop: '1px solid var(--border)',
-            color: 'var(--text-muted)', fontSize: 11,
-          }}>
-            EVSE = Electric Vehicle Supply Equipment (a single charging outlet/connector point).
-            One hub may have multiple EVSEs sharing a single power connection.
-          </div>
         </div>
       )}
     </div>

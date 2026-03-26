@@ -390,7 +390,7 @@ select.filter-input option {
   padding: 6px 8px;
   cursor: pointer;
   font-size: 12px;
-  color: var(--text);
+  color: #000000;
 }
 .op-option:hover  { background: rgba(0, 86, 179, 0.06); }
 .op-option.active { background: rgba(0, 86, 179, 0.10); color: var(--accent); font-weight: 600; }
@@ -410,11 +410,11 @@ select.filter-input option {
   padding: 0;
   cursor: pointer;
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--text);
   line-height: 1;
   flex-shrink: 0;
-  opacity: 0.35;
-  transition: opacity 0.1s, color 0.1s;
+  opacity: 1;
+  transition: color 0.1s;
 }
 .op-star:hover, .op-star--on { opacity: 1; color: #f59e0b; }
 
