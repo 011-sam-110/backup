@@ -4,6 +4,7 @@ import logging
 import os
 import random
 import re
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
@@ -23,6 +24,11 @@ GB_LNG = (-5.85, 1.75)  # SW Scotland / Land's End → East Anglia (excludes Ire
 
 HEADLESS = os.getenv("HEADLESS", "true").lower() == "true"
 USE_PROXY = os.getenv("USE_PROXY", "false").lower() == "true"
+
+# ── Bearer token cache (shared between full and targeted scrapes) ─────────────
+_last_bearer: str | None = None
+_bearer_cached_at: float = 0.0
+BEARER_MAX_AGE_S: float = 55 * 60  # 55 minutes
 
 # ── Bandwidth reduction — block resources that are never needed ───────────────
 _BLOCK_TYPES = {"image", "font", "media", "stylesheet"}
@@ -451,6 +457,12 @@ async def scrape():
 
         scraped_at = datetime.now(timezone.utc).isoformat()
 
+        # Cache bearer token for targeted fast scrapes
+        global _last_bearer, _bearer_cached_at
+        if bearer_token:
+            _last_bearer = bearer_token
+            _bearer_cached_at = time.monotonic()
+
         await browser.close()
 
     # ── Build records ──────────────────────────────────────────────────────────
@@ -495,6 +507,130 @@ async def scrape():
     db.update_latest_devices_status(db_only_records)
     log.info("DB write complete — %d hub snapshots saved", total_records)
     print(f"Saved {total_records} hub snapshots to database.")
+
+
+async def scrape_targeted(uuids: list[str]) -> int:
+    """Fetch status snapshots for a specific set of hub UUIDs (high-frequency mode).
+
+    Launches a lightweight browser session — no bounding-box capture, no zooming.
+    Uses the module-level bearer token cache from the last full scrape as a fallback
+    if the page doesn't produce a fresh token within the initial wait.
+
+    Returns the number of snapshots saved.
+    """
+    global _last_bearer, _bearer_cached_at
+
+    if not uuids:
+        return 0
+
+    bearer_token: str | None = None
+
+    async with async_playwright() as p:
+        proxy_cfg = _pick_proxy()
+        browser = await p.chromium.launch(
+            headless=HEADLESS,
+            args=[
+                "--disable-blink-features=AutomationControlled",
+                "--no-sandbox",
+                "--disable-dev-shm-usage",
+                "--enable-unsafe-swiftshader",
+            ],
+            proxy=proxy_cfg,
+        )
+        context = await browser.new_context(
+            viewport={"width": 1280, "height": 720},
+            user_agent=(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/146.0.0.0 Safari/537.36"
+            ),
+        )
+        page = await context.new_page()
+        await page.route("**/*", _block_junk)
+
+        def on_request(request):
+            nonlocal bearer_token
+            if bearer_token or "api.zap-map.io" not in request.url:
+                return
+            auth = request.headers.get("authorization", "")
+            if auth.startswith("Bearer "):
+                bearer_token = auth
+
+        page.on("request", on_request)
+
+        await page.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+            Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
+            Object.defineProperty(navigator, 'languages', {get: () => ['en-GB', 'en']});
+            Object.defineProperty(window, 'chrome', {
+                writable: true, enumerable: true, configurable: false,
+                value: {runtime: {}}
+            });
+            const _origQuery = window.navigator.permissions.query;
+            window.navigator.permissions.query = (p) =>
+                p.name === 'notifications'
+                    ? Promise.resolve({state: Notification.permission})
+                    : _origQuery(p);
+        """)
+
+        log.info("scrape_targeted: navigating to zapmap.com/live/")
+        await page.goto("https://www.zapmap.com/live/",
+                        wait_until="domcontentloaded", timeout=90_000)
+        # Short wait — just enough for the page to fire initial API requests
+        await page.wait_for_timeout(4_000)
+
+        # Fall back to cached token if the page didn't produce a fresh one
+        if not bearer_token:
+            cached_age = time.monotonic() - _bearer_cached_at
+            if _last_bearer and cached_age < BEARER_MAX_AGE_S:
+                log.info("scrape_targeted: using cached bearer token (age %.0fs)", cached_age)
+                bearer_token = _last_bearer
+            else:
+                log.warning("scrape_targeted: no bearer token available — skipping")
+                await browser.close()
+                return 0
+
+        # Update cache with the fresh token (if we got one from this session)
+        _last_bearer = bearer_token
+        _bearer_cached_at = time.monotonic()
+
+        # Fetch status in chunks of 50
+        status_map: dict = {}
+        chunks = [uuids[i:i + 50] for i in range(0, len(uuids), 50)]
+        log.info("scrape_targeted: fetching status for %d hubs (%d chunks)", len(uuids), len(chunks))
+        for chunk in chunks:
+            url = f"{BASE_API}/transient/status?uuids={','.join(chunk)}"
+            data = await fetch_via_browser(page, url, auth=bearer_token)
+            if data:
+                for item in data.get("data", []):
+                    status_map[item["uuid"]] = item
+
+        await browser.close()
+
+    scraped_at = datetime.now(timezone.utc).isoformat()
+    records = []
+    for uuid in uuids:
+        s = status_map.get(uuid)
+        if not s:
+            continue
+        parsed = _parse_status(s)
+        records.append({
+            "uuid": uuid,
+            "scraped_at": scraped_at,
+            "available_count":    parsed["available"],
+            "charging_count":     parsed["charging"],
+            "inoperative_count":  parsed["inoperative"],
+            "out_of_order_count": parsed["out_of_order"],
+            "unknown_count":      parsed["unknown"],
+            "devices":            parsed["devices_out"],
+        })
+
+    if records:
+        db.process_evse_events(records)
+        db.insert_snapshots(records)
+        log.info("scrape_targeted: saved %d snapshots", len(records))
+
+    return len(records)
 
 
 if __name__ == "__main__":

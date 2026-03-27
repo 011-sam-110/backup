@@ -15,15 +15,16 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from dotenv import load_dotenv
 
 from log_setup import setup_logging
-from scraper import scrape
+from scraper import scrape, scrape_targeted
 import db
 
 load_dotenv()
 setup_logging()
 log = logging.getLogger("evanti.scheduler")
-INTERVAL_MINUTES = int(os.getenv("SCRAPE_INTERVAL_MINUTES", 15))
-MAX_RETRIES      = 3    # attempts per scrape run
-RETRY_DELAY_S    = 30   # seconds between retry attempts
+INTERVAL_MINUTES    = int(os.getenv("SCRAPE_INTERVAL_MINUTES", 15))
+HF_INTERVAL_MINUTES = 1   # high-frequency polling interval for flagged groups
+MAX_RETRIES         = 3    # attempts per scrape run
+RETRY_DELAY_S       = 30   # seconds between retry attempts
 DB_PATH = Path("chargers.db")
 
 colorama.init()
@@ -313,10 +314,25 @@ def job():
     scraping = False          # re-enables auto-refresh
 
 
+def fast_job():
+    """1-minute targeted scrape for hubs in high-frequency groups."""
+    uuids = db.get_high_frequency_hub_uuids()
+    if not uuids:
+        return
+    log.info("Fast scrape: %d high-frequency hubs", len(uuids))
+    try:
+        count = asyncio.run(scrape_targeted(uuids))
+        log.info("Fast scrape: %d snapshots saved", count)
+    except Exception as exc:
+        log.error("Fast scrape failed: %s", exc)
+
+
 if __name__ == "__main__":
-    log.info("Scheduler starting — interval %d min, DB: %s", INTERVAL_MINUTES, db.DB_PATH)
+    log.info("Scheduler starting — interval %d min, HF interval %d min, DB: %s",
+             INTERVAL_MINUTES, HF_INTERVAL_MINUTES, db.DB_PATH)
     scheduler = BlockingScheduler()
     scheduler.add_job(job, "interval", minutes=INTERVAL_MINUTES)
+    scheduler.add_job(fast_job, "interval", minutes=HF_INTERVAL_MINUTES)
     threading.Thread(target=_refresh_loop, daemon=True).start()
     job()
     scheduler.start()

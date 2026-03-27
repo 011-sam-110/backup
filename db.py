@@ -136,9 +136,10 @@ def init_db() -> None:
             ON visits(hub_uuid, started_at);
 
         CREATE TABLE IF NOT EXISTS groups (
-            id         INTEGER PRIMARY KEY AUTOINCREMENT,
-            name       TEXT NOT NULL UNIQUE,
-            created_at TEXT NOT NULL
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            name           TEXT NOT NULL UNIQUE,
+            created_at     TEXT NOT NULL,
+            high_frequency INTEGER NOT NULL DEFAULT 0
         );
 
         CREATE TABLE IF NOT EXISTS group_hubs (
@@ -203,6 +204,11 @@ def init_db() -> None:
         pass
     try:
         con.execute("ALTER TABLE visits ADD COLUMN evse_uuid TEXT DEFAULT NULL")
+        con.commit()
+    except Exception:
+        pass
+    try:
+        con.execute("ALTER TABLE groups ADD COLUMN high_frequency INTEGER NOT NULL DEFAULT 0")
         con.commit()
     except Exception:
         pass
@@ -995,7 +1001,7 @@ def get_groups() -> list[dict]:
     """Return all groups with their hub counts."""
     con = _connect()
     rows = con.execute("""
-        SELECT g.id, g.name, g.created_at,
+        SELECT g.id, g.name, g.created_at, g.high_frequency,
                COUNT(gh.hub_uuid) AS hub_count
         FROM groups g
         LEFT JOIN group_hubs gh ON gh.group_id = g.id
@@ -1073,6 +1079,41 @@ def get_group_hub_uuids(group_id: int) -> list[str]:
     rows = con.execute(
         "SELECT hub_uuid FROM group_hubs WHERE group_id = ?", (group_id,)
     ).fetchall()
+    con.close()
+    return [r["hub_uuid"] for r in rows]
+
+
+def get_group_by_id(group_id: int) -> dict | None:
+    con = _connect()
+    row = con.execute("SELECT * FROM groups WHERE id = ?", (group_id,)).fetchone()
+    con.close()
+    return dict(row) if row else None
+
+
+def set_group_high_frequency(group_id: int, value: bool) -> dict | None:
+    con = _connect()
+    cur = con.execute(
+        "UPDATE groups SET high_frequency = ? WHERE id = ?",
+        (1 if value else 0, group_id),
+    )
+    con.commit()
+    if cur.rowcount == 0:
+        con.close()
+        return None
+    row = con.execute("SELECT * FROM groups WHERE id = ?", (group_id,)).fetchone()
+    con.close()
+    return dict(row) if row else None
+
+
+def get_high_frequency_hub_uuids() -> list[str]:
+    """Return UUIDs of all hubs belonging to at least one high-frequency group."""
+    con = _connect()
+    rows = con.execute("""
+        SELECT DISTINCT gh.hub_uuid
+        FROM group_hubs gh
+        JOIN groups g ON g.id = gh.group_id
+        WHERE g.high_frequency = 1
+    """).fetchall()
     con.close()
     return [r["hub_uuid"] for r in rows]
 

@@ -175,6 +175,17 @@ export default function Toolbar() {
     } catch { /* ignore */ }
   }
 
+  const toggleHighFreq = async (g) => {
+    try {
+      await authFetch(`/api/groups/${g.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ high_frequency: !g.high_frequency }),
+      })
+      await loadGroups()
+    } catch { /* ignore */ }
+  }
+
   const hasFilters = search || minKw || maxKw || minEvses || maxEvses || minUtil || maxUtil ||
     connectorFilter !== 'all' || operatorFilter.size > 0 ||
     dateRange.start || startHour !== null || endHour !== null
@@ -304,6 +315,11 @@ export default function Toolbar() {
                       borderRadius: 4, padding: '0 2px', lineHeight: 1,
                     }}
                   >◎</button>
+                  <button
+                    onClick={() => toggleHighFreq(g)}
+                    title={g.high_frequency ? '1-min polling ON — click to disable' : 'Enable 1-min polling for this group'}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: g.high_frequency ? '#f59e0b' : 'var(--text-dim)', fontSize: 12, padding: '0 1px', lineHeight: 1 }}
+                  >⚡</button>
                   <button
                     onClick={() => { setRenamingId(g.id); setRenameVal(g.name) }}
                     title="Rename"

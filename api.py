@@ -230,14 +230,24 @@ def create_group(body: dict = Body(...)):
 
 
 @app.patch("/api/groups/{group_id}")
-def rename_group(group_id: int, body: dict = Body(...)):
+def update_group(group_id: int, body: dict = Body(...)):
     name = (body.get("name") or "").strip()
-    if not name:
-        raise HTTPException(status_code=400, detail="name is required")
-    updated = db.rename_group(group_id, name)
-    if not updated:
-        raise HTTPException(status_code=404, detail="Group not found")
-    return updated
+    hf   = body.get("high_frequency")
+
+    if not name and hf is None:
+        raise HTTPException(status_code=400, detail="name or high_frequency is required")
+
+    updated = None
+    if name:
+        updated = db.rename_group(group_id, name)
+        if not updated:
+            raise HTTPException(status_code=404, detail="Group not found")
+    if hf is not None:
+        updated = db.set_group_high_frequency(group_id, bool(hf))
+        if not updated:
+            raise HTTPException(status_code=404, detail="Group not found")
+
+    return updated or db.get_group_by_id(group_id)
 
 
 @app.delete("/api/groups/{group_id}", status_code=204)
