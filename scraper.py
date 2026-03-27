@@ -485,6 +485,10 @@ async def scrape():
 
     # Persist to SQLite
     db.init_db()
+
+    # EVSE-level change detection must run before upsert_hubs overwrites latest_devices_status
+    db.process_evse_events(all_records + db_only_records)
+
     db.upsert_hubs(all_records)
     db.insert_snapshots(all_records + db_only_records)
     db.update_latest_devices_status(db_only_records)

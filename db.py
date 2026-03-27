@@ -14,6 +14,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 INTERVAL_MINUTES = int(os.getenv("SCRAPE_INTERVAL_MINUTES", 15))
+EVSE_EVENT_RETENTION_DAYS = int(os.getenv("EVSE_EVENT_RETENTION_DAYS", "30"))
 
 log = logging.getLogger("evanti.db")
 
@@ -148,6 +149,20 @@ def init_db() -> None:
 
         CREATE INDEX IF NOT EXISTS idx_group_hubs_group
             ON group_hubs(group_id);
+
+        CREATE TABLE IF NOT EXISTS evse_events (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            evse_uuid  TEXT NOT NULL,
+            hub_uuid   TEXT NOT NULL REFERENCES hubs(uuid),
+            scraped_at TEXT NOT NULL,
+            status     TEXT NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_evse_events_evse_time
+            ON evse_events(evse_uuid, scraped_at);
+
+        CREATE INDEX IF NOT EXISTS idx_evse_events_hub_time
+            ON evse_events(hub_uuid, scraped_at);
     """)
     # Migration guard for existing databases
     try:
@@ -186,6 +201,11 @@ def init_db() -> None:
         con.commit()
     except Exception:
         pass
+    try:
+        con.execute("ALTER TABLE visits ADD COLUMN evse_uuid TEXT DEFAULT NULL")
+        con.commit()
+    except Exception:
+        pass
     con.commit()
     con.close()
     purge_non_gb_hubs()
@@ -210,9 +230,10 @@ def purge_non_gb_hubs() -> int:
     uuids = [r["uuid"] for r in bad_uuids]
     if uuids:
         placeholders = ",".join("?" * len(uuids))
-        con.execute(f"DELETE FROM visits    WHERE hub_uuid IN ({placeholders})", uuids)
-        con.execute(f"DELETE FROM snapshots WHERE hub_uuid IN ({placeholders})", uuids)
-        con.execute(f"DELETE FROM hubs      WHERE uuid     IN ({placeholders})", uuids)
+        con.execute(f"DELETE FROM evse_events WHERE hub_uuid IN ({placeholders})", uuids)
+        con.execute(f"DELETE FROM visits     WHERE hub_uuid IN ({placeholders})", uuids)
+        con.execute(f"DELETE FROM snapshots  WHERE hub_uuid IN ({placeholders})", uuids)
+        con.execute(f"DELETE FROM hubs       WHERE uuid     IN ({placeholders})", uuids)
         con.commit()
         log.info("purge_non_gb_hubs: removed %d hubs outside valid GB area", len(uuids))
     con.close()
@@ -332,12 +353,13 @@ def insert_snapshots(records: list[dict]) -> None:
     con.commit()
     count_after = con.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
     log.info("insert_snapshots: %d → %d (+%d)", count_before, count_after, count_after - count_before)
-    _detect_visits(records, con)
     con.close()
 
 
 def _detect_visits(records: list[dict], con: sqlite3.Connection) -> None:
-    """Infer visit starts/ends from changes in charging_count between consecutive snapshots."""
+    """Deprecated: superseded by detect_evse_changes(). Legacy visits have evse_uuid=NULL.
+    Inferred visits from charging_count deltas — systematically undercounts due to net-delta
+    cancellation. Kept for reference; no longer called."""
     for r in records:
         uuid = r["uuid"]
         scraped_at = r["scraped_at"]
@@ -803,6 +825,161 @@ def update_latest_devices_status(records: list[dict]) -> None:
         )
     con.commit()
     con.close()
+
+
+def detect_evse_changes(records: list[dict], con: sqlite3.Connection) -> None:
+    """Compare incoming per-EVSE statuses against the previously stored
+    latest_devices_status for each hub. Writes change events to evse_events
+    and opens/closes per-EVSE visits accordingly.
+
+    Must be called BEFORE upsert_hubs() so that latest_devices_status still
+    holds the previous scrape's state.
+    """
+    if not records:
+        return
+
+    hub_uuids = [r["uuid"] for r in records]
+    placeholders = ",".join("?" * len(hub_uuids))
+    rows = con.execute(
+        f"SELECT uuid, latest_devices_status FROM hubs WHERE uuid IN ({placeholders})",
+        hub_uuids,
+    ).fetchall()
+
+    # Build {hub_uuid → {evse_uuid → status}} from stored previous state
+    old_status_map: dict[str, dict[str, str]] = {}
+    for row in rows:
+        raw = row["latest_devices_status"]
+        if not raw:
+            continue
+        try:
+            devices = json.loads(raw)
+        except Exception:
+            continue
+        evse_map: dict[str, str] = {}
+        for device in devices:
+            for evse in device.get("evses", []):
+                evse_id = evse.get("evse_uuid")
+                status = (evse.get("network_status") or "UNKNOWN").upper()
+                if evse_id:
+                    evse_map[evse_id] = status
+        old_status_map[row["uuid"]] = evse_map
+
+    event_rows: list[tuple] = []          # (evse_uuid, hub_uuid, scraped_at, status)
+    visit_opens: list[tuple] = []         # (hub_uuid, evse_uuid, scraped_at)
+    visit_closes: list[tuple] = []        # (evse_uuid, scraped_at)
+
+    for r in records:
+        hub_uuid = r["uuid"]
+        scraped_at = r["scraped_at"]
+        old_evse_map = old_status_map.get(hub_uuid)  # None if hub is brand-new
+        new_devices = r.get("devices", [])
+
+        for device in new_devices:
+            for evse in device.get("evses", []):
+                evse_uuid = evse.get("evse_uuid")
+                if not evse_uuid:
+                    continue
+                new_status = (evse.get("network_status") or "UNKNOWN").upper()
+
+                if old_evse_map is None:
+                    # Hub seen for the first time — record event, no visit action
+                    event_rows.append((evse_uuid, hub_uuid, scraped_at, new_status))
+                    continue
+
+                old_status = old_evse_map.get(evse_uuid)
+
+                if old_status is None:
+                    # EVSE is brand-new within an existing hub — record event, no visit action
+                    event_rows.append((evse_uuid, hub_uuid, scraped_at, new_status))
+                    continue
+
+                if old_status == new_status:
+                    continue  # no change — skip
+
+                event_rows.append((evse_uuid, hub_uuid, scraped_at, new_status))
+
+                if new_status == "CHARGING":
+                    visit_opens.append((hub_uuid, evse_uuid, scraped_at))
+                if old_status == "CHARGING":
+                    visit_closes.append((evse_uuid, scraped_at))
+
+    if event_rows:
+        con.executemany(
+            "INSERT INTO evse_events (evse_uuid, hub_uuid, scraped_at, status) VALUES (?, ?, ?, ?)",
+            event_rows,
+        )
+
+    for hub_uuid, evse_uuid, scraped_at in visit_opens:
+        con.execute(
+            "INSERT INTO visits (hub_uuid, evse_uuid, started_at) VALUES (?, ?, ?)",
+            (hub_uuid, evse_uuid, scraped_at),
+        )
+
+    for evse_uuid, close_scraped_at in visit_closes:
+        open_visit = con.execute("""
+            SELECT id, started_at FROM visits
+            WHERE evse_uuid = ? AND ended_at IS NULL
+            ORDER BY started_at DESC LIMIT 1
+        """, (evse_uuid,)).fetchone()
+        if open_visit:
+            start = datetime.fromisoformat(open_visit["started_at"].replace('Z', '+00:00'))
+            end = datetime.fromisoformat(close_scraped_at.replace('Z', '+00:00'))
+            dwell_min = round((end - start).total_seconds() / 60)
+            con.execute(
+                "UPDATE visits SET ended_at = ?, dwell_min = ? WHERE id = ?",
+                (close_scraped_at, dwell_min, open_visit["id"]),
+            )
+
+    log.info(
+        "detect_evse_changes: %d events, %d visits opened, %d visits closed",
+        len(event_rows), len(visit_opens), len(visit_closes),
+    )
+
+
+def close_stale_visits(con: sqlite3.Connection, max_hours: int = 12) -> None:
+    """Force-close any visits that have been open longer than max_hours.
+    At 100kW+ no session should last more than a few hours; long-open visits
+    represent missed close events (scraper downtime, API gaps, etc.).
+    dwell_min is set to NULL to signal that the duration is unreliable.
+    """
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=max_hours)).isoformat()
+    stale = con.execute(
+        "SELECT id FROM visits WHERE ended_at IS NULL AND started_at < ?", (cutoff,)
+    ).fetchall()
+    if not stale:
+        return
+    now_str = datetime.now(timezone.utc).isoformat()
+    ids = [r["id"] for r in stale]
+    ph = ",".join("?" * len(ids))
+    con.execute(
+        f"UPDATE visits SET ended_at = ?, dwell_min = NULL WHERE id IN ({ph})",
+        [now_str] + ids,
+    )
+    log.info("close_stale_visits: force-closed %d visits open > %dh", len(ids), max_hours)
+
+
+def purge_old_evse_events(con: sqlite3.Connection) -> None:
+    """Delete evse_events older than EVSE_EVENT_RETENTION_DAYS (default 30)."""
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=EVSE_EVENT_RETENTION_DAYS)).isoformat()
+    cur = con.execute("DELETE FROM evse_events WHERE scraped_at < ?", (cutoff,))
+    if cur.rowcount:
+        log.info("purge_old_evse_events: deleted %d rows older than %d days",
+                 cur.rowcount, EVSE_EVENT_RETENTION_DAYS)
+
+
+def process_evse_events(records: list[dict]) -> None:
+    """Entry point called from scraper BEFORE upsert_hubs.
+    Detects per-EVSE status changes, opens/closes visits, closes stale visits,
+    and purges old events — all in a single transaction.
+    """
+    con = _connect()
+    try:
+        detect_evse_changes(records, con)
+        close_stale_visits(con)
+        purge_old_evse_events(con)
+        con.commit()
+    finally:
+        con.close()
 
 
 def get_all_hubs_for_scrape() -> list[dict]:
