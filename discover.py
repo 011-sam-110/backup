@@ -58,7 +58,7 @@ def build_hub_record_from_detail(uuid: str, detail: dict, scraped_at: str) -> di
         "inoperative_count": 0,
         "out_of_order_count": 0,
         "unknown_count": 0,
-        "devices": [],
+        "devices_raw_loc": detail.get("devices", []),
         "hub_name": detail.get("name") or None,
         "operator": operator or None,
         "user_rating": detail.get("user_rating"),
@@ -191,10 +191,14 @@ async def discover():
         if not is_great_britain({"coordinates": coords}):
             skipped += 1
             continue
-        records.append(build_hub_record_from_detail(uuid, detail, scraped_at))
+        rec = build_hub_record_from_detail(uuid, detail, scraped_at)
+        if rec["max_power_kw"] < 100:
+            skipped += 1
+            continue
+        records.append(rec)
 
     if skipped:
-        print(f"Skipped {skipped} hub(s) outside Great Britain.")
+        print(f"Skipped {skipped} hub(s) (outside Great Britain or below 100 kW).")
 
     db.init_db()
     db.upsert_hubs(records)
