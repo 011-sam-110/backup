@@ -200,7 +200,6 @@ export default function Graphs() {
                   : <UtilisationLine data={history} />}
                 <CustomRangePanel
                   title="SECONDARY CUSTOM CHART"
-                  showOperator
                   buildUrl={(range, sh, eh, fp) => {
                     const dt = range.start && range.end
                       ? `&start_dt=${enc(range.start)}&end_dt=${enc(range.end)}`
@@ -228,7 +227,6 @@ export default function Graphs() {
                 <ReliabilityChart data={reliabilityData} />
                 <CustomRangePanel
                   title="SECONDARY CUSTOM CHART"
-                  showOperator
                   buildUrl={(range, sh, eh, fp) => {
                     const dt = range.start && range.end
                       ? `&start_dt=${enc(range.start)}&end_dt=${enc(range.end)}`
