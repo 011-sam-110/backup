@@ -23,6 +23,9 @@ import urllib.request
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import db
 
 HAR_PATH = Path("discovery.har")
