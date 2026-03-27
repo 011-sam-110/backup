@@ -161,6 +161,7 @@ def build_record(loc: dict, status: dict | None, scraped_at: str, loc_detail: di
         "is_24_7":           is_24_7,
         "pricing":           sorted(pricing_set),
         "payment_methods":   sorted(pm_set),
+        "devices_raw_loc":   ld.get("devices", []),
         "scraped_at": scraped_at,
     }
 
