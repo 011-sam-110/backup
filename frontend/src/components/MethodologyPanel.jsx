@@ -84,9 +84,11 @@ export default function MethodologyPanel() {
           <Divider title="Live Status Figures" />
 
           <ROW label="Utilisation %">
-            <Code>charging ÷ (available + charging + inoperative + out-of-order + unknown) × 100</Code>
-            {' '}Inoperative and unknown chargepoints are included in the denominator —
-            a hub where half the ports are broken will never show 100% utilisation.
+            <Code>charging ÷ (available + charging + unknown) × 100</Code>
+            {' '}Inoperative and out-of-order chargepoints are excluded from the denominator —
+            they are confirmed broken. Unknown-status chargepoints remain in the denominator
+            since their state cannot be confirmed. A hub where half the ports are broken will
+            show utilisation of the <b>working</b> bays only.
           </ROW>
 
           <ROW label="Est. Load (kW)">

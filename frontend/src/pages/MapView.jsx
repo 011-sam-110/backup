@@ -45,6 +45,7 @@ export default function MapView() {
   const [loading, setLoading] = useState(true)
   const [selectedHub, setSelectedHub] = useState(null)
   const [flyTarget, setFlyTarget] = useState(null)
+  const [mapStyle, setMapStyle] = useState('satellite')
 
   const filters = useFilters()
   const { hubsUrl, setAvailableOperators, dateRange, activeGroupIds, groupHubs,
@@ -116,18 +117,26 @@ export default function MapView() {
             >Done</button>
           </div>
         )}
-        <div className="map-container">
+        <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+          <div className="map-container" style={{ position: 'static', flex: 'unset', height: '100%' }}>
           <MapContainer
             center={[52.5, -1.5]}
             zoom={6}
             style={{ height: '100%', width: '100%', background: '#0f1117' }}
             zoomControl={true}
           >
-            <TileLayer
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-              attribution='Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
-              maxZoom={19}
-            />
+            {mapStyle === 'satellite' ? (
+              <TileLayer
+                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                attribution='Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
+                maxZoom={19}
+              />
+            ) : (
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              />
+            )}
             {flyTarget && <FlyTo target={flyTarget} />}
             {filtered.map(hub => (
               <Marker
@@ -155,6 +164,20 @@ export default function MapView() {
               </Marker>
             ))}
           </MapContainer>
+          </div>
+          <button
+            onClick={() => setMapStyle(s => s === 'satellite' ? 'street' : 'satellite')}
+            style={{
+              position: 'absolute', bottom: 24, right: 10, zIndex: 1000,
+              background: 'var(--surface)', border: '1px solid var(--border)',
+              borderRadius: 8, padding: '5px 10px', fontSize: 12,
+              cursor: 'pointer', color: 'var(--text)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+              display: 'flex', alignItems: 'center', gap: 5,
+            }}
+          >
+            {mapStyle === 'satellite' ? '🗺 Street map' : '🛰 Satellite'}
+          </button>
         </div>
 
         {/* Legend sidebar */}

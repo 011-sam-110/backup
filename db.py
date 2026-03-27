@@ -324,7 +324,7 @@ def insert_snapshots(records: list[dict]) -> None:
         inoperative = r.get("inoperative_count")  or 0
         oos         = r.get("out_of_order_count") or 0
         unknown     = r.get("unknown_count")      or 0
-        total_status = available + charging + inoperative + oos + unknown
+        total_status = available + charging + unknown
         util_pct = round(charging / total_status * 100, 2) if total_status > 0 else 0.0
         try:
             max_kw = r.get("max_power_kw") or power_map.get(r["uuid"], 0.0)
@@ -452,8 +452,7 @@ def get_hub_averages(start_dt: str, end_dt: str,
             ROUND(AVG(s.out_of_order_count)) AS out_of_order_count,
             ROUND(AVG(s.unknown_count))      AS unknown_count,
             ROUND(100.0 * SUM(s.charging_count) /
-                  NULLIF(SUM(s.available_count + s.charging_count + s.inoperative_count +
-                             s.out_of_order_count + s.unknown_count), 0), 2) AS utilisation_pct
+                  NULLIF(SUM(s.available_count + s.charging_count + s.unknown_count), 0), 2) AS utilisation_pct
         FROM hubs h
         LEFT JOIN snapshots s ON s.hub_uuid = h.uuid
             AND s.scraped_at >= ? AND s.scraped_at <= ?{hour_filter}
@@ -516,7 +515,7 @@ def get_all_history(hours: int = 24, hub_uuid: str | None = None,
         SELECT
             scraped_at,
             ROUND(100.0 * SUM(charging_count) /
-                  NULLIF(SUM(available_count + charging_count + inoperative_count + out_of_order_count + unknown_count), 0), 2) AS avg_utilisation_pct,
+                  NULLIF(SUM(available_count + charging_count + unknown_count), 0), 2) AS avg_utilisation_pct,
             SUM(charging_count)              AS total_charging,
             SUM(available_count)             AS total_available,
             COUNT(*)                         AS hub_count,
@@ -549,7 +548,7 @@ def get_all_history_daily(days: int = 30, hub_uuid: str | None = None,
         SELECT
             DATE(scraped_at) AS date,
             ROUND(100.0 * SUM(charging_count) /
-                  NULLIF(SUM(available_count + charging_count + inoperative_count + out_of_order_count + unknown_count), 0), 2) AS avg_utilisation_pct,
+                  NULLIF(SUM(available_count + charging_count + unknown_count), 0), 2) AS avg_utilisation_pct,
             CAST(SUM(charging_count) AS INTEGER) AS total_charging,
             COUNT(DISTINCT scraped_at) AS hub_count
         FROM snapshots
@@ -592,7 +591,7 @@ def get_hourly_pattern(hours: int = 168, hub_uuid: str | None = None,
         SELECT
             CAST(strftime('%H', scraped_at) AS INTEGER) AS hour,
             ROUND(100.0 * SUM(charging_count) /
-                  NULLIF(SUM(available_count + charging_count + inoperative_count + out_of_order_count + unknown_count), 0), 2) AS avg_utilisation_pct,
+                  NULLIF(SUM(available_count + charging_count + unknown_count), 0), 2) AS avg_utilisation_pct,
             ROUND(AVG(estimated_kwh) * (60.0 / ?), 1) AS avg_est_kw,
             COUNT(*) AS data_points
         FROM snapshots
@@ -654,7 +653,7 @@ def get_hourly_heatmap(hours: int = 336, hub_uuid: str | None = None,
             CAST(strftime('%w', scraped_at) AS INTEGER) AS day_of_week,
             CAST(strftime('%H', scraped_at) AS INTEGER) AS hour,
             ROUND(100.0 * SUM(charging_count) /
-                  NULLIF(SUM(available_count + charging_count + inoperative_count + out_of_order_count + unknown_count), 0), 2) AS avg_utilisation_pct,
+                  NULLIF(SUM(available_count + charging_count + unknown_count), 0), 2) AS avg_utilisation_pct,
             COUNT(*) AS data_points
         FROM snapshots
         WHERE {where_time}{hub_filter}
@@ -712,14 +711,14 @@ def get_stat_deltas() -> dict:
     con = _connect()
     current = con.execute("""
         SELECT ROUND(100.0 * SUM(charging_count) /
-                     NULLIF(SUM(available_count + charging_count + inoperative_count + out_of_order_count + unknown_count), 0), 2) AS avg_util,
+                     NULLIF(SUM(available_count + charging_count + unknown_count), 0), 2) AS avg_util,
                SUM(charging_count) AS total_charging
         FROM snapshots
         WHERE scraped_at >= datetime('now', '-7 days')
     """).fetchone()
     prior = con.execute("""
         SELECT ROUND(100.0 * SUM(charging_count) /
-                     NULLIF(SUM(available_count + charging_count + inoperative_count + out_of_order_count + unknown_count), 0), 2) AS avg_util,
+                     NULLIF(SUM(available_count + charging_count + unknown_count), 0), 2) AS avg_util,
                SUM(charging_count) AS total_charging
         FROM snapshots
         WHERE scraped_at >= datetime('now', '-14 days')
@@ -745,7 +744,7 @@ def get_global_sparkline(days: int = 7) -> list[dict]:
         SELECT
             DATE(scraped_at) AS date,
             ROUND(100.0 * SUM(charging_count) /
-                  NULLIF(SUM(available_count + charging_count + inoperative_count + out_of_order_count + unknown_count), 0), 2) AS avg_utilisation_pct
+                  NULLIF(SUM(available_count + charging_count + unknown_count), 0), 2) AS avg_utilisation_pct
         FROM snapshots
         WHERE scraped_at >= ?
         GROUP BY DATE(scraped_at)
@@ -1168,7 +1167,6 @@ def get_stats() -> dict:
             SELECT
                 ROUND(100.0 * SUM(charging_count) /
                       NULLIF(SUM(available_count + charging_count +
-                                 inoperative_count + out_of_order_count +
                                  unknown_count), 0), 2) AS avg_utilisation_pct,
                 SUM(charging_count)            AS total_charging,
                 SUM(available_count + charging_count +
