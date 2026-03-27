@@ -1125,6 +1125,7 @@ def get_visit_stats(start_dt: str | None = None, end_dt: str | None = None,
                     operator: str | None = None, connector: str | None = None,
                     min_kw: float | None = None, max_kw: float | None = None,
                     min_evses: int | None = None, max_evses: int | None = None,
+                    start_hour: int | None = None, end_hour: int | None = None,
                     group_ids: list[int] | None = None) -> list[dict]:
     """Per-hub visit counts and average dwell time for a date range (or all time if no dates given)."""
     params: list = []
@@ -1134,8 +1135,9 @@ def get_visit_stats(start_dt: str | None = None, end_dt: str | None = None,
         e = _parse_dt(end_dt)
         params = [s, e]
         date_filter = "started_at >= ? AND started_at <= ?"
+    hour_filter = _hour_filter(params, start_hour, end_hour, col="started_at").lstrip(" AND ")
     hub_filter = _hub_subquery(params, operator, connector, min_kw, max_kw, min_evses, max_evses, group_ids=group_ids)
-    where = " AND ".join(filter(None, [date_filter, hub_filter.lstrip(" AND ")]))
+    where = " AND ".join(filter(None, [date_filter, hour_filter, hub_filter.lstrip(" AND ")]))
     where_clause = f"WHERE {where}" if where else ""
     con = _connect()
     rows = con.execute(f"""

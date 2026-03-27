@@ -207,8 +207,11 @@ def visits(start_dt: Optional[str] = Query(default=None),
            max_kw: Optional[float] = Query(default=None),
            min_evses: Optional[int] = Query(default=None),
            max_evses: Optional[int] = Query(default=None),
+           start_hour: Optional[int] = Query(default=None, ge=0, le=23),
+           end_hour: Optional[int] = Query(default=None, ge=0, le=23),
            group_id: Optional[List[int]] = Query(default=None)):
     return db.get_visit_stats(start_dt or None, end_dt or None, operator, connector, min_kw, max_kw, min_evses, max_evses,
+                              start_hour=start_hour, end_hour=end_hour,
                               group_ids=group_id or None)
 
 

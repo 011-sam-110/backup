@@ -14,6 +14,8 @@ export function FilterProvider({ children }) {
   const [connectorFilter, setConnectorFilter] = useState('all')
   const [operatorFilter, setOperatorFilter] = useState(new Set())
   const [dateRange, setDateRange] = useState({ start: null, end: null })
+  const [startHour, setStartHour] = useState(null)
+  const [endHour, setEndHour] = useState(null)
   const [availableOperators, setAvailableOperators] = useState([])
 
   // Groups
@@ -105,6 +107,8 @@ export function FilterProvider({ children }) {
     setConnectorFilter('all')
     setOperatorFilter(new Set())
     setDateRange({ start: null, end: null })
+    setStartHour(null)
+    setEndHour(null)
   }, [])
 
   const toggleOperator = useCallback((op) => {
@@ -166,10 +170,13 @@ export function FilterProvider({ children }) {
   /** Returns URL query params object for /api/hubs date range filtering */
   const hubsUrl = useCallback(() => {
     if (dateRange.start && dateRange.end) {
-      return `/api/hubs?start_dt=${encodeURIComponent(dateRange.start.toISOString())}&end_dt=${encodeURIComponent(dateRange.end.toISOString())}`
+      let url = `/api/hubs?start_dt=${encodeURIComponent(dateRange.start.toISOString())}&end_dt=${encodeURIComponent(dateRange.end.toISOString())}`
+      if (startHour !== null) url += `&start_hour=${startHour}`
+      if (endHour !== null) url += `&end_hour=${endHour}`
+      return url
     }
     return '/api/hubs'
-  }, [dateRange])
+  }, [dateRange, startHour, endHour])
 
   /** Returns URL for /api/visits with date range + all toolbar filters */
   const visitsUrl = useCallback(() => {
@@ -178,6 +185,8 @@ export function FilterProvider({ children }) {
       parts.push(`start_dt=${encodeURIComponent(dateRange.start.toISOString())}`)
       parts.push(`end_dt=${encodeURIComponent(dateRange.end.toISOString())}`)
     }
+    if (startHour !== null) parts.push(`start_hour=${startHour}`)
+    if (endHour !== null) parts.push(`end_hour=${endHour}`)
     if (activeGroupIds.size > 0) {
       activeGroupIds.forEach(id => parts.push(`group_id=${id}`))
     } else {
@@ -189,7 +198,7 @@ export function FilterProvider({ children }) {
     if (minEvses) parts.push(`min_evses=${encodeURIComponent(minEvses)}`)
     if (maxEvses) parts.push(`max_evses=${encodeURIComponent(maxEvses)}`)
     return `/api/visits${parts.length ? '?' + parts.join('&') : ''}`
-  }, [dateRange, operatorFilter, connectorFilter, minKw, maxKw, minEvses, maxEvses, activeGroupIds])
+  }, [dateRange, startHour, endHour, operatorFilter, connectorFilter, minKw, maxKw, minEvses, maxEvses, activeGroupIds])
 
   return (
     <FilterContext.Provider value={{
@@ -203,6 +212,8 @@ export function FilterProvider({ children }) {
       connectorFilter, setConnectorFilter,
       operatorFilter,
       dateRange, setDateRange,
+      startHour, setStartHour,
+      endHour, setEndHour,
       availableOperators, setAvailableOperators,
       clearFilters,
       toggleOperator,

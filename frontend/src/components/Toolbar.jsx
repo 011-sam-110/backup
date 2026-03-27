@@ -66,6 +66,8 @@ export default function Toolbar() {
     connectorFilter, setConnectorFilter,
     operatorFilter, toggleOperator, clearOperators,
     dateRange, setDateRange,
+    startHour, setStartHour,
+    endHour, setEndHour,
     availableOperators,
     clearFilters,
     groups, loadGroups,
@@ -175,7 +177,7 @@ export default function Toolbar() {
 
   const hasFilters = search || minKw || maxKw || minEvses || maxEvses || minUtil || maxUtil ||
     connectorFilter !== 'all' || operatorFilter.size > 0 ||
-    dateRange.start
+    dateRange.start || startHour !== null || endHour !== null
 
 
   return (
@@ -354,6 +356,37 @@ export default function Toolbar() {
           {dateRange.start && (
             <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 6 }}>
               Showing averaged data for selected period
+            </div>
+          )}
+          <Label>Time of Day</Label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <select
+              className="filter-input"
+              style={{ flex: 1, boxSizing: 'border-box' }}
+              value={startHour ?? ''}
+              onChange={e => setStartHour(e.target.value === '' ? null : Number(e.target.value))}
+            >
+              <option value="">Any</option>
+              {Array.from({ length: 24 }, (_, h) => (
+                <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>
+              ))}
+            </select>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>to</span>
+            <select
+              className="filter-input"
+              style={{ flex: 1, boxSizing: 'border-box' }}
+              value={endHour ?? ''}
+              onChange={e => setEndHour(e.target.value === '' ? null : Number(e.target.value))}
+            >
+              <option value="">Any</option>
+              {Array.from({ length: 24 }, (_, h) => (
+                <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>
+              ))}
+            </select>
+          </div>
+          {(startHour !== null || endHour !== null) && (
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>
+              Filters visits and snapshots to this hour range
             </div>
           )}
         </Section>
