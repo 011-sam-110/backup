@@ -17,7 +17,7 @@ const CONNECTOR_OPTIONS = [
 function Section({ title, icon, defaultOpen = true, children }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
-    <div style={{ borderBottom: '1px solid var(--border)' }}>
+    <div style={{ borderBottom: '1px solid #000' }}>
       <button
         onClick={() => setOpen(o => !o)}
         style={{
@@ -218,6 +218,16 @@ export default function Toolbar() {
           )}
         </div>
 
+        <Section title="Search" icon="⌕" defaultOpen={true}>
+          <input
+            className="filter-input"
+            style={{ width: '100%', boxSizing: 'border-box' }}
+            placeholder="Name, UUID, operator…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </Section>
+
         <Section title="Groups" icon="◈" defaultOpen={true}>
           {groups.length === 0 && (
             <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 8 }}>
@@ -334,16 +344,6 @@ export default function Toolbar() {
               }}
             >+</button>
           </div>
-        </Section>
-
-        <Section title="Search" icon="⌕" defaultOpen={true}>
-          <input
-            className="filter-input"
-            style={{ width: '100%', boxSizing: 'border-box' }}
-            placeholder="Name, UUID, operator…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
         </Section>
 
         <Section title="Date Range" icon="📅" defaultOpen={true}>
