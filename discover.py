@@ -98,7 +98,7 @@ async def discover():
                 "--no-sandbox",
                 "--disable-dev-shm-usage",
             ],
-            proxy={"server": proxy_url} if proxy_url else None,
+            proxy=proxy_url,
         )
         context = await browser.new_context(
             viewport={"width": 1280, "height": 720},
