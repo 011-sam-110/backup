@@ -40,6 +40,14 @@ export default function HubDetailModal({ hub, onClose }) {
   const [detail, setDetail] = useState(null)
   const [detailLoading, setDetailLoading] = useState(true)
   const [showGroupPicker, setShowGroupPicker] = useState(false)
+  const [sessionStart, setSessionStart] = useState(null)
+
+  useEffect(() => {
+    authFetch(`/api/hubs/${hub.uuid}/session-start`)
+      .then(r => r.json())
+      .then(d => setSessionStart(d.session_start || null))
+      .catch(() => {})
+  }, [hub.uuid])
 
   useEffect(() => {
     authFetch(`/api/history?hub_uuid=${hub.uuid}&hours=24`)
@@ -273,9 +281,9 @@ export default function HubDetailModal({ hub, onClose }) {
                     <div style={{ color: c.cfg.color, fontWeight: 600, fontSize: 11 }}>
                       {c.cfg.icon} {c.cfg.label}
                     </div>
-                    {c.status === 'CHARGING' && fmtDuration(c.updatedAt) && (
+                    {c.status === 'CHARGING' && fmtDuration(sessionStart || c.updatedAt) && (
                       <div style={{ color: c.cfg.color, fontSize: 10, opacity: 0.85 }}>
-                        ⏱ {fmtDuration(c.updatedAt)}
+                        ⏱ {fmtDuration(sessionStart || c.updatedAt)}
                       </div>
                     )}
                     <div style={{ color: 'var(--text-muted)', fontSize: 10 }}>{c.connector}</div>

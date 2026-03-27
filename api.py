@@ -100,6 +100,11 @@ def hub_detail(uuid: str):
     return result
 
 
+@app.get("/api/hubs/{uuid}/session-start")
+def hub_session_start(uuid: str):
+    return {"session_start": db.get_charging_session_start(uuid)}
+
+
 @app.get("/api/hubs/{uuid}/groups")
 def hub_groups(uuid: str):
     return db.get_hub_group_ids(uuid)

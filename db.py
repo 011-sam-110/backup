@@ -901,6 +901,39 @@ def get_group_hub_uuids(group_id: int) -> list[str]:
     return [r["hub_uuid"] for r in rows]
 
 
+def get_charging_session_start(hub_uuid: str) -> str | None:
+    """Return when the current charging session was first detected by our scraper.
+    Finds the first snapshot in the current unbroken charging run by locating the
+    most recent transition from a lower charging_count to the current one.
+    Returns None if hub is not currently charging or has no snapshot history."""
+    con = _connect()
+    try:
+        row = con.execute(
+            "SELECT charging_count FROM snapshots WHERE hub_uuid=? ORDER BY scraped_at DESC LIMIT 1",
+            (hub_uuid,)
+        ).fetchone()
+        if not row or row["charging_count"] == 0:
+            return None
+        current_charging = row["charging_count"]
+
+        transition = con.execute("""
+            SELECT scraped_at FROM snapshots
+            WHERE hub_uuid=? AND charging_count < ?
+            ORDER BY scraped_at DESC LIMIT 1
+        """, (hub_uuid, current_charging)).fetchone()
+
+        after = transition["scraped_at"] if transition else "1970-01-01"
+        first_in_run = con.execute("""
+            SELECT scraped_at FROM snapshots
+            WHERE hub_uuid=? AND scraped_at > ? AND charging_count >= ?
+            ORDER BY scraped_at ASC LIMIT 1
+        """, (hub_uuid, after, current_charging)).fetchone()
+
+        return first_in_run["scraped_at"] if first_in_run else None
+    finally:
+        con.close()
+
+
 def get_hub_group_ids(hub_uuid: str) -> list[int]:
     """Return the group IDs that a hub belongs to."""
     con = _connect()
