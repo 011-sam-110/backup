@@ -425,13 +425,14 @@ def get_latest_snapshot_per_hub() -> list[dict]:
             h.is_24_7, h.pricing, h.payment_methods,
             s.scraped_at, s.available_count, s.charging_count,
             s.inoperative_count, s.out_of_order_count, s.unknown_count,
-            s.utilisation_pct
+            ROUND(100.0 * s.charging_count /
+                  NULLIF(s.available_count + s.charging_count + s.unknown_count, 0), 2) AS utilisation_pct
         FROM hubs h
         LEFT JOIN snapshots s ON s.hub_uuid = h.uuid
             AND s.scraped_at = (
                 SELECT MAX(scraped_at) FROM snapshots WHERE hub_uuid = h.uuid
             )
-        ORDER BY s.utilisation_pct DESC NULLS LAST
+        ORDER BY utilisation_pct DESC NULLS LAST
     """).fetchall()
     con.close()
     return [_deserialise_hub(dict(row)) for row in rows]
