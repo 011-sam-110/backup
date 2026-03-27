@@ -26,7 +26,8 @@ import secrets
 import asyncio
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query, Request, Body
+import json
+from fastapi import FastAPI, HTTPException, Query, Request, Body, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -272,6 +273,34 @@ def export_snapshots(hours: int = Query(default=24, ge=1, le=8760),
                      start_dt: Optional[str] = Query(default=None),
                      end_dt: Optional[str] = Query(default=None)):
     return db.get_all_snapshots(hours, start_dt=start_dt, end_dt=end_dt)
+
+
+async def _run_discover():
+    """Run discover.py as a subprocess — fires after the endpoint returns."""
+    proc = await asyncio.create_subprocess_exec(
+        "python", "discover.py",
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    await proc.communicate()
+
+
+@app.post("/api/admin/discover")
+async def admin_discover(body: dict = Body(...), background_tasks: BackgroundTasks = None):
+    """
+    Receive a list of hub UUIDs, deduplicate against the DB, write pending_uuids.json,
+    and kick off discover.py in the background. Called by parse_har.py --push.
+    """
+    uuids = body.get("uuids", [])
+    if not uuids:
+        raise HTTPException(status_code=400, detail="No UUIDs provided")
+    known = {h["uuid"] for h in db.get_all_hubs_for_scrape()}
+    new_uuids = [u for u in uuids if u not in known]
+    if not new_uuids:
+        return {"queued": 0, "already_known": len(uuids), "message": "All UUIDs already in DB"}
+    Path("pending_uuids.json").write_text(json.dumps(new_uuids))
+    background_tasks.add_task(_run_discover)
+    return {"queued": len(new_uuids), "already_known": len(uuids) - len(new_uuids)}
 
 
 # Serve built React frontend — must be last so /api/* routes take priority

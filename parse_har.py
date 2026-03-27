@@ -12,11 +12,14 @@ Usage:
   4. Right-click in the Network tab → "Save all as HAR with content"
   5. Save as 'discovery.har' in this folder
   6. Run: python parse_har.py
-  7. Then run: python discover.py
+     — If SERVER_URL is set in .env, UUIDs are pushed to the live server automatically.
+     — Otherwise, writes pending_uuids.json for manual use with discover.py.
 """
 
 import json
+import os
 import sys
+import urllib.request
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
@@ -86,7 +89,34 @@ def main():
 
     PENDING_PATH.write_text(json.dumps(new_uuids, indent=2))
     print(f"\nSaved {len(new_uuids)} new UUID(s) to {PENDING_PATH}")
-    print("Run next:  python discover.py")
+
+    # Push to live server if SERVER_URL is configured in .env
+    server_url = os.getenv("SERVER_URL", "").rstrip("/")
+    password = os.getenv("DASHBOARD_PASSWORD", "")
+    if server_url and password:
+        print(f"\nPushing {len(all_uuids)} UUID(s) to {server_url} ...")
+        payload = json.dumps({"uuids": sorted(all_uuids)}).encode()
+        req = urllib.request.Request(
+            f"{server_url}/api/admin/discover",
+            data=payload,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {password}",
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                result = json.loads(resp.read())
+            print(f"Server queued {result.get('queued', '?')} new UUID(s) "
+                  f"({result.get('already_known', '?')} already known).")
+            print("Discovery running in background — new hubs appear within ~2 minutes.")
+        except Exception as e:
+            print(f"WARNING: Push to server failed: {e}")
+            print("Run manually:  python discover.py")
+    else:
+        print("Run next:  python discover.py")
+        print("(Set SERVER_URL and DASHBOARD_PASSWORD in .env to push automatically.)")
 
 
 if __name__ == "__main__":
