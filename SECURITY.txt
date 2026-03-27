@@ -1,6 +1,6 @@
 EVMONITOR DASHBOARD — SECURITY OVERVIEW
 ========================================
-Last updated: 2026-03-26
+Last updated: 2026-03-27
 
 
 AUTHENTICATION
@@ -28,6 +28,36 @@ API PROTECTION
   a 401 Unauthorized response and no data.
 - This means the protection is at the data layer, not just the UI layer.
   Bypassing the frontend does not grant access to the data.
+- Port 8000 (uvicorn) is bound to 127.0.0.1 only. It is not reachable from
+  the internet — all traffic must go through nginx.
+
+
+TRANSPORT SECURITY (HTTPS)
+--------------------------
+- nginx is configured as a reverse proxy terminating TLS on port 443.
+- A self-signed certificate is used (generated with openssl, valid 10 years).
+  The certificate includes a Subject Alternative Name (SAN) for the server IP,
+  which is required by modern browsers.
+- HTTP (port 80) permanently redirects to HTTPS (301).
+- The following security headers are set by nginx:
+    Strict-Transport-Security  — instructs browsers to always use HTTPS
+    X-Frame-Options            — prevents clickjacking (SAMEORIGIN)
+    X-Content-Type-Options     — prevents MIME-type sniffing
+    Referrer-Policy            — no referrer header sent on navigation
+
+SELF-SIGNED CERT NOTE:
+  The certificate is not issued by a trusted Certificate Authority, so browsers
+  will show a "Your connection is not private" warning on first visit. The
+  traffic is still fully encrypted. Click "Advanced → Proceed" to continue.
+  To eliminate the warning permanently, install the cert as a trusted root in
+  your OS/browser, or switch to a domain-based Let's Encrypt certificate.
+
+DOMAIN UPGRADE PATH:
+  If a domain name is later obtained (or a free subdomain via duckdns.org):
+  1. Switch from nginx to Caddy in docker-compose.yml
+  2. Configure the Caddyfile with the domain — Caddy auto-fetches Let's Encrypt
+  3. Update CORS_ORIGINS in .env to https://yourdomain.com
+  4. The browser warning disappears permanently; cert renews automatically
 
 
 FRONTEND
@@ -43,36 +73,33 @@ FRONTEND
   bundle itself.
 
 
-WHAT IS NOT COVERED (KNOWN LIMITATIONS)
-----------------------------------------
-- HTTPS / TLS: Credentials and tokens travel in plaintext over HTTP unless
-  a reverse proxy (e.g. nginx) with TLS is configured at the server level.
-  This is a server infrastructure concern, not an application concern.
-  It is strongly recommended to run behind HTTPS in production.
+KNOWN LIMITATIONS
+-----------------
+- Self-signed certificate: Browsers warn on first visit (see above). Traffic
+  is still encrypted. A trusted cert requires a domain name.
 
 - Single shared password: There are no individual user accounts, no roles,
   and no audit log of who accessed what. If the password is compromised,
-  it must be changed in .env and the API server restarted.
+  change it in .env and restart the API container.
 
-- No token expiry: The bearer token does not expire on the server side.
-  It remains valid until DASHBOARD_PASSWORD is changed in .env. Closing
-  the browser tab clears the token from sessionStorage on the client side.
+- No token expiry: The bearer token does not expire server-side. It remains
+  valid until DASHBOARD_PASSWORD is changed in .env.
 
 - Rate limiting: The 1-second delay on failed logins is a basic deterrent,
-  not a full rate limiter. A determined attacker could still make ~60
-  attempts per minute. A stronger solution would use IP-based rate limiting
-  at the nginx/proxy layer.
+  not a full rate limiter. A determined attacker could make ~60 attempts/min.
+  Stronger rate limiting could be added at the nginx layer (limit_req_zone).
 
-- CORS: The API allows all origins by default (CORS_ORIGINS=*). To lock
-  this down, set CORS_ORIGINS to the exact domain(s) the dashboard is
-  served from in .env.
+- CORS: The API should have CORS_ORIGINS set to your server IP or domain in
+  .env on the server. The default (*) allows any origin to make API requests
+  if they obtain your token.
 
 
 RECOMMENDATIONS
 ---------------
-1. Change DASHBOARD_PASSWORD in .env to a strong, random passphrase.
-2. Put the server behind nginx with a TLS certificate (e.g. Let's Encrypt).
-3. Set CORS_ORIGINS in .env to your specific domain once on HTTPS.
-4. Add logs/scheduler.log to .gitignore to prevent future git merge conflicts.
-
-git add 
+1. Set DASHBOARD_PASSWORD in .env to a strong, random passphrase.
+2. Set CORS_ORIGINS=https://YOUR_SERVER_IP in .env on the server, then
+   restart the API: docker compose restart api
+3. To eliminate browser cert warnings: obtain a domain name and switch to
+   Caddy + Let's Encrypt (see Domain Upgrade Path above).
+4. Optional: add a Hetzner Cloud Firewall in the Hetzner console to allow
+   only ports 80 and 443 inbound, as a defence-in-depth layer.
