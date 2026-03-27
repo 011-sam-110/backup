@@ -108,19 +108,20 @@ export default function MethodologyPanel() {
           <Divider title="Visits & Dwell Time" />
 
           <ROW label="How visits are detected">
-            A visit is inferred when <Code>charging_count</Code> increases between two
-            consecutive snapshots — each unit of increase counts as one visit start.
-            When charging_count decreases, the oldest open visits are closed first (FIFO)
-            and dwell time is recorded. Only <b>completed</b> visits are included in
-            averages; active sessions are excluded.
+            Each chargepoint (EVSE) is tracked individually by its unique ID. A visit
+            starts when an individual bay transitions from any status to <b>Charging</b>,
+            and ends when it transitions back to <b>Available</b> (or any non-charging
+            state). This is detected per-bay, not per-hub — simultaneous arrivals and
+            departures at the same hub are all captured independently. Only{' '}
+            <b>completed</b> visits are included in averages; active sessions are excluded.
           </ROW>
 
           <ROW label="Dwell time accuracy">
-            Dwell times are the interval between when a session start and end were
-            detected by the scraper, not the exact start and end of the charge.
-            They are accurate to within one scrape interval (~5 minutes) on each end.
-            Any session that both starts and ends within a single polling window is
-            invisible to this method.
+            Dwell times are measured from when the bay's Charging status was first
+            detected to when it ended, both accurate to within one scrape interval
+            (~5 minutes). Sessions shorter than 5 minutes cannot be detected, but at
+            100 kW+ this is negligible in practice. Visit data is retained permanently;
+            the underlying per-bay event log has a 30-day rolling window.
           </ROW>
 
           <Divider title="Known Limitations" />
@@ -139,11 +140,11 @@ export default function MethodologyPanel() {
             Utilisation figures for those operators may be understated.
           </ROW>
 
-          <ROW label="Multi-EVSE session attribution">
-            Charging duration uses hub-level <Code>charging_count</Code> transitions.
-            For hubs with multiple EVSEs, all currently-charging ports show the same
-            "session started" time — the earliest charging session we detected, not
-            each individual EVSE's start time.
+          <ROW label="Charging duration (⏱)">
+            The ⏱ duration shown on individual bay cards still uses a hub-level signal —
+            it reflects when we first detected <i>any</i> charging activity at this hub
+            in the current run, not each specific bay's own start time. Visit counts
+            and dwell time averages are tracked per-bay and are not affected by this.
           </ROW>
         </div>
       )}
