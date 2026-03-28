@@ -627,7 +627,7 @@ async def scrape_targeted(uuids: list[str]) -> int:
 
     if records:
         db.process_evse_events(records)
-        db.insert_snapshots(records)
+        db.insert_snapshots(records, source='targeted')
         log.info("scrape_targeted: saved %d snapshots", len(records))
 
     return len(records)

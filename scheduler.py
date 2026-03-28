@@ -22,7 +22,7 @@ load_dotenv()
 setup_logging()
 log = logging.getLogger("evanti.scheduler")
 INTERVAL_MINUTES    = int(os.getenv("SCRAPE_INTERVAL_MINUTES", 15))
-HF_INTERVAL_MINUTES = 1   # high-frequency polling interval for flagged groups
+HF_INTERVAL_MINUTES = int(os.getenv("HF_SCRAPE_INTERVAL_MINUTES", 1))  # high-frequency polling interval for flagged groups
 MAX_RETRIES         = 3    # attempts per scrape run
 RETRY_DELAY_S       = 30   # seconds between retry attempts
 DB_PATH = Path("chargers.db")

@@ -212,6 +212,11 @@ def init_db() -> None:
         con.commit()
     except Exception:
         pass
+    try:
+        con.execute("ALTER TABLE snapshots ADD COLUMN source TEXT NOT NULL DEFAULT 'full'")
+        con.commit()
+    except Exception:
+        pass
     con.commit()
     con.close()
     purge_non_gb_hubs()
@@ -307,7 +312,7 @@ def upsert_hubs(records: list[dict]) -> None:
 _KWH_COEFFICIENT = 0.7
 
 
-def insert_snapshots(records: list[dict]) -> None:
+def insert_snapshots(records: list[dict], *, source: str = 'full') -> None:
     con = _connect()
 
     interval_hours = int(os.getenv("SCRAPE_INTERVAL_MINUTES", "15")) / 60.0
@@ -347,14 +352,15 @@ def insert_snapshots(records: list[dict]) -> None:
             r.get("unknown_count", 0),
             util_pct,
             estimated_kwh,
+            source,
         ))
     count_before = con.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
     con.executemany("""
         INSERT INTO snapshots
             (hub_uuid, scraped_at, available_count, charging_count,
              inoperative_count, out_of_order_count, unknown_count, utilisation_pct,
-             estimated_kwh)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+             estimated_kwh, source)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, rows)
     con.commit()
     count_after = con.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
@@ -499,10 +505,15 @@ def get_all_history(hours: int = 24, hub_uuid: str | None = None,
                     min_kw: float | None = None, max_kw: float | None = None,
                     min_evses: int | None = None, max_evses: int | None = None,
                     start_hour: int | None = None, end_hour: int | None = None,
-                    group_ids: list[int] | None = None) -> list[dict]:
+                    group_ids: list[int] | None = None,
+                    source_filter: str | None = 'full') -> list[dict]:
     """
     Return one row per scrape run (keyed by scraped_at) with weighted average
     utilisation and totals across all hubs.
+
+    source_filter: 'full' (default) excludes targeted 1-min snapshots from the
+    trend graph so partial-network rows don't distort the utilisation average.
+    Pass None to include all sources.
     """
     if start_dt and end_dt:
         where_time = "scraped_at >= ? AND scraped_at <= ?"
@@ -517,6 +528,10 @@ def get_all_history(hours: int = 24, hub_uuid: str | None = None,
         params.append(hub_uuid)
     hub_attr_filter = _hub_subquery(params, operator, connector, min_kw, max_kw, min_evses, max_evses, group_ids=group_ids)
     hour_filter = _hour_filter(params, start_hour, end_hour)
+    source_clause = ""
+    if source_filter:
+        source_clause = " AND source = ?"
+        params.append(source_filter)
     con = _connect()
     rows = con.execute(f"""
         SELECT
@@ -528,7 +543,7 @@ def get_all_history(hours: int = 24, hub_uuid: str | None = None,
             COUNT(*)                         AS hub_count,
             ROUND(SUM(estimated_kwh), 1)     AS total_estimated_kwh
         FROM snapshots
-        WHERE {where_time}{hub_filter}{hub_attr_filter}{hour_filter}
+        WHERE {where_time}{hub_filter}{hub_attr_filter}{hour_filter}{source_clause}
         GROUP BY scraped_at
         ORDER BY scraped_at
     """, params).fetchall()
