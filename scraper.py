@@ -24,6 +24,7 @@ GB_LNG = (-5.85, 1.75)  # SW Scotland / Land's End → East Anglia (excludes Ire
 
 HEADLESS = os.getenv("HEADLESS", "true").lower() == "true"
 USE_PROXY = os.getenv("USE_PROXY", "false").lower() == "true"
+SCRAPE_RESPONSE_TIMEOUT_MS = int(os.getenv("SCRAPE_RESPONSE_TIMEOUT_MS", 45_000))
 
 # ── Bearer token cache (shared between full and targeted scrapes) ─────────────
 _last_bearer: str | None = None
@@ -369,7 +370,7 @@ async def scrape():
             await page.mouse.move(cx, cy)
             # Set up response waiter BEFORE scrolling so we don't miss a fast response
             async with page.expect_response(
-                lambda r: "bounding-box" in r.url, timeout=25_000
+                lambda r: "bounding-box" in r.url, timeout=SCRAPE_RESPONSE_TIMEOUT_MS
             ) as resp_info:
                 await page.keyboard.down("Control")
                 for _ in range(10):

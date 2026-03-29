@@ -15,6 +15,7 @@ from pathlib import Path
 
 INTERVAL_MINUTES = int(os.getenv("SCRAPE_INTERVAL_MINUTES", 15))
 EVSE_EVENT_RETENTION_DAYS = int(os.getenv("EVSE_EVENT_RETENTION_DAYS", "30"))
+SNAPSHOT_RETENTION_DAYS = int(os.getenv("SNAPSHOT_RETENTION_DAYS", "90"))
 
 log = logging.getLogger("evanti.db")
 
@@ -24,7 +25,8 @@ DB_PATH = Path(os.getenv("DATABASE_PATH", "chargers.db"))
 def _connect() -> sqlite3.Connection:
     con = sqlite3.connect(DB_PATH)
     con.row_factory = sqlite3.Row
-    con.execute("PRAGMA journal_mode=DELETE")
+    con.execute("PRAGMA journal_mode=WAL")
+    con.execute("PRAGMA synchronous=NORMAL")
     return con
 
 
@@ -365,6 +367,8 @@ def insert_snapshots(records: list[dict], *, source: str = 'full') -> None:
     con.commit()
     count_after = con.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
     log.info("insert_snapshots: %d → %d (+%d)", count_before, count_after, count_after - count_before)
+    purge_old_snapshots(con)
+    con.commit()
     con.close()
 
 
@@ -986,6 +990,15 @@ def purge_old_evse_events(con: sqlite3.Connection) -> None:
     if cur.rowcount:
         log.info("purge_old_evse_events: deleted %d rows older than %d days",
                  cur.rowcount, EVSE_EVENT_RETENTION_DAYS)
+
+
+def purge_old_snapshots(con: sqlite3.Connection) -> None:
+    """Delete snapshots older than SNAPSHOT_RETENTION_DAYS (default 90)."""
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=SNAPSHOT_RETENTION_DAYS)).isoformat()
+    cur = con.execute("DELETE FROM snapshots WHERE scraped_at < ?", (cutoff,))
+    if cur.rowcount:
+        log.info("purge_old_snapshots: deleted %d rows older than %d days",
+                 cur.rowcount, SNAPSHOT_RETENTION_DAYS)
 
 
 def process_evse_events(records: list[dict]) -> None:
