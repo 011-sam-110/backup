@@ -104,6 +104,7 @@ async def discover():
                 "--disable-blink-features=AutomationControlled",
                 "--no-sandbox",
                 "--disable-dev-shm-usage",
+                "--enable-unsafe-swiftshader",
             ],
             proxy=proxy_url,
         )
@@ -116,6 +117,22 @@ async def discover():
             ),
         )
         page = await context.new_page()
+
+        # Stealth patches — prevent headless Chromium detection (same as scraper.py)
+        await page.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+            Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
+            Object.defineProperty(navigator, 'languages', {get: () => ['en-GB', 'en']});
+            Object.defineProperty(window, 'chrome', {
+                writable: true, enumerable: true, configurable: false,
+                value: {runtime: {}}
+            });
+            const _origQuery = window.navigator.permissions.query;
+            window.navigator.permissions.query = (p) =>
+                p.name === 'notifications'
+                    ? Promise.resolve({state: Notification.permission})
+                    : _origQuery(p);
+        """)
 
         def on_request(request):
             nonlocal bearer_token
@@ -133,6 +150,9 @@ async def discover():
             wait_until="domcontentloaded",
             timeout=90_000,
         )
+
+        # Wait for JS/map to fully initialise (longer on headless Linux)
+        await page.wait_for_timeout(12_000)
 
         # Dismiss cookie consent so the map initialises and fires authenticated API calls
         for selector in [
@@ -154,19 +174,22 @@ async def discover():
             await page.mouse.wheel(0, 400)
             await page.wait_for_timeout(500)
 
-        # Ctrl+scroll to zoom the map — this fires authenticated bounding-box requests
-        # which is the reliable way to get a bearer token (same approach as scraper.py)
+        await page.wait_for_timeout(3_000)
+
+        # Ctrl+scroll to zoom the map — fires authenticated bounding-box requests
         log.info("Zooming map to trigger authenticated API calls...")
         viewport = page.viewport_size or {"width": 1280, "height": 720}
         cx, cy = viewport["width"] // 2, viewport["height"] // 2
+        await page.mouse.click(cx, cy)
+        await page.wait_for_timeout(1_000)
         await page.mouse.move(cx, cy)
         await page.keyboard.down("Control")
-        for _ in range(8):
+        for _ in range(10):
             await page.mouse.wheel(0, 300)
             await page.wait_for_timeout(300)
         await page.keyboard.up("Control")
 
-        # Wait up to 30s for a bearer token (should arrive quickly after zoom)
+        # Wait up to 30s for a bearer token
         for _ in range(30):
             if bearer_token:
                 break
