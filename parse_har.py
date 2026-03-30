@@ -18,6 +18,7 @@ Usage:
 
 import json
 import os
+import ssl
 import sys
 import urllib.request
 from pathlib import Path
@@ -109,7 +110,10 @@ def main():
             method="POST",
         )
         try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:
                 result = json.loads(resp.read())
             print(f"Server queued {result.get('queued', '?')} new UUID(s) "
                   f"({result.get('already_known', '?')} already known).")
