@@ -150,6 +150,9 @@ celerybeat.pid
 # SageMath parsed files
 *.sage.py
 
+# Runtime cache files
+bearer_token.cache
+
 # Environments
 .env
 .venv

@@ -305,9 +305,30 @@ def export_snapshots(hours: int = Query(default=24, ge=1, le=8760),
     return db.get_all_snapshots(hours, start_dt=start_dt, end_dt=end_dt)
 
 
+BEARER_MAX_AGE_S = 55 * 60  # matches scraper.py
+BEARER_CACHE_FILE = Path("bearer_token.cache")
+
+
 async def _run_discover():
     """Run discover.py as a subprocess — fires after the endpoint returns."""
     try:
+        # Wait for a fresh bearer token (written by scheduler after each scrape).
+        # Poll every 30s for up to 20 minutes before giving up.
+        for attempt in range(40):
+            if BEARER_CACHE_FILE.exists():
+                try:
+                    age = time.time() - json.loads(BEARER_CACHE_FILE.read_text()).get("ts", 0)
+                    if age < BEARER_MAX_AGE_S:
+                        log.info("Bearer token cache ready (age %.0fs) — launching discover", age)
+                        break
+                except Exception:
+                    pass
+            log.info("_run_discover: waiting for fresh bearer token (attempt %d/40)...", attempt + 1)
+            await asyncio.sleep(30)
+        else:
+            log.error("_run_discover: no fresh bearer token after 20 min — aborting")
+            return
+
         log.info("discover subprocess starting...")
         t0 = time.monotonic()
         proc = await asyncio.create_subprocess_exec(

@@ -30,6 +30,15 @@ SCRAPE_RESPONSE_TIMEOUT_MS = int(os.getenv("SCRAPE_RESPONSE_TIMEOUT_MS", 45_000)
 _last_bearer: str | None = None
 _bearer_cached_at: float = 0.0
 BEARER_MAX_AGE_S: float = 55 * 60  # 55 minutes
+BEARER_CACHE_FILE = Path("bearer_token.cache")
+
+
+def _write_bearer_cache(token: str) -> None:
+    """Persist bearer token to disk so discover.py (subprocess) can reuse it."""
+    try:
+        BEARER_CACHE_FILE.write_text(json.dumps({"token": token, "ts": time.time()}))
+    except Exception as e:
+        log.warning("Failed to write bearer token cache: %s", e)
 
 # ── Bandwidth reduction — block resources that are never needed ───────────────
 _BLOCK_TYPES = {"image", "font", "media", "stylesheet"}
@@ -474,6 +483,7 @@ async def scrape():
         if bearer_token:
             _last_bearer = bearer_token
             _bearer_cached_at = time.monotonic()
+            _write_bearer_cache(bearer_token)
 
         await browser.close()
 
@@ -605,6 +615,7 @@ async def scrape_targeted(uuids: list[str]) -> int:
         # Update cache with the fresh token (if we got one from this session)
         _last_bearer = bearer_token
         _bearer_cached_at = time.monotonic()
+        _write_bearer_cache(bearer_token)
 
         # Fetch status in chunks of 50
         status_map: dict = {}

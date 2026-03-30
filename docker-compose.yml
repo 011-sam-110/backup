@@ -20,6 +20,7 @@ services:
       - ./chargers.db:/app/chargers.db
       - ./proxies.txt:/app/proxies.txt:ro
       - ./logs:/app/logs
+      - ./bearer_token.cache:/app/bearer_token.cache
     environment:
       - TERM=xterm
     env_file: .env
@@ -32,6 +33,7 @@ services:
       - ./chargers.db:/app/chargers.db
       - ./proxies.txt:/app/proxies.txt:ro
       - ./logs:/app/logs
+      - ./bearer_token.cache:/app/bearer_token.cache
     environment:
       - TERM=xterm
     env_file: .env

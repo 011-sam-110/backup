@@ -16,13 +16,31 @@ from playwright.async_api import async_playwright
 
 import db
 from log_setup import setup_logging
-from scraper import BASE_API, fetch_via_browser, fetch_location_details, is_great_britain, HEADLESS, _pick_proxy
+from scraper import (BASE_API, fetch_via_browser, fetch_location_details,
+                     is_great_britain, HEADLESS, _pick_proxy,
+                     BEARER_MAX_AGE_S, BEARER_CACHE_FILE)
 
 setup_logging(log_file="logs/discover.log")
 log = logging.getLogger("evanti.discover")
 
 PENDING_PATH = Path("pending_uuids.json")
 CONCURRENCY = 20
+
+
+def _read_bearer_cache() -> str | None:
+    """Return a cached bearer token if it exists and is still fresh, else None."""
+    try:
+        data = json.loads(BEARER_CACHE_FILE.read_text())
+        age = time.time() - data["ts"]
+        if age < BEARER_MAX_AGE_S:
+            log.info("Using cached bearer token (age %.0fs)", age)
+            return data["token"]
+        log.warning("Bearer token cache is stale (age %.0fs) — falling back to browser", age)
+    except FileNotFoundError:
+        log.warning("No bearer token cache found — falling back to browser capture")
+    except Exception as e:
+        log.warning("Failed to read bearer token cache: %s — falling back to browser", e)
+    return None
 
 
 def build_hub_record_from_detail(uuid: str, detail: dict, scraped_at: str) -> dict:
@@ -93,9 +111,11 @@ async def discover():
     t_start = time.monotonic()
     log.info("=== discover started: %d UUIDs to fetch ===", len(uuids))
 
-    bearer_token = None
+    # Try cached bearer token from the scheduler's last scrape run
+    bearer_token = _read_bearer_cache()
 
-    log.info("Phase 1/3: launching browser, capturing bearer token...")
+    log.info("Phase 1/3: launching browser%s...",
+             " (token from cache — skipping page interaction)" if bearer_token else ", capturing bearer token")
     async with async_playwright() as p:
         proxy_url = _pick_proxy()
         browser = await p.chromium.launch(
@@ -118,87 +138,85 @@ async def discover():
         )
         page = await context.new_page()
 
-        # Stealth patches — prevent headless Chromium detection (same as scraper.py)
-        await page.add_init_script("""
-            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
-            Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
-            Object.defineProperty(navigator, 'languages', {get: () => ['en-GB', 'en']});
-            Object.defineProperty(window, 'chrome', {
-                writable: true, enumerable: true, configurable: false,
-                value: {runtime: {}}
-            });
-            const _origQuery = window.navigator.permissions.query;
-            window.navigator.permissions.query = (p) =>
-                p.name === 'notifications'
-                    ? Promise.resolve({state: Notification.permission})
-                    : _origQuery(p);
-        """)
-
-        def on_request(request):
-            nonlocal bearer_token
-            if bearer_token or "api.zap-map.io" not in request.url:
-                return
-            auth = request.headers.get("authorization", "")
-            if auth.startswith("Bearer "):
-                bearer_token = auth
-
-        page.on("request", on_request)
-
-        log.info("Loading zapmap.com to capture bearer token...")
-        await page.goto(
-            "https://www.zapmap.com/live/",
-            wait_until="domcontentloaded",
-            timeout=90_000,
-        )
-
-        # Wait for JS/map to fully initialise (longer on headless Linux)
-        await page.wait_for_timeout(12_000)
-
-        # Dismiss cookie consent so the map initialises and fires authenticated API calls
-        for selector in [
-            "#onetrust-accept-btn-handler",
-            "button:has-text('Allow all cookies')",
-            "button:has-text('Accept All')",
-            "button:has-text('Accept all cookies')",
-            "button:has-text('Accept')",
-        ]:
-            try:
-                await page.click(selector, timeout=5_000)
-                log.info("Cookie consent dismissed.")
-                break
-            except Exception:
-                pass
-
-        # Scroll page down to bring map into view
-        for _ in range(5):
-            await page.mouse.wheel(0, 400)
-            await page.wait_for_timeout(500)
-
-        await page.wait_for_timeout(3_000)
-
-        # Ctrl+scroll to zoom the map — fires authenticated bounding-box requests
-        log.info("Zooming map to trigger authenticated API calls...")
-        viewport = page.viewport_size or {"width": 1280, "height": 720}
-        cx, cy = viewport["width"] // 2, viewport["height"] // 2
-        await page.mouse.click(cx, cy)
-        await page.wait_for_timeout(1_000)
-        await page.mouse.move(cx, cy)
-        await page.keyboard.down("Control")
-        for _ in range(10):
-            await page.mouse.wheel(0, 300)
-            await page.wait_for_timeout(300)
-        await page.keyboard.up("Control")
-
-        # Wait up to 30s for a bearer token
-        for _ in range(30):
-            if bearer_token:
-                break
-            await page.wait_for_timeout(1_000)
-
         if not bearer_token:
-            log.warning("No bearer token captured — location details may fail.")
-        else:
-            log.info("Bearer token captured.")
+            # No cached token — must load zapmap.com and trigger authenticated requests
+            # Stealth patches — prevent headless Chromium detection (same as scraper.py)
+            await page.add_init_script("""
+                Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+                Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
+                Object.defineProperty(navigator, 'languages', {get: () => ['en-GB', 'en']});
+                Object.defineProperty(window, 'chrome', {
+                    writable: true, enumerable: true, configurable: false,
+                    value: {runtime: {}}
+                });
+                const _origQuery = window.navigator.permissions.query;
+                window.navigator.permissions.query = (p) =>
+                    p.name === 'notifications'
+                        ? Promise.resolve({state: Notification.permission})
+                        : _origQuery(p);
+            """)
+
+            def on_request(request):
+                nonlocal bearer_token
+                if bearer_token or "api.zap-map.io" not in request.url:
+                    return
+                auth = request.headers.get("authorization", "")
+                if auth.startswith("Bearer "):
+                    bearer_token = auth
+
+            page.on("request", on_request)
+
+            log.info("Loading zapmap.com to capture bearer token...")
+            await page.goto(
+                "https://www.zapmap.com/live/",
+                wait_until="domcontentloaded",
+                timeout=90_000,
+            )
+
+            # Wait for JS/map to fully initialise (longer on headless Linux)
+            await page.wait_for_timeout(12_000)
+
+            for selector in [
+                "#onetrust-accept-btn-handler",
+                "button:has-text('Allow all cookies')",
+                "button:has-text('Accept All')",
+                "button:has-text('Accept all cookies')",
+                "button:has-text('Accept')",
+            ]:
+                try:
+                    await page.click(selector, timeout=5_000)
+                    log.info("Cookie consent dismissed.")
+                    break
+                except Exception:
+                    pass
+
+            for _ in range(5):
+                await page.mouse.wheel(0, 400)
+                await page.wait_for_timeout(500)
+
+            await page.wait_for_timeout(3_000)
+
+            log.info("Zooming map to trigger authenticated API calls...")
+            viewport = page.viewport_size or {"width": 1280, "height": 720}
+            cx, cy = viewport["width"] // 2, viewport["height"] // 2
+            await page.mouse.click(cx, cy)
+            await page.wait_for_timeout(1_000)
+            await page.mouse.move(cx, cy)
+            await page.keyboard.down("Control")
+            for _ in range(10):
+                await page.mouse.wheel(0, 300)
+                await page.wait_for_timeout(300)
+            await page.keyboard.up("Control")
+
+            for _ in range(30):
+                if bearer_token:
+                    break
+                await page.wait_for_timeout(1_000)
+
+            if not bearer_token:
+                log.warning("No bearer token captured — location details may fail.")
+            else:
+                log.info("Bearer token captured from browser.")
 
         log.info("Phase 2/3: fetching location details (concurrency=%d, batches=%d)...",
                  CONCURRENCY, (len(uuids) + CONCURRENCY - 1) // CONCURRENCY)
