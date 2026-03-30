@@ -45,6 +45,7 @@ log = logging.getLogger("evanti.api")
 
 log.info("API starting up — initialising DB...")
 db.init_db()
+db.purge_non_gb_hubs()
 log.info("DB ready.")
 
 SCRAPE_INTERVAL_MINUTES = int(os.getenv("SCRAPE_INTERVAL_MINUTES", 15))

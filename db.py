@@ -221,7 +221,6 @@ def init_db() -> None:
         pass
     con.commit()
     con.close()
-    purge_non_gb_hubs()
 
 
 def purge_non_gb_hubs() -> int:
