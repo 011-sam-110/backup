@@ -202,13 +202,18 @@ async def fetch_location_details(
             fetch_via_browser(page, f"{BASE_API}/location/{uid}", auth=auth)
             for uid in chunk
         ])
+        batch_ok = 0
         for uid, resp in zip(chunk, responses):
             if resp and isinstance(resp.get("data"), dict):
                 results[uid] = resp["data"]
+                batch_ok += 1
+            elif batch_num == 1 and batch_ok == 0:
+                # Log first failed response to diagnose format/auth issues
+                log.warning("fetch_location_details sample failure — uid=%s resp=%s", uid, str(resp)[:300])
         fetched_so_far = min(i + concurrency, total)
-        log.info("fetch_location_details: %d/%d (%.0f%%) — batch %d/%d",
+        log.info("fetch_location_details: %d/%d (%.0f%%) — batch %d/%d (%d ok)",
                  fetched_so_far, total, 100 * fetched_so_far / total,
-                 batch_num, total_batches)
+                 batch_num, total_batches, batch_ok)
     return results
 
 
