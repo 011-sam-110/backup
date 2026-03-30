@@ -19,6 +19,7 @@ services:
     volumes:
       - ./chargers.db:/app/chargers.db
       - ./proxies.txt:/app/proxies.txt:ro
+      - ./logs:/app/logs
     environment:
       - TERM=xterm
     env_file: .env

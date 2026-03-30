@@ -11,11 +11,11 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 LOG_DIR = Path(os.getenv("LOG_DIR", "logs"))
-LOG_FILE = LOG_DIR / "scheduler.log"
 
 
-def setup_logging() -> logging.Logger:
-    LOG_DIR.mkdir(exist_ok=True)
+def setup_logging(log_file: str = "logs/scheduler.log") -> logging.Logger:
+    log_path = Path(log_file)
+    log_path.parent.mkdir(exist_ok=True)
 
     fmt = logging.Formatter(
         fmt="%(asctime)s UTC | %(levelname)-5s | %(message)s",
@@ -34,7 +34,7 @@ def setup_logging() -> logging.Logger:
 
     # ── rotating file handler (persists across restarts) ──────────────────────
     fh = RotatingFileHandler(
-        LOG_FILE,
+        log_path,
         maxBytes=5 * 1024 * 1024,  # 5 MB
         backupCount=3,
         encoding="utf-8",

@@ -7,13 +7,19 @@ Run after parse_har.py has created pending_uuids.json:
 
 import asyncio
 import json
+import logging
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
 from playwright.async_api import async_playwright
 
 import db
+from log_setup import setup_logging
 from scraper import BASE_API, fetch_via_browser, fetch_location_details, is_great_britain, HEADLESS, _pick_proxy
+
+setup_logging(log_file="logs/discover.log")
+log = logging.getLogger("evanti.discover")
 
 PENDING_PATH = Path("pending_uuids.json")
 CONCURRENCY = 20
@@ -75,20 +81,21 @@ def build_hub_record_from_detail(uuid: str, detail: dict, scraped_at: str) -> di
 
 async def discover():
     if not PENDING_PATH.exists():
-        print(f"ERROR: {PENDING_PATH} not found.")
-        print("Run parse_har.py first to generate it.")
+        log.error("%s not found — run parse_har.py first to generate it.", PENDING_PATH)
         return
 
     uuids = json.loads(PENDING_PATH.read_text())
     if not uuids:
-        print("No pending UUIDs.")
+        log.info("No pending UUIDs.")
         PENDING_PATH.unlink()
         return
 
-    print(f"Fetching details for {len(uuids)} new hub(s)...")
+    t_start = time.monotonic()
+    log.info("=== discover started: %d UUIDs to fetch ===", len(uuids))
 
     bearer_token = None
 
+    log.info("Phase 1/3: launching browser, capturing bearer token...")
     async with async_playwright() as p:
         proxy_url = _pick_proxy()
         browser = await p.chromium.launch(
@@ -120,7 +127,7 @@ async def discover():
 
         page.on("request", on_request)
 
-        print("Loading zapmap.com to capture bearer token...")
+        log.info("Loading zapmap.com to capture bearer token...")
         await page.goto(
             "https://www.zapmap.com/live/",
             wait_until="domcontentloaded",
@@ -137,7 +144,7 @@ async def discover():
         ]:
             try:
                 await page.click(selector, timeout=5_000)
-                print("  Cookie consent dismissed.")
+                log.info("Cookie consent dismissed.")
                 break
             except Exception:
                 pass
@@ -149,7 +156,7 @@ async def discover():
 
         # Ctrl+scroll to zoom the map — this fires authenticated bounding-box requests
         # which is the reliable way to get a bearer token (same approach as scraper.py)
-        print("  Zooming map to trigger authenticated API calls...")
+        log.info("Zooming map to trigger authenticated API calls...")
         viewport = page.viewport_size or {"width": 1280, "height": 720}
         cx, cy = viewport["width"] // 2, viewport["height"] // 2
         await page.mouse.move(cx, cy)
@@ -166,9 +173,12 @@ async def discover():
             await page.wait_for_timeout(1_000)
 
         if not bearer_token:
-            print("WARNING: No bearer token captured — location details may fail.")
+            log.warning("No bearer token captured — location details may fail.")
+        else:
+            log.info("Bearer token captured.")
 
-        print(f"Fetching location details ({CONCURRENCY} concurrent)...")
+        log.info("Phase 2/3: fetching location details (concurrency=%d, batches=%d)...",
+                 CONCURRENCY, (len(uuids) + CONCURRENCY - 1) // CONCURRENCY)
         loc_detail_map = await fetch_location_details(
             page, uuids, auth=bearer_token, concurrency=CONCURRENCY
         )
@@ -177,7 +187,8 @@ async def discover():
 
     fetched = len(loc_detail_map)
     missed = len(uuids) - fetched
-    print(f"Got details for {fetched}/{len(uuids)} hub(s)." + (f" ({missed} failed)" if missed else ""))
+    log.info("Got details for %d/%d hub(s).%s", fetched, len(uuids),
+             f" ({missed} failed)" if missed else "")
 
     scraped_at = datetime.now(timezone.utc).isoformat()
 
@@ -198,15 +209,17 @@ async def discover():
         records.append(rec)
 
     if skipped:
-        print(f"Skipped {skipped} hub(s) (outside Great Britain or below 100 kW).")
+        log.info("Skipped %d hub(s) (outside Great Britain or below 100 kW).", skipped)
 
+    log.info("Phase 3/3: upserting %d hub(s) into DB...", len(records))
     db.init_db()
     db.upsert_hubs(records)
-    print(f"Upserted {len(records)} hub(s) into DB.")
 
     PENDING_PATH.unlink()
-    print(f"Removed {PENDING_PATH}.")
-    print("\nDone. New hubs will appear in the next scraper run.")
+
+    elapsed = time.monotonic() - t_start
+    log.info("=== discover complete: %d upserted, %d skipped, elapsed %.0fs ===",
+             len(records), skipped, elapsed)
 
 
 if __name__ == "__main__":

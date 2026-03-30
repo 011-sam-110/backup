@@ -21,9 +21,11 @@ Run with:
     uvicorn api:app --reload --port 8000
 """
 
+import logging
 import os
 import secrets
 import asyncio
+import time
 from pathlib import Path
 
 import json
@@ -34,6 +36,10 @@ from fastapi.staticfiles import StaticFiles
 from typing import Optional, List
 
 import db
+from log_setup import setup_logging
+
+setup_logging(log_file="logs/api.log")
+log = logging.getLogger("evanti.api")
 
 db.init_db()
 
@@ -287,12 +293,25 @@ def export_snapshots(hours: int = Query(default=24, ge=1, le=8760),
 
 async def _run_discover():
     """Run discover.py as a subprocess — fires after the endpoint returns."""
+    log.info("discover subprocess starting...")
+    t0 = time.monotonic()
     proc = await asyncio.create_subprocess_exec(
         "python", "discover.py",
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
-    await proc.communicate()
+    stdout, stderr = await proc.communicate()
+    elapsed = time.monotonic() - t0
+    for line in stdout.decode(errors="replace").splitlines():
+        if line.strip():
+            log.info("[discover] %s", line)
+    for line in stderr.decode(errors="replace").splitlines():
+        if line.strip():
+            log.warning("[discover stderr] %s", line)
+    if proc.returncode != 0:
+        log.error("discover subprocess exited with code %d after %.0fs", proc.returncode, elapsed)
+    else:
+        log.info("discover subprocess finished OK in %.0fs", elapsed)
 
 
 @app.post("/api/admin/discover")

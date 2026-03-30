@@ -194,7 +194,9 @@ async def fetch_location_details(
 ) -> dict:
     """Call /location/{uuid} for each uuid in concurrent batches. Returns {uuid: data_dict}."""
     results = {}
-    for i in range(0, len(uuids), concurrency):
+    total = len(uuids)
+    total_batches = (total + concurrency - 1) // concurrency
+    for batch_num, i in enumerate(range(0, total, concurrency), 1):
         chunk = uuids[i : i + concurrency]
         responses = await asyncio.gather(*[
             fetch_via_browser(page, f"{BASE_API}/location/{uid}", auth=auth)
@@ -203,6 +205,10 @@ async def fetch_location_details(
         for uid, resp in zip(chunk, responses):
             if resp and isinstance(resp.get("data"), dict):
                 results[uid] = resp["data"]
+        fetched_so_far = min(i + concurrency, total)
+        log.info("fetch_location_details: %d/%d (%.0f%%) — batch %d/%d",
+                 fetched_so_far, total, 100 * fetched_so_far / total,
+                 batch_num, total_batches)
     return results
 
 
