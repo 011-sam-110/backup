@@ -7,6 +7,7 @@ All other modules just do: log = logging.getLogger("evanti.<module>")
 
 import logging
 import os
+import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
@@ -28,7 +29,7 @@ def setup_logging(log_file: str = "logs/scheduler.log") -> logging.Logger:
     root.setLevel(logging.DEBUG)
 
     # ── stdout handler (shows up in docker compose logs) ──────────────────────
-    sh = logging.StreamHandler()
+    sh = logging.StreamHandler(sys.stdout)
     sh.setLevel(logging.INFO)
     sh.setFormatter(fmt)
 
