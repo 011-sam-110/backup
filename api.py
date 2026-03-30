@@ -29,6 +29,8 @@ import time
 from pathlib import Path
 
 import json
+import traceback
+
 from fastapi import FastAPI, HTTPException, Query, Request, Body, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -41,7 +43,9 @@ from log_setup import setup_logging
 setup_logging(log_file="logs/api.log")
 log = logging.getLogger("evanti.api")
 
+log.info("API starting up — initialising DB...")
 db.init_db()
+log.info("DB ready.")
 
 SCRAPE_INTERVAL_MINUTES = int(os.getenv("SCRAPE_INTERVAL_MINUTES", 15))
 
@@ -56,6 +60,16 @@ app.add_middleware(
 )
 
 _PASSWORD = os.getenv("DASHBOARD_PASSWORD", "")
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    log.error(
+        "Unhandled exception on %s %s\n%s",
+        request.method, request.url.path,
+        traceback.format_exc(),
+    )
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
 @app.middleware("http")
@@ -293,25 +307,28 @@ def export_snapshots(hours: int = Query(default=24, ge=1, le=8760),
 
 async def _run_discover():
     """Run discover.py as a subprocess — fires after the endpoint returns."""
-    log.info("discover subprocess starting...")
-    t0 = time.monotonic()
-    proc = await asyncio.create_subprocess_exec(
-        "python", "discover.py",
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    stdout, stderr = await proc.communicate()
-    elapsed = time.monotonic() - t0
-    for line in stdout.decode(errors="replace").splitlines():
-        if line.strip():
-            log.info("[discover] %s", line)
-    for line in stderr.decode(errors="replace").splitlines():
-        if line.strip():
-            log.warning("[discover stderr] %s", line)
-    if proc.returncode != 0:
-        log.error("discover subprocess exited with code %d after %.0fs", proc.returncode, elapsed)
-    else:
-        log.info("discover subprocess finished OK in %.0fs", elapsed)
+    try:
+        log.info("discover subprocess starting...")
+        t0 = time.monotonic()
+        proc = await asyncio.create_subprocess_exec(
+            "python", "discover.py",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await proc.communicate()
+        elapsed = time.monotonic() - t0
+        for line in stdout.decode(errors="replace").splitlines():
+            if line.strip():
+                log.info("[discover] %s", line)
+        for line in stderr.decode(errors="replace").splitlines():
+            if line.strip():
+                log.warning("[discover stderr] %s", line)
+        if proc.returncode != 0:
+            log.error("discover subprocess exited with code %d after %.0fs", proc.returncode, elapsed)
+        else:
+            log.info("discover subprocess finished OK in %.0fs", elapsed)
+    except Exception:
+        log.error("_run_discover crashed:\n%s", traceback.format_exc())
 
 
 @app.post("/api/admin/discover")
