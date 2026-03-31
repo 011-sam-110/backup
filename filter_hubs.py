@@ -38,12 +38,20 @@ def main():
         return
 
     print(f"Found {len(rows)} hub(s) to delete:\n")
-    print(f"  {'UUID':<12}  {'kW':>6}  {'EVSEs':>5}  Name")
-    print(f"  {'-'*12}  {'-'*6}  {'-'*5}  {'-'*30}")
+    print(f"  {'UUID':<12}  {'kW':>6}  {'EVSEs':>5}  {'Reason':<14}  Name")
+    print(f"  {'-'*12}  {'-'*6}  {'-'*5}  {'-'*14}  {'-'*30}")
     for uuid, name, kw, evses in rows:
-        kw_str = f"{kw:.0f}" if kw is not None else "?"
-        evse_str = str(evses) if evses is not None else "?"
-        print(f"  {uuid:<12}  {kw_str:>6}  {evse_str:>5}  {name or '(no name)'}")
+        kw_str   = f"{kw:.0f}"  if kw    is not None else "?"
+        evse_str = str(evses)   if evses is not None else "?"
+        low_kw   = kw    is None or kw    < 100
+        few_evse = evses is None or evses < 6
+        if low_kw and few_evse:
+            reason = "low kW + few EVSEs"
+        elif low_kw:
+            reason = "low kW"
+        else:
+            reason = "few EVSEs"
+        print(f"  {uuid:<12}  {kw_str:>6}  {evse_str:>5}  {reason:<14}  {name or '(no name)'}")
 
     confirm = input(f"\nDelete these {len(rows)} hub(s) and all their data? [y/N] ").strip().lower()
     if confirm != "y":
@@ -54,11 +62,17 @@ def main():
     uuids = [row[0] for row in rows]
     ph = ",".join("?" * len(uuids))
 
-    evse_count  = con.execute(f"DELETE FROM evse_events WHERE hub_uuid IN ({ph})", uuids).rowcount
-    snap_count  = con.execute(f"DELETE FROM snapshots   WHERE hub_uuid IN ({ph})", uuids).rowcount
-    visit_count = con.execute(f"DELETE FROM visits      WHERE hub_uuid IN ({ph})", uuids).rowcount
-    gh_count    = con.execute(f"DELETE FROM group_hubs  WHERE hub_uuid IN ({ph})", uuids).rowcount
-    hub_count   = con.execute(f"DELETE FROM hubs        WHERE uuid     IN ({ph})", uuids).rowcount
+    def safe_delete(sql, params):
+        try:
+            return con.execute(sql, params).rowcount
+        except Exception:
+            return 0
+
+    evse_count  = safe_delete(f"DELETE FROM evse_events WHERE hub_uuid IN ({ph})", uuids)
+    snap_count  = safe_delete(f"DELETE FROM snapshots   WHERE hub_uuid IN ({ph})", uuids)
+    visit_count = safe_delete(f"DELETE FROM visits      WHERE hub_uuid IN ({ph})", uuids)
+    gh_count    = safe_delete(f"DELETE FROM group_hubs  WHERE hub_uuid IN ({ph})", uuids)
+    hub_count   = safe_delete(f"DELETE FROM hubs        WHERE uuid     IN ({ph})", uuids)
 
     con.commit()
     con.close()
