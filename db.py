@@ -182,12 +182,12 @@ _MIGRATIONS: dict[int, str | list[str]] = {
     #     into exact-match indexed rows, replacing the LIKE anti-pattern in queries.
     #     Populated from existing connector_types JSON via json_each.
     20: [
-        """CREATE TABLE hub_connectors (
+        """CREATE TABLE IF NOT EXISTS hub_connectors (
             hub_uuid       TEXT NOT NULL REFERENCES hubs(uuid),
             connector_type TEXT NOT NULL,
             PRIMARY KEY (hub_uuid, connector_type)
         )""",
-        "CREATE INDEX idx_hub_connectors_type ON hub_connectors(connector_type)",
+        "CREATE INDEX IF NOT EXISTS idx_hub_connectors_type ON hub_connectors(connector_type)",
         """INSERT OR IGNORE INTO hub_connectors (hub_uuid, connector_type)
            SELECT h.uuid, j.value
            FROM hubs h, json_each(h.connector_types) j
