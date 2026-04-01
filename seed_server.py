@@ -40,7 +40,7 @@ def main():
     if not os.path.exists(args.uuids):
         sys.exit(f"UUID file not found: {args.uuids}\nGenerate it with: python push_uuids.py --dry-run > uuids.txt")
 
-    uuids = [u.strip() for u in open(args.uuids) if u.strip()]
+    uuids = [u.strip() for u in open(args.uuids, encoding="utf-8-sig") if u.strip()]
     print(f"Loaded {len(uuids)} UUIDs from {args.uuids}")
 
     env = read_env()
