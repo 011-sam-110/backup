@@ -42,7 +42,9 @@ def main():
 
     raw = open(args.uuids, "rb").read()
     text = raw.decode("utf-16") if raw[:2] in (b"\xff\xfe", b"\xfe\xff") else raw.decode("utf-8-sig")
-    uuids = [u.strip() for u in text.splitlines() if u.strip()]
+    import re
+    uuids = [u.strip() for u in text.splitlines()
+             if re.match(r'^[0-9a-f\-]{30,}$', u.strip(), re.IGNORECASE)]
     print(f"Loaded {len(uuids)} UUIDs from {args.uuids}")
 
     env = read_env()
@@ -66,11 +68,11 @@ def main():
         try:
             resp = urllib.request.urlopen(req, timeout=30)
             result = json.loads(resp.read())
-            new = result.get("new_count", 0)
-            dup = result.get("duplicate_count", 0)
+            new = result.get("queued", 0)
+            dup = result.get("already_known", 0)
             total_new += new
             total_dup += dup
-            print(f"OK — {new} new, {dup} already known")
+            print(f"OK — {new} queued for discovery, {dup} already known")
         except urllib.error.HTTPError as e:
             print(f"FAILED — HTTP {e.code} {e.read().decode()[:120]}")
         except Exception as e:
