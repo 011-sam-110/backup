@@ -1022,7 +1022,9 @@ def get_hub_performance(hours: int = 168,
                   / NULLIF(COUNT(s.id), 0), 1) AS full_capacity_pct,
             ROUND(1.0 * SUM(CASE WHEN h.total_evses > 0
                                       AND s.charging_count >= h.total_evses THEN 1 ELSE 0 END)
-                  * {interval_minutes} / 60.0, 1) AS full_capacity_hours
+                  * {interval_minutes} / 60.0, 1) AS full_capacity_hours,
+            ROUND(100.0 * SUM(s.charging_count) /
+                  NULLIF(SUM(s.available_count + s.charging_count + s.unknown_count), 0), 1) AS avg_utilisation_pct
         FROM snapshots s
         JOIN hubs h ON h.uuid = s.hub_uuid
         WHERE {where_time}{snap_hub_filter}

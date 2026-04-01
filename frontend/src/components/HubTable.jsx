@@ -40,7 +40,7 @@ export default function HubTable({ hubs, onHubClick }) {
   const paginated = sorted.slice(0, page * PAGE_SIZE)
   const hasMore = paginated.length < sorted.length
 
-  const NUMERIC_KEYS = new Set(['max_power_kw','total_evses','charging_count','est_kw','available_count','inoperative_count','latitude','longitude','user_rating','utilisation_pct','visit_count','avg_dwell_min'])
+  const NUMERIC_KEYS = new Set(['max_power_kw','total_evses','charging_count','est_kw','available_count','inoperative_count','latitude','longitude','user_rating','utilisation_pct','visit_count','avg_dwell_min','util_24h'])
 
   function th(label, key, extraStyle = {}) {
     const active = sortKey === key
@@ -77,6 +77,7 @@ export default function HubTable({ hubs, onHubClick }) {
             {th('Utilisation', 'utilisation_pct')}
             {th('Visits', 'visit_count')}
             {th('Avg Dwell', 'avg_dwell_min')}
+            {th('24h Avg Util', 'util_24h')}
             {th('Last Seen', 'scraped_at')}
           </tr>
         </thead>
@@ -152,6 +153,9 @@ export default function HubTable({ hubs, onHubClick }) {
                 </td>
                 <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-muted)' }}>
                   {hub.avg_dwell_min != null ? `${hub.avg_dwell_min}m` : <span>—</span>}
+                </td>
+                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: utilColor(hub.util_24h ?? 0) }}>
+                  {hub.util_24h != null ? `${hub.util_24h}%` : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                 </td>
                 <td style={{ color: 'var(--text-muted)' }}>{fmtTime(hub.scraped_at)}</td>
               </tr>

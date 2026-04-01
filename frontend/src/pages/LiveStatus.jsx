@@ -88,16 +88,19 @@ export default function LiveStatus() {
   const load = useCallback(async (showSpinner = false) => {
     if (showSpinner) setLoading(true)
     try {
-      const [statsRes, hubsRes, deltasRes, sparkRes, visitsRes] = await Promise.all([
+      const [statsRes, hubsRes, deltasRes, sparkRes, visitsRes, perfRes] = await Promise.all([
         authFetch('/api/stats'),
         authFetch(hubsUrl()),
         authFetch('/api/stats/deltas'),
         authFetch('/api/sparkline?days=7'),
         authFetch(visitsUrl()),
+        authFetch('/api/hub-performance?hours=24'),
       ])
       const hubData = await hubsRes.json()
       const visitsData = await visitsRes.json()
+      const perfData = await perfRes.json()
       const visitMap = new Map(visitsData.map(v => [v.hub_uuid, v]))
+      const perfMap = new Map(perfData.map(p => [p.uuid, p]))
 
       setStats(await statsRes.json())
       setHubs(hubData.map(h => ({
@@ -105,6 +108,7 @@ export default function LiveStatus() {
         visit_count: visitMap.get(h.uuid)?.visit_count ?? 0,
         avg_dwell_min: visitMap.get(h.uuid)?.avg_dwell_min ?? null,
         active_visits: visitMap.get(h.uuid)?.active_visits ?? 0,
+        util_24h: perfMap.get(h.uuid)?.avg_utilisation_pct ?? null,
       })))
       setDeltas(await deltasRes.json())
       setSparkline(await sparkRes.json())
