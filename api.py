@@ -12,6 +12,8 @@ Endpoints:
   GET  /api/hourly-heatmap?hours=336    — avg util by (day_of_week, hour)
   GET  /api/reliability?hours=168       — network composition over time
   GET  /api/sparkline?days=7            — global daily sparkline data
+  GET  /api/hub-performance?hours=168   — per-hub performance: active%, full-capacity%, visits/day
+  GET  /api/connector-types             — distinct connector types with hub counts
   GET  /api/export/snapshots            — raw snapshot dump for Excel export
 
 All time-window endpoints also accept ?start_dt=ISO&end_dt=ISO to query a
@@ -235,6 +237,29 @@ def visits(start_dt: Optional[str] = Query(default=None),
     return db.get_visit_stats(start_dt or None, end_dt or None, operator, connector, min_kw, max_kw, min_evses, max_evses,
                               start_hour=start_hour, end_hour=end_hour,
                               group_ids=group_id or None)
+
+
+@app.get("/api/hub-performance")
+def hub_performance(hours: int = Query(default=168, ge=24, le=8760),
+                    start_dt: Optional[str] = Query(default=None),
+                    end_dt: Optional[str] = Query(default=None),
+                    operator: Optional[List[str]] = Query(default=None),
+                    connector: Optional[str] = Query(default=None),
+                    min_kw: Optional[float] = Query(default=None),
+                    max_kw: Optional[float] = Query(default=None),
+                    min_evses: Optional[int] = Query(default=None),
+                    max_evses: Optional[int] = Query(default=None),
+                    group_id: Optional[List[int]] = Query(default=None)):
+    return db.get_hub_performance(hours, start_dt=start_dt, end_dt=end_dt,
+                                   operator=operator, connector=connector,
+                                   min_kw=min_kw, max_kw=max_kw,
+                                   min_evses=min_evses, max_evses=max_evses,
+                                   group_ids=group_id or None)
+
+
+@app.get("/api/connector-types")
+def connector_types():
+    return db.get_connector_types()
 
 
 @app.get("/api/groups")

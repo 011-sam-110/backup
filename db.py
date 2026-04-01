@@ -57,8 +57,8 @@ def _hub_subquery(params: list, operator: str | list[str] | None, connector: str
             conditions.append(f"LOWER(operator) IN ({placeholders})")
             params.extend(op.lower() for op in ops)
     if connector:
-        conditions.append("connector_types LIKE ?")
-        params.append(f'%{connector}%')
+        conditions.append("uuid IN (SELECT hub_uuid FROM hub_connectors WHERE connector_type = ?)")
+        params.append(connector)
     if min_kw is not None:
         conditions.append("max_power_kw >= ?")
         params.append(min_kw)
@@ -78,6 +78,156 @@ def _hub_subquery(params: list, operator: str | list[str] | None, connector: str
     if not conditions:
         return ""
     return " AND hub_uuid IN (SELECT uuid FROM hubs WHERE " + " AND ".join(conditions) + ")"
+
+
+# ---------------------------------------------------------------------------
+# Schema versioning
+# Each entry is a single SQL statement applied exactly once, in order.
+# To add a migration: append a new key (next integer) — never edit existing ones.
+# ---------------------------------------------------------------------------
+_MIGRATIONS: dict[int, str | list[str]] = {
+    # ── Historical single-column additions (1–16) ──────────────────────────
+    1:  "ALTER TABLE hubs ADD COLUMN hub_name TEXT DEFAULT NULL",
+    2:  "ALTER TABLE hubs ADD COLUMN operator TEXT DEFAULT NULL",
+    3:  "ALTER TABLE hubs ADD COLUMN address TEXT DEFAULT NULL",
+    4:  "ALTER TABLE hubs ADD COLUMN city TEXT DEFAULT NULL",
+    5:  "ALTER TABLE hubs ADD COLUMN postal_code TEXT DEFAULT NULL",
+    6:  "ALTER TABLE hubs ADD COLUMN user_rating REAL DEFAULT NULL",
+    7:  "ALTER TABLE hubs ADD COLUMN user_rating_count INTEGER DEFAULT NULL",
+    8:  "ALTER TABLE hubs ADD COLUMN is_24_7 INTEGER DEFAULT NULL",
+    9:  "ALTER TABLE hubs ADD COLUMN pricing TEXT DEFAULT NULL",
+    10: "ALTER TABLE hubs ADD COLUMN payment_methods TEXT DEFAULT NULL",
+    11: "ALTER TABLE hubs ADD COLUMN devices_raw_loc TEXT DEFAULT NULL",
+    12: "ALTER TABLE hubs ADD COLUMN latest_devices_status TEXT DEFAULT NULL",
+    13: "ALTER TABLE snapshots ADD COLUMN estimated_kwh REAL",
+    14: "ALTER TABLE visits ADD COLUMN evse_uuid TEXT DEFAULT NULL",
+    15: "ALTER TABLE groups ADD COLUMN high_frequency INTEGER NOT NULL DEFAULT 0",
+    16: "ALTER TABLE snapshots ADD COLUMN source TEXT NOT NULL DEFAULT 'full'",
+
+    # ── Structural improvements ────────────────────────────────────────────
+
+    # 17: Rebuild snapshots — add snapshot_max_kw audit column, CHECK on source,
+    #     and covering index for analytics queries.
+    17: [
+        "DROP TABLE IF EXISTS snapshots_new",
+        """CREATE TABLE snapshots_new (
+            id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+            hub_uuid            TEXT NOT NULL REFERENCES hubs(uuid),
+            scraped_at          TEXT NOT NULL,
+            available_count     INTEGER,
+            charging_count      INTEGER,
+            inoperative_count   INTEGER,
+            out_of_order_count  INTEGER,
+            unknown_count       INTEGER,
+            utilisation_pct     REAL,
+            estimated_kwh       REAL,
+            snapshot_max_kw     REAL,
+            source              TEXT NOT NULL DEFAULT 'full'
+                                    CHECK(source IN ('full', 'targeted'))
+        )""",
+        """INSERT INTO snapshots_new
+               (id, hub_uuid, scraped_at, available_count, charging_count,
+                inoperative_count, out_of_order_count, unknown_count,
+                utilisation_pct, estimated_kwh, snapshot_max_kw, source)
+           SELECT id, hub_uuid, scraped_at, available_count, charging_count,
+                  inoperative_count, out_of_order_count, unknown_count,
+                  utilisation_pct, estimated_kwh, NULL, source
+           FROM snapshots""",
+        "DROP TABLE snapshots",
+        "ALTER TABLE snapshots_new RENAME TO snapshots",
+        "CREATE INDEX idx_snapshots_hub_time ON snapshots(hub_uuid, scraped_at)",
+        "CREATE INDEX idx_snapshots_time ON snapshots(scraped_at)",
+        "CREATE INDEX idx_snapshots_covering ON snapshots(hub_uuid, scraped_at, utilisation_pct, charging_count, source)",
+    ],
+
+    # 18: Rebuild evse_events — enforce valid status values via CHECK constraint.
+    18: [
+        "DROP TABLE IF EXISTS evse_events_new",
+        """CREATE TABLE evse_events_new (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            evse_uuid  TEXT NOT NULL,
+            hub_uuid   TEXT NOT NULL REFERENCES hubs(uuid),
+            scraped_at TEXT NOT NULL,
+            status     TEXT NOT NULL
+                           CHECK(status IN ('AVAILABLE', 'CHARGING', 'INOPERATIVE',
+                                            'OUTOFORDER', 'UNKNOWN'))
+        )""",
+        """INSERT INTO evse_events_new
+               (id, evse_uuid, hub_uuid, scraped_at, status)
+           SELECT id, evse_uuid, hub_uuid, scraped_at, status
+           FROM evse_events""",
+        "DROP TABLE evse_events",
+        "ALTER TABLE evse_events_new RENAME TO evse_events",
+        "CREATE INDEX idx_evse_events_evse_time ON evse_events(evse_uuid, scraped_at)",
+        "CREATE INDEX idx_evse_events_hub_time ON evse_events(hub_uuid, scraped_at)",
+    ],
+
+    # 19: Rebuild groups — enforce high_frequency is strictly 0 or 1.
+    19: [
+        "DROP TABLE IF EXISTS groups_new",
+        """CREATE TABLE groups_new (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            name           TEXT NOT NULL UNIQUE,
+            created_at     TEXT NOT NULL,
+            high_frequency INTEGER NOT NULL DEFAULT 0
+                               CHECK(high_frequency IN (0, 1))
+        )""",
+        """INSERT INTO groups_new (id, name, created_at, high_frequency)
+           SELECT id, name, created_at, high_frequency FROM groups""",
+        "DROP TABLE groups",
+        "ALTER TABLE groups_new RENAME TO groups",
+    ],
+
+    # 20: Create hub_connectors junction table — normalises connector_types TEXT/JSON
+    #     into exact-match indexed rows, replacing the LIKE anti-pattern in queries.
+    #     Populated from existing connector_types JSON via json_each.
+    20: [
+        """CREATE TABLE hub_connectors (
+            hub_uuid       TEXT NOT NULL REFERENCES hubs(uuid),
+            connector_type TEXT NOT NULL,
+            PRIMARY KEY (hub_uuid, connector_type)
+        )""",
+        "CREATE INDEX idx_hub_connectors_type ON hub_connectors(connector_type)",
+        """INSERT OR IGNORE INTO hub_connectors (hub_uuid, connector_type)
+           SELECT h.uuid, j.value
+           FROM hubs h, json_each(h.connector_types) j
+           WHERE h.connector_types IS NOT NULL AND h.connector_types != '[]'""",
+    ],
+}
+
+
+def _run_migrations(con: sqlite3.Connection) -> None:
+    """Apply any pending schema migrations and record them in schema_version."""
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS schema_version (
+            version    INTEGER PRIMARY KEY,
+            applied_at TEXT NOT NULL
+        )
+    """)
+    current: int = con.execute("SELECT MAX(version) FROM schema_version").fetchone()[0] or 0
+    now = datetime.now(timezone.utc).isoformat()
+    for version, payload in sorted(_MIGRATIONS.items()):
+        if version <= current:
+            continue
+        if isinstance(payload, str):
+            # Single-statement migration — catch duplicate-column errors for the
+            # historical ALTER TABLE shims (migrations 1–16) that may already be
+            # applied on older databases.
+            try:
+                con.execute(payload)
+            except sqlite3.OperationalError as exc:
+                if "duplicate column name" not in str(exc).lower():
+                    raise
+        else:
+            # Multi-statement migration (e.g. table rebuild) — all errors propagate.
+            for stmt in payload:
+                con.execute(stmt)
+        con.execute(
+            "INSERT INTO schema_version(version, applied_at) VALUES (?, ?)",
+            (version, now),
+        )
+        con.commit()
+        log.debug("db migration %d applied", version)
 
 
 def init_db() -> None:
@@ -117,7 +267,10 @@ def init_db() -> None:
             out_of_order_count  INTEGER,
             unknown_count       INTEGER,
             utilisation_pct     REAL,
-            estimated_kwh       REAL
+            estimated_kwh       REAL,
+            snapshot_max_kw     REAL,
+            source              TEXT NOT NULL DEFAULT 'full'
+                                    CHECK(source IN ('full', 'targeted'))
         );
 
         CREATE INDEX IF NOT EXISTS idx_snapshots_hub_time
@@ -125,6 +278,9 @@ def init_db() -> None:
 
         CREATE INDEX IF NOT EXISTS idx_snapshots_time
             ON snapshots(scraped_at);
+
+        CREATE INDEX IF NOT EXISTS idx_snapshots_covering
+            ON snapshots(hub_uuid, scraped_at, utilisation_pct, charging_count, source);
 
         CREATE TABLE IF NOT EXISTS visits (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -142,6 +298,7 @@ def init_db() -> None:
             name           TEXT NOT NULL UNIQUE,
             created_at     TEXT NOT NULL,
             high_frequency INTEGER NOT NULL DEFAULT 0
+                               CHECK(high_frequency IN (0, 1))
         );
 
         CREATE TABLE IF NOT EXISTS group_hubs (
@@ -159,6 +316,8 @@ def init_db() -> None:
             hub_uuid   TEXT NOT NULL REFERENCES hubs(uuid),
             scraped_at TEXT NOT NULL,
             status     TEXT NOT NULL
+                           CHECK(status IN ('AVAILABLE', 'CHARGING', 'INOPERATIVE',
+                                            'OUTOFORDER', 'UNKNOWN'))
         );
 
         CREATE INDEX IF NOT EXISTS idx_evse_events_evse_time
@@ -166,60 +325,17 @@ def init_db() -> None:
 
         CREATE INDEX IF NOT EXISTS idx_evse_events_hub_time
             ON evse_events(hub_uuid, scraped_at);
+
+        CREATE TABLE IF NOT EXISTS hub_connectors (
+            hub_uuid       TEXT NOT NULL REFERENCES hubs(uuid),
+            connector_type TEXT NOT NULL,
+            PRIMARY KEY (hub_uuid, connector_type)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_hub_connectors_type
+            ON hub_connectors(connector_type);
     """)
-    # Migration guard for existing databases
-    try:
-        con.execute("ALTER TABLE hubs ADD COLUMN hub_name TEXT DEFAULT NULL")
-        con.commit()
-    except Exception:
-        pass  # column already exists
-    try:
-        con.execute("ALTER TABLE hubs ADD COLUMN operator TEXT DEFAULT NULL")
-        con.commit()
-    except Exception:
-        pass  # column already exists
-    for col, typedef in [
-        ("address",           "TEXT DEFAULT NULL"),
-        ("city",              "TEXT DEFAULT NULL"),
-        ("postal_code",       "TEXT DEFAULT NULL"),
-        ("user_rating",       "REAL DEFAULT NULL"),
-        ("user_rating_count", "INTEGER DEFAULT NULL"),
-        ("is_24_7",           "INTEGER DEFAULT NULL"),
-        ("pricing",           "TEXT DEFAULT NULL"),
-        ("payment_methods",   "TEXT DEFAULT NULL"),
-        ("devices_raw_loc",   "TEXT DEFAULT NULL"),
-    ]:
-        try:
-            con.execute(f"ALTER TABLE hubs ADD COLUMN {col} {typedef}")
-            con.commit()
-        except Exception:
-            pass
-    try:
-        con.execute("ALTER TABLE hubs ADD COLUMN latest_devices_status TEXT DEFAULT NULL")
-        con.commit()
-    except Exception:
-        pass
-    try:
-        con.execute("ALTER TABLE snapshots ADD COLUMN estimated_kwh REAL")
-        con.commit()
-    except Exception:
-        pass
-    try:
-        con.execute("ALTER TABLE visits ADD COLUMN evse_uuid TEXT DEFAULT NULL")
-        con.commit()
-    except Exception:
-        pass
-    try:
-        con.execute("ALTER TABLE groups ADD COLUMN high_frequency INTEGER NOT NULL DEFAULT 0")
-        con.commit()
-    except Exception:
-        pass
-    try:
-        con.execute("ALTER TABLE snapshots ADD COLUMN source TEXT NOT NULL DEFAULT 'full'")
-        con.commit()
-    except Exception:
-        pass
-    con.commit()
+    _run_migrations(con)
     con.close()
 
 
@@ -306,6 +422,13 @@ def upsert_hubs(records: list[dict]) -> None:
             json.dumps(r["devices_raw_loc"]) if r.get("devices_raw_loc") else None,
             json.dumps(r.get("devices", [])),
         ))
+        connector_types = r.get("connector_types", [])
+        con.execute("DELETE FROM hub_connectors WHERE hub_uuid = ?", (r["uuid"],))
+        if connector_types:
+            con.executemany(
+                "INSERT OR IGNORE INTO hub_connectors (hub_uuid, connector_type) VALUES (?, ?)",
+                [(r["uuid"], ct) for ct in connector_types],
+            )
     con.commit()
     con.close()
 
@@ -342,6 +465,7 @@ def insert_snapshots(records: list[dict], *, source: str = 'full') -> None:
             max_kw = r.get("max_power_kw") or power_map.get(r["uuid"], 0.0)
             estimated_kwh = round(charging * max_kw * interval_hours * _KWH_COEFFICIENT, 2)
         except Exception:
+            max_kw = None
             estimated_kwh = None
         rows.append((
             r["uuid"],
@@ -353,6 +477,7 @@ def insert_snapshots(records: list[dict], *, source: str = 'full') -> None:
             r.get("unknown_count", 0),
             util_pct,
             estimated_kwh,
+            max_kw or None,   # snapshot_max_kw — NULL when kW is unknown/zero
             source,
         ))
     count_before = con.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
@@ -360,8 +485,8 @@ def insert_snapshots(records: list[dict], *, source: str = 'full') -> None:
         INSERT INTO snapshots
             (hub_uuid, scraped_at, available_count, charging_count,
              inoperative_count, out_of_order_count, unknown_count, utilisation_pct,
-             estimated_kwh, source)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             estimated_kwh, snapshot_max_kw, source)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, rows)
     con.commit()
     count_after = con.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
@@ -761,6 +886,19 @@ def get_stat_deltas() -> dict:
     }
 
 
+def get_connector_types() -> list[dict]:
+    """Distinct connector types present in the DB with hub counts, ordered by prevalence."""
+    con = _connect()
+    rows = con.execute("""
+        SELECT connector_type, COUNT(DISTINCT hub_uuid) AS hub_count
+        FROM hub_connectors
+        GROUP BY connector_type
+        ORDER BY hub_count DESC
+    """).fetchall()
+    con.close()
+    return [dict(r) for r in rows]
+
+
 def get_global_sparkline(days: int = 7) -> list[dict]:
     """Daily avg utilisation for the last N days — used for stat card sparklines."""
     cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
@@ -837,6 +975,96 @@ def get_hub_detail(uuid: str) -> dict | None:
     return d
 
 
+def get_hub_performance(hours: int = 168,
+                        start_dt: str | None = None, end_dt: str | None = None,
+                        operator: str | list[str] | None = None,
+                        connector: str | None = None,
+                        min_kw: float | None = None, max_kw: float | None = None,
+                        min_evses: int | None = None, max_evses: int | None = None,
+                        group_ids: list[int] | None = None) -> list[dict]:
+    """Per-hub performance stats covering three metrics:
+    - active_pct: % of scrape intervals where charging_count > 0 (site sustaining traffic)
+    - full_capacity_pct / full_capacity_hours: time at max capacity
+    - visits_per_day / avg_dwell_min: visit throughput from the visits table
+
+    All three metrics use the same date window.
+    """
+    interval_minutes = int(os.getenv("SCRAPE_INTERVAL_MINUTES", "15"))
+
+    if start_dt and end_dt:
+        where_time = "s.scraped_at >= ? AND s.scraped_at <= ?"
+        snap_params: list = [_parse_dt(start_dt), _parse_dt(end_dt)]
+    else:
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+        where_time = "s.scraped_at >= ?"
+        snap_params = [cutoff]
+
+    hub_attr_filter = _hub_subquery(snap_params, operator, connector, min_kw, max_kw, min_evses, max_evses, group_ids=group_ids)
+    # _hub_subquery references columns via hub_uuid; swap to s.hub_uuid context
+    snap_hub_filter = hub_attr_filter.replace(" AND hub_uuid IN ", " AND s.hub_uuid IN ")
+
+    con = _connect()
+    snap_rows = con.execute(f"""
+        SELECT
+            h.uuid,
+            h.hub_name,
+            h.operator,
+            h.max_power_kw,
+            h.total_evses,
+            COUNT(s.id) AS total_snapshots,
+            SUM(CASE WHEN s.charging_count > 0 THEN 1 ELSE 0 END) AS active_snapshots,
+            ROUND(100.0 * SUM(CASE WHEN s.charging_count > 0 THEN 1 ELSE 0 END)
+                  / NULLIF(COUNT(s.id), 0), 1) AS active_pct,
+            SUM(CASE WHEN h.total_evses > 0
+                          AND s.charging_count >= h.total_evses THEN 1 ELSE 0 END) AS full_capacity_snapshots,
+            ROUND(100.0 * SUM(CASE WHEN h.total_evses > 0
+                                        AND s.charging_count >= h.total_evses THEN 1 ELSE 0 END)
+                  / NULLIF(COUNT(s.id), 0), 1) AS full_capacity_pct,
+            ROUND(1.0 * SUM(CASE WHEN h.total_evses > 0
+                                      AND s.charging_count >= h.total_evses THEN 1 ELSE 0 END)
+                  * {interval_minutes} / 60.0, 1) AS full_capacity_hours
+        FROM snapshots s
+        JOIN hubs h ON h.uuid = s.hub_uuid
+        WHERE {where_time}{snap_hub_filter}
+        GROUP BY h.uuid
+        ORDER BY active_pct DESC
+    """, snap_params).fetchall()
+
+    # Build visits stats over the same window
+    if start_dt and end_dt:
+        v_start = _parse_dt(start_dt)
+        v_end = _parse_dt(end_dt)
+    else:
+        v_start = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+        v_end = datetime.now(timezone.utc).isoformat()
+    v_params: list = [v_start, v_end]
+    v_hub_filter = _hub_subquery(v_params, operator, connector, min_kw, max_kw, min_evses, max_evses, group_ids=group_ids)
+    visit_rows = con.execute(f"""
+        SELECT
+            hub_uuid,
+            COUNT(*) AS total_visits,
+            COUNT(DISTINCT DATE(started_at)) AS visit_days,
+            ROUND(1.0 * COUNT(*) / NULLIF(COUNT(DISTINCT DATE(started_at)), 0), 1) AS visits_per_day,
+            ROUND(AVG(CASE WHEN dwell_min IS NOT NULL AND dwell_min > 0 THEN dwell_min END), 0) AS avg_dwell_min
+        FROM visits
+        WHERE started_at >= ? AND started_at <= ?{v_hub_filter}
+        GROUP BY hub_uuid
+    """, v_params).fetchall()
+    con.close()
+
+    visit_map = {r["hub_uuid"]: dict(r) for r in visit_rows}
+
+    result = []
+    for row in snap_rows:
+        d = dict(row)
+        v = visit_map.get(d["uuid"], {})
+        d["total_visits"]   = v.get("total_visits", 0)
+        d["visits_per_day"] = v.get("visits_per_day", 0.0)
+        d["avg_dwell_min"]  = v.get("avg_dwell_min")
+        result.append(d)
+    return result
+
+
 def update_latest_devices_status(records: list[dict]) -> None:
     """Update only latest_devices_status for hubs that don't go through a full upsert."""
     if not records:
@@ -888,6 +1116,8 @@ def detect_evse_changes(records: list[dict], con: sqlite3.Connection) -> None:
                     evse_map[evse_id] = status
         old_status_map[row["uuid"]] = evse_map
 
+    _VALID_STATUSES = frozenset({"AVAILABLE", "CHARGING", "INOPERATIVE", "OUTOFORDER", "UNKNOWN"})
+
     event_rows: list[tuple] = []          # (evse_uuid, hub_uuid, scraped_at, status)
     visit_opens: list[tuple] = []         # (hub_uuid, evse_uuid, scraped_at)
     visit_closes: list[tuple] = []        # (evse_uuid, scraped_at)
@@ -903,7 +1133,8 @@ def detect_evse_changes(records: list[dict], con: sqlite3.Connection) -> None:
                 evse_uuid = evse.get("evse_uuid")
                 if not evse_uuid:
                     continue
-                new_status = (evse.get("network_status") or "UNKNOWN").upper()
+                raw_status = (evse.get("network_status") or "UNKNOWN").upper()
+                new_status = raw_status if raw_status in _VALID_STATUSES else "UNKNOWN"
 
                 if old_evse_map is None:
                     # Hub seen for the first time — record event, no visit action

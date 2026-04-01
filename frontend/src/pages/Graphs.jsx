@@ -7,6 +7,8 @@ import ReliabilityChart from '../components/charts/ReliabilityChart'
 import HubDetailModal from '../components/HubDetailModal'
 import PageLoader from '../components/PageLoader'
 import CustomRangePanel from '../components/charts/CustomRangePanel'
+import HubPerformanceTable from '../components/charts/HubPerformanceTable'
+import ProjectionsPanel from '../components/ProjectionsPanel'
 import { useFilters, applyFilters } from '../context/FilterContext'
 import { authFetch } from '../context/AuthContext'
 import { hubEstKw, fmtKw, fmtKwh, fmtHour } from '../utils/status'
@@ -18,6 +20,7 @@ const CHARTS = [
   { key: 'trend',       label: 'Trend',               icon: '↗' },
   { key: 'reliability', label: 'Network Composition', icon: '◑' },
   { key: 'hourly',      label: 'Day Pattern',         icon: '◷' },
+  { key: 'performance', label: 'Performance',         icon: '◈' },
 ]
 
 function exportTrendData(data) {
@@ -38,6 +41,7 @@ export default function Graphs() {
   const [hubs, setHubs] = useState([])
   const [hourly, setHourly] = useState([])
   const [reliabilityData, setReliabilityData] = useState([])
+  const [performanceData, setPerformanceData] = useState([])
   const [stats, setStats] = useState(null)
   const [deltas, setDeltas] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -60,19 +64,21 @@ export default function Graphs() {
     if (showSpinner) setLoading(true)
     try {
       const ap = analyticsParams()
-      const [histRes, hubsRes, hourlyRes, relRes, statsRes, deltasRes] = await Promise.all([
-        authFetch(`/api/history?hours=168${ap}`,        { signal: controller.signal }),
-        authFetch(hubsUrl(),                             { signal: controller.signal }),
-        authFetch(`/api/hourly-pattern?hours=168${ap}`, { signal: controller.signal }),
-        authFetch(`/api/reliability?hours=168${ap}`,    { signal: controller.signal }),
-        authFetch('/api/stats',                          { signal: controller.signal }),
-        authFetch('/api/stats/deltas',                   { signal: controller.signal }),
+      const [histRes, hubsRes, hourlyRes, relRes, perfRes, statsRes, deltasRes] = await Promise.all([
+        authFetch(`/api/history?hours=168${ap}`,            { signal: controller.signal }),
+        authFetch(hubsUrl(),                                 { signal: controller.signal }),
+        authFetch(`/api/hourly-pattern?hours=168${ap}`,     { signal: controller.signal }),
+        authFetch(`/api/reliability?hours=168${ap}`,        { signal: controller.signal }),
+        authFetch(`/api/hub-performance?hours=168${ap}`,    { signal: controller.signal }),
+        authFetch('/api/stats',                              { signal: controller.signal }),
+        authFetch('/api/stats/deltas',                       { signal: controller.signal }),
       ])
       const hubData = await hubsRes.json()
       setHistory(await histRes.json())
       setHubs(hubData)
       setHourly(await hourlyRes.json())
       setReliabilityData(await relRes.json())
+      setPerformanceData(await perfRes.json())
       setStats(await statsRes.json())
       setDeltas(await deltasRes.json())
       const ops = [...new Set(hubData.map(h => h.operator).filter(Boolean))].sort()
@@ -126,6 +132,13 @@ export default function Graphs() {
     return <>Avg <strong style={{ color: 'var(--accent)' }}>{avg.toFixed(1)}%</strong> · Peak at <strong style={{ color: 'var(--accent)' }}>{fmtHour(peak.hour)}</strong> ({peak.avg_utilisation_pct?.toFixed(1)}%)</>
   })() : null
 
+  const perfStat = performanceData.length > 0 ? (() => {
+    const avgActive = performanceData.reduce((s, h) => s + (h.active_pct ?? 0), 0) / performanceData.length
+    const totalVisits = performanceData.reduce((s, h) => s + (h.total_visits ?? 0), 0)
+    const avgVisitsPerDay = performanceData.reduce((s, h) => s + (h.visits_per_day ?? 0), 0) / performanceData.length
+    return <>{performanceData.length} hubs · Avg active <strong style={{ color: 'var(--accent)' }}>{avgActive.toFixed(1)}%</strong> · {totalVisits.toLocaleString()} visits · Avg <strong style={{ color: '#f59e0b' }}>{avgVisitsPerDay.toFixed(1)}</strong>/day</>
+  })() : null
+
   const statStyle = { fontSize: 12, color: 'var(--text-muted)' }
 
   return (
@@ -158,6 +171,7 @@ export default function Graphs() {
               {activeChart === 'trend'       && trendStat      && <div style={statStyle}>{trendStat}</div>}
               {activeChart === 'reliability' && reliabilityStat && <div style={statStyle}>{reliabilityStat}</div>}
               {activeChart === 'hourly'      && hourlyStat     && <div style={statStyle}>{hourlyStat}</div>}
+              {activeChart === 'performance' && perfStat       && <div style={statStyle}>{perfStat}</div>}
               {activeChart === 'trend' && history.length >= 2 && (
                 <button className="btn btn-outline" style={{ fontSize: 12, padding: '4px 12px', flexShrink: 0 }} onClick={() => exportTrendData(history)}>
                   ↓ Export
@@ -266,7 +280,15 @@ export default function Graphs() {
                 />
               </>
             )}
+
+            {activeChart === 'performance' && (
+              performanceData.length === 0
+                ? <div className="empty">No performance data in this window.</div>
+                : <HubPerformanceTable data={performanceData} onHubClick={setSelectedHub} />
+            )}
           </div>
+
+          <ProjectionsPanel avgUtil={stats?.avg_utilisation_pct ?? 0} />
 
           {selectedHub && (
             <HubDetailModal hub={selectedHub} onClose={() => setSelectedHub(null)} />

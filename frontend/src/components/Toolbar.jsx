@@ -7,12 +7,31 @@ import { authFetch } from '../context/AuthContext'
 import { groupColor } from '../utils/status'
 import * as XLSX from 'xlsx'
 
-const CONNECTOR_OPTIONS = [
-  { value: 'all',              label: 'All connectors' },
-  { value: 'IEC_62196_T2_COMBO', label: 'CCS2' },
-  { value: 'CHADEMO',          label: 'CHAdeMO' },
-  { value: 'IEC_62196_T2',     label: 'Type 2' },
-]
+// Human-readable labels for known Zapmap connector standard codes.
+// Unknown codes fall back to the raw value.
+const CONNECTOR_LABELS = {
+  IEC_62196_T2_COMBO: 'CCS2',
+  CHADEMO:            'CHAdeMO',
+  IEC_62196_T2:       'Type 2',
+  IEC_62196_T1_COMBO: 'CCS1',
+  IEC_62196_T1:       'Type 1',
+  TESLA_R:            'Tesla (Roadster)',
+  TESLA_S:            'Tesla (S)',
+  GBT_AC:             'GB/T AC',
+  GBT_DC:             'GB/T DC',
+  DOMESTIC_A:         'Domestic A',
+  DOMESTIC_B:         'Domestic B',
+  DOMESTIC_C:         'Domestic C',
+  DOMESTIC_D:         'Domestic D',
+  DOMESTIC_E:         'Domestic E',
+  DOMESTIC_F:         'Domestic F',
+  DOMESTIC_G:         'Domestic G',
+  DOMESTIC_H:         'Domestic H',
+  DOMESTIC_I:         'Domestic I',
+  DOMESTIC_J:         'Domestic J',
+  DOMESTIC_K:         'Domestic K',
+  DOMESTIC_L:         'Domestic L',
+}
 
 function Section({ title, icon, defaultOpen = true, children }) {
   const [open, setOpen] = useState(defaultOpen)
@@ -74,6 +93,15 @@ export default function Toolbar() {
     activeGroupIds, toggleGroup, clearGroups,
     assigningGroupId, toggleAssigningGroup,
   } = filters
+
+  const [connectorOptions, setConnectorOptions] = useState([])
+
+  useEffect(() => {
+    authFetch('/api/connector-types')
+      .then(r => r.json())
+      .then(data => setConnectorOptions(data))
+      .catch(() => {}) // non-fatal; falls back to empty list
+  }, [])
 
   const [showExport, setShowExport] = useState(false)
   const [newGroupName, setNewGroupName] = useState('')
@@ -423,8 +451,11 @@ export default function Toolbar() {
             value={connectorFilter}
             onChange={e => setConnectorFilter(e.target.value)}
           >
-            {CONNECTOR_OPTIONS.map(c => (
-              <option key={c.value} value={c.value}>{c.label}</option>
+            <option value="all">All connectors</option>
+            {connectorOptions.map(c => (
+              <option key={c.connector_type} value={c.connector_type}>
+                {CONNECTOR_LABELS[c.connector_type] || c.connector_type} ({c.hub_count})
+              </option>
             ))}
           </select>
 
