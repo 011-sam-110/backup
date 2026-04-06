@@ -37,6 +37,7 @@ run_count = 0
 scraping = False          # suppresses auto-refresh while live scraper output is printing
 
 _IS_TTY            = sys.stdout.isatty()  # True in interactive terminal, False in Docker/pipe
+_scrape_lock       = threading.Lock()     # prevents job() and fast_job() writing DB concurrently
 _last_render_lines: int   = 0             # lines printed in last render_screen() call
 _cached_stats: dict | None = None         # last db.get_stats() result
 _stats_cached_at: float    = 0.0          # time.monotonic() when cache was filled
@@ -263,76 +264,86 @@ def _build_failure_card(n: int, max_retries: int, duration: float, exc: Exceptio
 
 def job():
     global run_count, next_run_at, scraping, _last_render_lines, _stats_cached_at
-    run_count += 1
-    scraping = True
-    _last_render_lines = 0   # don't cursor-up into scraper output on next render
-    print_scrape_header(run_count)
-    log.info("Scrape #%d started", run_count)
-    t0 = time.monotonic()
+    _scrape_lock.acquire()
+    try:
+        run_count += 1
+        scraping = True
+        _last_render_lines = 0   # don't cursor-up into scraper output on next render
+        print_scrape_header(run_count)
+        log.info("Scrape #%d started", run_count)
+        t0 = time.monotonic()
 
-    last_exc = None
-    for attempt in range(1, MAX_RETRIES + 1):
-        try:
-            asyncio.run(scrape())
-            last_exc = None
-            break                           # success — exit retry loop
-        except Exception as exc:
-            last_exc = exc
-            elapsed = time.monotonic() - t0
-            if attempt < MAX_RETRIES:
-                log.warning(
-                    "Scrape #%d attempt %d/%d failed after %.0fs — retrying in %ds | %s",
-                    run_count, attempt, MAX_RETRIES, elapsed, RETRY_DELAY_S, exc,
-                )
-                _print_retry_warning(run_count, attempt, MAX_RETRIES, RETRY_DELAY_S, exc)
-                time.sleep(RETRY_DELAY_S)
-            else:
-                log.error(
-                    "Scrape #%d FAILED all %d attempts after %.0fs — %s\n%s",
-                    run_count, MAX_RETRIES, elapsed, exc, traceback.format_exc(),
-                )
+        last_exc = None
+        for attempt in range(1, MAX_RETRIES + 1):
+            try:
+                asyncio.run(scrape())
+                last_exc = None
+                break                           # success — exit retry loop
+            except Exception as exc:
+                last_exc = exc
+                elapsed = time.monotonic() - t0
+                if attempt < MAX_RETRIES:
+                    log.warning(
+                        "Scrape #%d attempt %d/%d failed after %.0fs — retrying in %ds | %s",
+                        run_count, attempt, MAX_RETRIES, elapsed, RETRY_DELAY_S, exc,
+                    )
+                    _print_retry_warning(run_count, attempt, MAX_RETRIES, RETRY_DELAY_S, exc)
+                    time.sleep(RETRY_DELAY_S)
+                else:
+                    log.error(
+                        "Scrape #%d FAILED all %d attempts after %.0fs — %s\n%s",
+                        run_count, MAX_RETRIES, elapsed, exc, traceback.format_exc(),
+                    )
 
-    duration = time.monotonic() - t0
-    next_run_at = datetime.now(timezone.utc) + timedelta(minutes=INTERVAL_MINUTES)
+        duration = time.monotonic() - t0
+        next_run_at = datetime.now(timezone.utc) + timedelta(minutes=INTERVAL_MINUTES)
 
-    if last_exc is None:
-        log.info("Scrape #%d done in %.0fs", run_count, duration)
-        try:
-            card = build_status_card(run_count, duration)
-            history.append(card)
-        except Exception as exc:
-            log.error("build_status_card failed: %s", exc)
-    else:
-        _print_failure_box(run_count, MAX_RETRIES, duration, last_exc)
-        try:
-            card = _build_failure_card(run_count, MAX_RETRIES, duration, last_exc)
-            history.append(card)
-        except Exception as exc:
-            log.error("_build_failure_card failed: %s", exc)
+        if last_exc is None:
+            log.info("Scrape #%d done in %.0fs", run_count, duration)
+            try:
+                card = build_status_card(run_count, duration)
+                history.append(card)
+            except Exception as exc:
+                log.error("build_status_card failed: %s", exc)
+        else:
+            _print_failure_box(run_count, MAX_RETRIES, duration, last_exc)
+            try:
+                card = _build_failure_card(run_count, MAX_RETRIES, duration, last_exc)
+                history.append(card)
+            except Exception as exc:
+                log.error("_build_failure_card failed: %s", exc)
 
-    _stats_cached_at = 0.0   # force live stats to refresh immediately after scrape
-    scraping = False          # re-enables auto-refresh
+        _stats_cached_at = 0.0   # force live stats to refresh immediately after scrape
+        scraping = False          # re-enables auto-refresh
+    finally:
+        _scrape_lock.release()
 
 
 def fast_job():
     """1-minute targeted scrape for hubs in high-frequency groups."""
-    uuids = db.get_high_frequency_hub_uuids()
-    if not uuids:
+    if not _scrape_lock.acquire(blocking=False):
+        log.debug("Fast scrape skipped — full scrape in progress")
         return
-    log.info("Fast scrape: %d high-frequency hubs", len(uuids))
     try:
-        count = asyncio.run(scrape_targeted(uuids))
-        log.info("Fast scrape: %d snapshots saved", count)
-    except Exception as exc:
-        log.error("Fast scrape failed: %s", exc)
+        uuids = db.get_high_frequency_hub_uuids()
+        if not uuids:
+            return
+        log.info("Fast scrape: %d high-frequency hubs", len(uuids))
+        try:
+            count = asyncio.run(scrape_targeted(uuids))
+            log.info("Fast scrape: %d snapshots saved", count)
+        except Exception as exc:
+            log.error("Fast scrape failed: %s", exc)
+    finally:
+        _scrape_lock.release()
 
 
 if __name__ == "__main__":
     log.info("Scheduler starting — interval %d min, HF interval %d min, DB: %s",
              INTERVAL_MINUTES, HF_INTERVAL_MINUTES, db.DB_PATH)
     scheduler = BlockingScheduler()
-    scheduler.add_job(job, "interval", minutes=INTERVAL_MINUTES)
-    scheduler.add_job(fast_job, "interval", minutes=HF_INTERVAL_MINUTES)
+    scheduler.add_job(job,      "interval", minutes=INTERVAL_MINUTES,    max_instances=1)
+    scheduler.add_job(fast_job, "interval", minutes=HF_INTERVAL_MINUTES, max_instances=1)
     threading.Thread(target=_refresh_loop, daemon=True).start()
     job()
     scheduler.start()

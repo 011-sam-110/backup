@@ -26,7 +26,7 @@ def _connect() -> sqlite3.Connection:
     con = sqlite3.connect(DB_PATH, timeout=30)
     con.row_factory = sqlite3.Row
     con.execute("PRAGMA journal_mode=WAL")
-    con.execute("PRAGMA synchronous=NORMAL")
+    con.execute("PRAGMA synchronous=FULL")
     return con
 
 
@@ -336,6 +336,11 @@ def init_db() -> None:
             ON hub_connectors(connector_type);
     """)
     _run_migrations(con)
+    result = con.execute("PRAGMA quick_check").fetchone()
+    if result and result[0] != "ok":
+        log.error("DB integrity check FAILED: %s — scheduler will continue but DB may be corrupt", result[0])
+    else:
+        log.debug("DB integrity check passed")
     con.close()
 
 
@@ -488,11 +493,21 @@ def insert_snapshots(records: list[dict], *, source: str = 'full') -> None:
              estimated_kwh, snapshot_max_kw, source)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, rows)
+    purge_old_snapshots(con)
     con.commit()
     count_after = con.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
     log.info("insert_snapshots: %d → %d (+%d)", count_before, count_after, count_after - count_before)
-    purge_old_snapshots(con)
-    con.commit()
+    if source == 'full':
+        rows = con.execute("PRAGMA wal_checkpoint(PASSIVE)").fetchall()
+        if rows:
+            busy, log_pages, ckpt_pages = rows[0][0], rows[0][1], rows[0][2]
+            if busy > 0 or log_pages != ckpt_pages:
+                log.warning(
+                    "wal_checkpoint incomplete: busy=%d log_pages=%d checkpointed=%d",
+                    busy, log_pages, ckpt_pages,
+                )
+            else:
+                log.debug("wal_checkpoint: log_pages=%d checkpointed=%d", log_pages, ckpt_pages)
     con.close()
 
 
