@@ -197,6 +197,64 @@ _MIGRATIONS: dict[int, str | list[str]] = {
            FROM hubs h, json_each(h.connector_types) j
            WHERE h.connector_types IS NOT NULL AND h.connector_types != '[]'""",
     ],
+    # 21: One-time data cleanup after CHAdeMO exclusion + 300kW power-sharing rules were added.
+    #     Strips excluded connectors from existing hub records and recomputes total_evses
+    #     from devices_raw_loc so the >= MIN_EVSES API filter operates on accurate counts.
+    21: "_python_migration_21",  # resolved to _migration_21_evse_cleanup by _run_migrations
+}
+
+
+def _migration_21_evse_cleanup(con: sqlite3.Connection) -> None:
+    """One-time data fix: strip excluded connectors and recompute total_evses.
+
+    Runs when the image is first deployed after the CHAdeMO + 300kW filtering rules
+    were introduced.  Updates three things:
+      1. connector_types JSON column  — removes excluded types (e.g. CHADEMO)
+      2. hub_connectors junction table — deletes excluded-type rows
+      3. total_evses                   — recomputed from devices_raw_loc using current
+                                         EXCLUDED_CONNECTORS + MIN_SHARED_POWER_W rules
+    """
+    # 1. Clean connector_types JSON
+    con.execute("""
+        UPDATE hubs
+        SET connector_types = (
+            SELECT json_group_array(value)
+            FROM json_each(hubs.connector_types)
+            WHERE value NOT IN ('CHADEMO')
+        )
+        WHERE connector_types LIKE '%CHADEMO%'
+    """)
+    # 2. Clean hub_connectors
+    try:
+        con.execute("DELETE FROM hub_connectors WHERE connector_type = 'CHADEMO'")
+    except Exception:
+        pass  # table may not exist on very old schemas — scraper will rebuild it
+
+    # 3. Recount total_evses from devices_raw_loc applying current exclusion rules
+    rows = con.execute(
+        "SELECT uuid, devices_raw_loc FROM hubs WHERE devices_raw_loc IS NOT NULL"
+    ).fetchall()
+    updates = []
+    for row in rows:
+        raw = json.loads(row["devices_raw_loc"] or "[]")
+        count = 0
+        for dev in raw:
+            for evse in dev.get("evses", []):
+                conns = evse.get("connectors", [])
+                if {c.get("standard") for c in conns} & EXCLUDED_CONNECTORS:
+                    continue
+                if max((c.get("max_electric_power") or 0 for c in conns), default=0) < MIN_SHARED_POWER_W:
+                    continue
+                count += 1
+        updates.append((count, row["uuid"]))
+    if updates:
+        con.executemany("UPDATE hubs SET total_evses = ? WHERE uuid = ?", updates)
+    log.info("Migration 21: stripped excluded connectors, recomputed total_evses for %d hubs",
+             len(updates))
+
+
+_PYTHON_MIGRATIONS = {
+    "_python_migration_21": _migration_21_evse_cleanup,
 }
 
 
@@ -213,8 +271,13 @@ def _run_migrations(con: sqlite3.Connection) -> None:
     for version, payload in sorted(_MIGRATIONS.items()):
         if version <= current:
             continue
-        if isinstance(payload, str):
-            # Single-statement migration — catch duplicate-column errors for the
+        if isinstance(payload, str) and payload.startswith("_python_migration_"):
+            # Python callable migration — resolved via _PYTHON_MIGRATIONS registry
+            fn = _PYTHON_MIGRATIONS.get(payload)
+            if fn:
+                fn(con)
+        elif isinstance(payload, str):
+            # Single-statement SQL migration — catch duplicate-column errors for the
             # historical ALTER TABLE shims (migrations 1–16) that may already be
             # applied on older databases.
             try:
@@ -1531,7 +1594,9 @@ def get_visit_stats(start_dt: str | None = None, end_dt: str | None = None,
 
 def get_stats() -> dict:
     con = _connect()
-    hub_count = con.execute("SELECT COUNT(*) FROM hubs").fetchone()[0]
+    hub_count = con.execute(
+        "SELECT COUNT(*) FROM hubs WHERE total_evses >= ?", (MIN_EVSES,)
+    ).fetchone()[0]
     last_scraped = con.execute(
         "SELECT MAX(scraped_at) FROM snapshots"
     ).fetchone()[0]
