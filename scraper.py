@@ -21,6 +21,23 @@ BASE_API = "https://api.zap-map.io/locations/v1"
 MIN_POWER_W = 100_000
 EXCLUDED_CONNECTORS = {"CHADEMO"}  # connector type strings excluded from tracking entirely
 MIN_EVSES = 12                      # hub must have this many non-excluded EVSEs to be tracked
+
+
+def _filter_raw_devices(devices: list) -> list:
+    """Remove excluded-connector EVSEs from a raw /location/{uuid} device list.
+
+    In the location-detail API format, connectors are objects with a 'standard' field
+    (not plain strings). Devices whose every EVSE is excluded are also dropped.
+    """
+    out = []
+    for dev in devices:
+        kept = [
+            evse for evse in dev.get("evses", [])
+            if not {c.get("standard") for c in evse.get("connectors", [])} & EXCLUDED_CONNECTORS
+        ]
+        if kept:
+            out.append({**dev, "evses": kept})
+    return out
 GB_LAT = (49.9, 61.0)    # Scilly Isles → Shetland
 GB_LNG = (-5.85, 1.75)  # SW Scotland / Land's End → East Anglia (excludes Ireland, French coast)
 
@@ -181,7 +198,7 @@ def build_record(loc: dict, status: dict | None, scraped_at: str, loc_detail: di
         "is_24_7":           is_24_7,
         "pricing":           sorted(pricing_set),
         "payment_methods":   sorted(pm_set),
-        "devices_raw_loc":   ld.get("devices", []),
+        "devices_raw_loc":   _filter_raw_devices(ld.get("devices", [])),
         "scraped_at": scraped_at,
     }
 

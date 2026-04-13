@@ -19,7 +19,7 @@ from log_setup import setup_logging
 from scraper import (BASE_API, fetch_via_browser, fetch_location_details,
                      is_great_britain, HEADLESS, _pick_proxy,
                      BEARER_MAX_AGE_S, BEARER_CACHE_FILE,
-                     EXCLUDED_CONNECTORS, MIN_EVSES)
+                     EXCLUDED_CONNECTORS, MIN_EVSES, _filter_raw_devices)
 
 setup_logging(log_file="logs/discover.log")
 log = logging.getLogger("evanti.discover")
@@ -94,7 +94,7 @@ def build_hub_record_from_detail(uuid: str, detail: dict, scraped_at: str) -> di
         "inoperative_count": 0,
         "out_of_order_count": 0,
         "unknown_count": 0,
-        "devices_raw_loc": detail.get("devices", []),
+        "devices_raw_loc": _filter_raw_devices(detail.get("devices", [])),
         "hub_name": detail.get("name") or None,
         "operator": operator or None,
         "user_rating": detail.get("user_rating"),

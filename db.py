@@ -80,7 +80,8 @@ def _hub_subquery(params: list, operator: str | list[str] | None, connector: str
     return " AND hub_uuid IN (SELECT uuid FROM hubs WHERE " + " AND ".join(conditions) + ")"
 
 
-MIN_EVSES = 12  # hubs below this non-excluded EVSE count are not surfaced by the API
+MIN_EVSES = 12              # hubs below this non-excluded EVSE count are not surfaced by the API
+EXCLUDED_CONNECTORS = {"CHADEMO"}  # connector types stripped from all API responses
 
 # ---------------------------------------------------------------------------
 # Schema versioning
@@ -559,7 +560,8 @@ def _detect_visits(records: list[dict], con: sqlite3.Connection) -> None:
 
 
 def _deserialise_hub(d: dict) -> dict:
-    d["connector_types"] = json.loads(d["connector_types"] or "[]")
+    d["connector_types"] = [ct for ct in json.loads(d["connector_types"] or "[]")
+                            if ct not in EXCLUDED_CONNECTORS]
     d["pricing"] = json.loads(d["pricing"] or "[]")
     d["payment_methods"] = json.loads(d["payment_methods"] or "[]")
     return d
@@ -986,11 +988,32 @@ def get_hub_detail(uuid: str) -> dict | None:
     if not row:
         return None
     d = dict(row)
-    d["connector_types"]       = json.loads(d["connector_types"] or "[]")
-    d["pricing"]               = json.loads(d["pricing"] or "[]")
-    d["payment_methods"]       = json.loads(d["payment_methods"] or "[]")
-    d["devices_raw_loc"]       = json.loads(d["devices_raw_loc"] or "[]")
-    d["latest_devices_status"] = json.loads(d["latest_devices_status"] or "[]")
+    d["connector_types"]  = [ct for ct in json.loads(d["connector_types"] or "[]")
+                             if ct not in EXCLUDED_CONNECTORS]
+    d["pricing"]          = json.loads(d["pricing"] or "[]")
+    d["payment_methods"]  = json.loads(d["payment_methods"] or "[]")
+
+    # Filter excluded connector types out of device blobs — handles stale DB rows
+    # that pre-date the scraper-level exclusion.  devices_raw_loc connectors are
+    # objects with a 'standard' field; latest_devices_status connectors are strings.
+    raw = json.loads(d["devices_raw_loc"] or "[]")
+    filtered_raw = []
+    for dev in raw:
+        kept = [e for e in dev.get("evses", [])
+                if not {c.get("standard") for c in e.get("connectors", [])} & EXCLUDED_CONNECTORS]
+        if kept:
+            filtered_raw.append({**dev, "evses": kept})
+    d["devices_raw_loc"] = filtered_raw
+
+    live = json.loads(d["latest_devices_status"] or "[]")
+    filtered_live = []
+    for dev in live:
+        kept = [e for e in dev.get("evses", [])
+                if not set(e.get("connectors", [])) & EXCLUDED_CONNECTORS]
+        if kept:
+            filtered_live.append({**dev, "evses": kept})
+    d["latest_devices_status"] = filtered_live
+
     return d
 
 
