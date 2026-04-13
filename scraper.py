@@ -19,6 +19,8 @@ log = logging.getLogger("evanti.scraper")
 load_dotenv()
 BASE_API = "https://api.zap-map.io/locations/v1"
 MIN_POWER_W = 100_000
+EXCLUDED_CONNECTORS = {"CHADEMO"}  # connector type strings excluded from tracking entirely
+MIN_EVSES = 12                      # hub must have this many non-excluded EVSEs to be tracked
 GB_LAT = (49.9, 61.0)    # Scilly Isles → Shetland
 GB_LNG = (-5.85, 1.75)  # SW Scotland / Land's End → East Anglia (excludes Ireland, French coast)
 
@@ -104,10 +106,12 @@ def _parse_status(status: dict) -> dict:
     for device in (status or {}).get("devices", []):
         evses_out = []
         for evse in device.get("evses", []):
+            connectors = evse.get("connectors", [])
+            if set(connectors) & EXCLUDED_CONNECTORS:
+                continue  # skip CHAdeMO (and any other excluded) EVSEs entirely
             net = (evse.get("status") or {}).get("network") or {}
             usr = (evse.get("status") or {}).get("user") or {}
             net_status = net.get("status", "UNKNOWN")
-            connectors = evse.get("connectors", [])
             connector_types.update(connectors)
             s = net_status.upper()
             if s == "AVAILABLE":    available += 1
@@ -494,6 +498,10 @@ async def scrape():
                      loc_detail=loc_detail_map.get(loc["uuid"]))
         for loc in qualifying
     ]
+    # Drop hubs where non-CHAdeMO EVSE count falls below threshold
+    all_records = [r for r in all_records if r["total_evses"] >= MIN_EVSES]
+    log.info("After CHAdeMO/EVSE filter: %d qualifying hubs (>= %d non-excluded EVSEs)",
+             len(all_records), MIN_EVSES)
 
     # Snapshot-only records for DB hubs not found in current bounding-box sweep
     db_only_records = []
@@ -502,6 +510,9 @@ async def scrape():
         if not s:
             continue
         parsed = _parse_status(s)
+        non_excl_evses = sum(len(d["evses"]) for d in parsed["devices_out"])
+        if non_excl_evses < MIN_EVSES:
+            continue  # hub no longer meets threshold after CHAdeMO exclusion
         db_only_records.append({
             "uuid": uuid,
             "scraped_at": scraped_at,

@@ -18,7 +18,8 @@ import db
 from log_setup import setup_logging
 from scraper import (BASE_API, fetch_via_browser, fetch_location_details,
                      is_great_britain, HEADLESS, _pick_proxy,
-                     BEARER_MAX_AGE_S, BEARER_CACHE_FILE)
+                     BEARER_MAX_AGE_S, BEARER_CACHE_FILE,
+                     EXCLUDED_CONNECTORS, MIN_EVSES)
 
 setup_logging(log_file="logs/discover.log")
 log = logging.getLogger("evanti.discover")
@@ -43,15 +44,19 @@ def _read_bearer_cache() -> str | None:
     return None
 
 
-def build_hub_record_from_detail(uuid: str, detail: dict, scraped_at: str) -> dict:
+def build_hub_record_from_detail(uuid: str, detail: dict, scraped_at: str) -> dict | None:
     """
     Build a hub record suitable for db.upsert_hubs() using only the /location/{uuid}
     detail response. Used when we have UUIDs but no bounding-box loc dict.
+
+    Returns None if the hub has fewer than MIN_EVSES non-excluded EVSEs (e.g. after
+    stripping CHAdeMO bays), indicating the hub should not be tracked.
     """
     operator_obj = (detail.get("operator") or {})
     operator = operator_obj.get("name") or operator_obj.get("trading_name") or ""
 
     pricing_set, pm_set, connector_types, power_vals = set(), set(), set(), []
+    qualifying_evses = 0
     for dev in detail.get("devices", []):
         pd_ = dev.get("payment_details") or {}
         if pd_.get("pricing"):
@@ -59,6 +64,10 @@ def build_hub_record_from_detail(uuid: str, detail: dict, scraped_at: str) -> di
         for m in (pd_.get("payment_methods") or []):
             pm_set.add(m)
         for evse in dev.get("evses", []):
+            evse_standards = {c.get("standard") for c in evse.get("connectors", [])}
+            if evse_standards & EXCLUDED_CONNECTORS:
+                continue  # skip CHAdeMO (and any other excluded) EVSEs entirely
+            qualifying_evses += 1
             for conn in evse.get("connectors", []):
                 if conn.get("standard"):
                     connector_types.add(conn["standard"])
@@ -67,7 +76,10 @@ def build_hub_record_from_detail(uuid: str, detail: dict, scraped_at: str) -> di
 
     coords = detail.get("coordinates") or {}
     max_power_kw = round(max(power_vals) / 1000, 1) if power_vals else 0.0
-    total_evses = sum(len(dev.get("evses", [])) for dev in detail.get("devices", []))
+    total_evses = qualifying_evses
+
+    if total_evses < MIN_EVSES:
+        return None  # hub does not meet the minimum non-excluded EVSE threshold
 
     return {
         "uuid": uuid,
@@ -244,13 +256,18 @@ async def discover():
             skipped += 1
             continue
         rec = build_hub_record_from_detail(uuid, detail, scraped_at)
+        if rec is None:
+            log.info("Skipping %s — fewer than %d non-CHAdeMO EVSEs", uuid, MIN_EVSES)
+            skipped += 1
+            continue
         if rec["max_power_kw"] < 100:
             skipped += 1
             continue
         records.append(rec)
 
     if skipped:
-        log.info("Skipped %d hub(s) (outside Great Britain or below 100 kW).", skipped)
+        log.info("Skipped %d hub(s) (outside Great Britain, below 100 kW, or below %d non-CHAdeMO EVSEs).",
+                 skipped, MIN_EVSES)
 
     log.info("Phase 3/3: upserting %d hub(s) into DB...", len(records))
     db.init_db()
