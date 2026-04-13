@@ -80,6 +80,8 @@ def _hub_subquery(params: list, operator: str | list[str] | None, connector: str
     return " AND hub_uuid IN (SELECT uuid FROM hubs WHERE " + " AND ".join(conditions) + ")"
 
 
+MIN_EVSES = 12  # hubs below this non-excluded EVSE count are not surfaced by the API
+
 # ---------------------------------------------------------------------------
 # Schema versioning
 # Each entry is a single SQL statement applied exactly once, in order.
@@ -566,7 +568,7 @@ def _deserialise_hub(d: dict) -> dict:
 def get_latest_snapshot_per_hub() -> list[dict]:
     """Return each hub's most recent snapshot merged with hub static data."""
     con = _connect()
-    rows = con.execute("""
+    rows = con.execute(f"""
         SELECT
             h.uuid, h.hub_name, h.operator, h.latitude, h.longitude, h.max_power_kw,
             h.total_evses, h.connector_types,
@@ -581,6 +583,7 @@ def get_latest_snapshot_per_hub() -> list[dict]:
             AND s.scraped_at = (
                 SELECT MAX(scraped_at) FROM snapshots WHERE hub_uuid = h.uuid
             )
+        WHERE h.total_evses >= {MIN_EVSES}
         ORDER BY utilisation_pct DESC NULLS LAST
     """).fetchall()
     con.close()
@@ -612,6 +615,7 @@ def get_hub_averages(start_dt: str, end_dt: str,
         FROM hubs h
         LEFT JOIN snapshots s ON s.hub_uuid = h.uuid
             AND s.scraped_at >= ? AND s.scraped_at <= ?{hour_filter}
+        WHERE h.total_evses >= {MIN_EVSES}
         GROUP BY h.uuid
         ORDER BY utilisation_pct DESC NULLS LAST
     """, join_params).fetchall()

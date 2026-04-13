@@ -492,16 +492,18 @@ async def scrape():
         await browser.close()
 
     # ── Build records ──────────────────────────────────────────────────────────
-    # Full records for bounding-box hubs (upsert static data + snapshot)
+    # Full records for ALL bounding-box hubs (CHAdeMO already stripped from devices).
+    # We upsert every record so the DB device list / total_evses / connector_types
+    # are updated to the post-exclusion values even for hubs that fall below threshold.
     all_records = [
         build_record(loc, status_map.get(loc["uuid"]), scraped_at,
                      loc_detail=loc_detail_map.get(loc["uuid"]))
         for loc in qualifying
     ]
-    # Drop hubs where non-CHAdeMO EVSE count falls below threshold
-    all_records = [r for r in all_records if r["total_evses"] >= MIN_EVSES]
-    log.info("After CHAdeMO/EVSE filter: %d qualifying hubs (>= %d non-excluded EVSEs)",
-             len(all_records), MIN_EVSES)
+    # Separate set: only hubs that meet the minimum non-excluded EVSE count get snapshots.
+    snapshot_records = [r for r in all_records if r["total_evses"] >= MIN_EVSES]
+    log.info("After CHAdeMO/EVSE filter: %d/%d bounding-box hubs meet >= %d non-excluded EVSEs",
+             len(snapshot_records), len(all_records), MIN_EVSES)
 
     # Snapshot-only records for DB hubs not found in current bounding-box sweep
     db_only_records = []
@@ -524,22 +526,25 @@ async def scrape():
             "devices":            parsed["devices_out"],
         })
 
-    total_records = len(all_records) + len(db_only_records)
-    log.info("Records built: %d bounding-box + %d db-only = %d total",
-             len(all_records), len(db_only_records), total_records)
-    print(f"Collected {len(all_records)} bounding-box + {len(db_only_records)} DB-only hub records.")
+    total_snapshots = len(snapshot_records) + len(db_only_records)
+    log.info("Records built: %d bounding-box snapshots + %d db-only = %d total",
+             len(snapshot_records), len(db_only_records), total_snapshots)
+    print(f"Collected {len(snapshot_records)} bounding-box + {len(db_only_records)} DB-only hub records.")
 
     # Persist to SQLite
     db.init_db()
 
     # EVSE-level change detection must run before upsert_hubs overwrites latest_devices_status
-    db.process_evse_events(all_records + db_only_records)
+    db.process_evse_events(snapshot_records + db_only_records)
 
+    # Upsert ALL bounding-box records (not just snapshot_records) so that
+    # total_evses / connector_types / latest_devices_status are corrected in the DB
+    # for hubs that lost CHAdeMO bays — the API layer filters by total_evses >= MIN_EVSES.
     db.upsert_hubs(all_records)
-    db.insert_snapshots(all_records + db_only_records)
+    db.insert_snapshots(snapshot_records + db_only_records)
     db.update_latest_devices_status(db_only_records)
-    log.info("DB write complete — %d hub snapshots saved", total_records)
-    print(f"Saved {total_records} hub snapshots to database.")
+    log.info("DB write complete — %d hub snapshots saved", total_snapshots)
+    print(f"Saved {total_snapshots} hub snapshots to database.")
 
 
 async def scrape_targeted(uuids: list[str]) -> int:
