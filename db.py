@@ -82,7 +82,7 @@ def _hub_subquery(params: list, operator: str | list[str] | None, connector: str
 
 MIN_EVSES = 12              # hubs below this qualifying EVSE count are not surfaced by the API
 EXCLUDED_CONNECTORS = {"CHADEMO"}  # connector types stripped from all API responses
-MIN_SHARED_POWER_W = 300_000       # 300kW: EVSE must deliver >= 150kW even when shared with 1 other car
+MIN_SHARED_POWER_W = 150_000       # 150kW minimum per EVSE — tracks all rapid/ultra-rapid CCS2 units
 
 # ---------------------------------------------------------------------------
 # Schema versioning
@@ -201,13 +201,17 @@ _MIGRATIONS: dict[int, str | list[str]] = {
     #     Strips excluded connectors from existing hub records and recomputes total_evses
     #     from devices_raw_loc so the >= MIN_EVSES API filter operates on accurate counts.
     21: "_python_migration_21",  # resolved to _migration_21_evse_cleanup by _run_migrations
+
+    # 22: Power threshold lowered from 300kW to 150kW — recompute total_evses so hubs with
+    #     dedicated 150kW CCS2 units (previously excluded) now qualify for tracking.
+    22: "_python_migration_22",  # resolved to _migration_22_power_threshold_update
 }
 
 
 def _migration_21_evse_cleanup(con: sqlite3.Connection) -> None:
     """One-time data fix: strip excluded connectors and recompute total_evses.
 
-    Runs when the image is first deployed after the CHAdeMO + 300kW filtering rules
+    Runs when the image is first deployed after the CHAdeMO exclusion rules
     were introduced.  Updates three things:
       1. connector_types JSON column  — removes excluded types (e.g. CHADEMO)
       2. hub_connectors junction table — deletes excluded-type rows
@@ -253,8 +257,37 @@ def _migration_21_evse_cleanup(con: sqlite3.Connection) -> None:
              len(updates))
 
 
+def _migration_22_power_threshold_update(con: sqlite3.Connection) -> None:
+    """Recompute total_evses after lowering the power threshold from 300kW to 150kW.
+
+    Migration 21 set total_evses using MIN_SHARED_POWER_W = 300_000, which excluded
+    the majority of dedicated 150kW CCS2 EVSEs.  This migration recounts from
+    devices_raw_loc using the updated MIN_SHARED_POWER_W = 150_000 threshold.
+    """
+    rows = con.execute(
+        "SELECT uuid, devices_raw_loc FROM hubs WHERE devices_raw_loc IS NOT NULL"
+    ).fetchall()
+    updates = []
+    for row in rows:
+        raw = json.loads(row["devices_raw_loc"] or "[]")
+        count = 0
+        for dev in raw:
+            for evse in dev.get("evses", []):
+                conns = evse.get("connectors", [])
+                if {c.get("standard") for c in conns} & EXCLUDED_CONNECTORS:
+                    continue
+                if max((c.get("max_electric_power") or 0 for c in conns), default=0) < MIN_SHARED_POWER_W:
+                    continue
+                count += 1
+        updates.append((count, row["uuid"]))
+    if updates:
+        con.executemany("UPDATE hubs SET total_evses = ? WHERE uuid = ?", updates)
+    log.info("Migration 22: recomputed total_evses (150kW threshold) for %d hubs", len(updates))
+
+
 _PYTHON_MIGRATIONS = {
     "_python_migration_21": _migration_21_evse_cleanup,
+    "_python_migration_22": _migration_22_power_threshold_update,
 }
 
 
@@ -1058,7 +1091,7 @@ def get_hub_detail(uuid: str) -> dict | None:
     d["payment_methods"]  = json.loads(d["payment_methods"] or "[]")
 
     # Filter device blobs at read time — cleans up stale DB rows that pre-date
-    # the scraper-level exclusion rules (excluded connectors + sub-300kW power).
+    # the scraper-level exclusion rules (excluded connectors + sub-150kW power).
     # devices_raw_loc: connectors are objects with 'standard'+'max_electric_power'.
     # latest_devices_status: connectors are plain strings (no power info), so we
     # cross-reference qualifying EVSE UUIDs derived from devices_raw_loc.

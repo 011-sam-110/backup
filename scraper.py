@@ -21,7 +21,7 @@ BASE_API = "https://api.zap-map.io/locations/v1"
 MIN_POWER_W = 100_000
 EXCLUDED_CONNECTORS = {"CHADEMO"}  # connector type strings excluded from tracking entirely
 MIN_EVSES = 12                      # hub must have this many qualifying EVSEs to be tracked
-MIN_SHARED_POWER_W = 300_000        # 300kW: EVSE must deliver >= 150kW even when shared with 1 other car
+MIN_SHARED_POWER_W = 150_000        # 150kW minimum per EVSE — tracks all rapid/ultra-rapid CCS2 units
 
 
 def _filter_raw_devices(devices: list) -> list:
@@ -29,7 +29,7 @@ def _filter_raw_devices(devices: list) -> list:
 
     An EVSE qualifies when:
       - None of its connector standards are in EXCLUDED_CONNECTORS (e.g. CHAdeMO)
-      - Its max connector power >= MIN_SHARED_POWER_W (so each car gets >= 150kW when shared)
+      - Its max connector power >= MIN_SHARED_POWER_W (150kW minimum per EVSE)
 
     Connectors in this format are objects with 'standard' and 'max_electric_power' fields.
     Devices with no remaining EVSEs after filtering are also dropped.
