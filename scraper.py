@@ -20,21 +20,30 @@ load_dotenv()
 BASE_API = "https://api.zap-map.io/locations/v1"
 MIN_POWER_W = 100_000
 EXCLUDED_CONNECTORS = {"CHADEMO"}  # connector type strings excluded from tracking entirely
-MIN_EVSES = 12                      # hub must have this many non-excluded EVSEs to be tracked
+MIN_EVSES = 12                      # hub must have this many qualifying EVSEs to be tracked
+MIN_SHARED_POWER_W = 300_000        # 300kW: EVSE must deliver >= 150kW even when shared with 1 other car
 
 
 def _filter_raw_devices(devices: list) -> list:
-    """Remove excluded-connector EVSEs from a raw /location/{uuid} device list.
+    """Return only qualifying EVSEs from a raw /location/{uuid} device list.
 
-    In the location-detail API format, connectors are objects with a 'standard' field
-    (not plain strings). Devices whose every EVSE is excluded are also dropped.
+    An EVSE qualifies when:
+      - None of its connector standards are in EXCLUDED_CONNECTORS (e.g. CHAdeMO)
+      - Its max connector power >= MIN_SHARED_POWER_W (so each car gets >= 150kW when shared)
+
+    Connectors in this format are objects with 'standard' and 'max_electric_power' fields.
+    Devices with no remaining EVSEs after filtering are also dropped.
     """
     out = []
     for dev in devices:
-        kept = [
-            evse for evse in dev.get("evses", [])
-            if not {c.get("standard") for c in evse.get("connectors", [])} & EXCLUDED_CONNECTORS
-        ]
+        kept = []
+        for evse in dev.get("evses", []):
+            conns = evse.get("connectors", [])
+            if {c.get("standard") for c in conns} & EXCLUDED_CONNECTORS:
+                continue
+            if max((c.get("max_electric_power") or 0 for c in conns), default=0) < MIN_SHARED_POWER_W:
+                continue
+            kept.append(evse)
         if kept:
             out.append({**dev, "evses": kept})
     return out
@@ -115,17 +124,28 @@ def is_great_britain(loc: dict) -> bool:
     return True
 
 
-def _parse_status(status: dict) -> dict:
-    """Extract per-EVSE counts and device list from a raw status response."""
+def _parse_status(status: dict, allowed_evse_uuids: set | None = None) -> dict:
+    """Extract per-EVSE counts and device list from a raw status response.
+
+    allowed_evse_uuids — when provided, only process EVSEs whose UUID is in this set.
+    Use this to restrict counts to EVSEs that passed the _filter_raw_devices() checks
+    (connector-type exclusion + power threshold).  Pass None to apply only the
+    connector-type check (used when no location-detail data is available).
+    """
     available = charging = inoperative = out_of_order = unknown = 0
     devices_out = []
     connector_types: set = set()
     for device in (status or {}).get("devices", []):
         evses_out = []
         for evse in device.get("evses", []):
+            evse_uuid = evse.get("uuid")
+            # UUID allow-list check (power + connector filter from location-detail data)
+            if allowed_evse_uuids is not None and evse_uuid not in allowed_evse_uuids:
+                continue
             connectors = evse.get("connectors", [])
+            # Connector-type safety-net (catches CHAdeMO even without allow-list)
             if set(connectors) & EXCLUDED_CONNECTORS:
-                continue  # skip CHAdeMO (and any other excluded) EVSEs entirely
+                continue
             net = (evse.get("status") or {}).get("network") or {}
             usr = (evse.get("status") or {}).get("user") or {}
             net_status = net.get("status", "UNKNOWN")
@@ -137,7 +157,7 @@ def _parse_status(status: dict) -> dict:
             elif s == "OUTOFORDER": out_of_order += 1
             else:                   unknown += 1
             evses_out.append({
-                "evse_uuid": evse.get("uuid"),
+                "evse_uuid": evse_uuid,
                 "connectors": connectors,
                 "network_status": net_status,
                 "network_updated_at": net.get("updated_at"),
@@ -153,9 +173,22 @@ def _parse_status(status: dict) -> dict:
 
 
 def build_record(loc: dict, status: dict | None, scraped_at: str, loc_detail: dict | None = None) -> dict:
-    parsed = _parse_status(status)
-
     ld = loc_detail or {}
+
+    # Filter the raw device list first: strips excluded connectors + sub-threshold power EVSEs.
+    # This becomes devices_raw_loc (displayed in the modal) and determines which EVSE UUIDs
+    # are passed to _parse_status so counts are consistent with what is displayed.
+    filtered_raw = _filter_raw_devices(ld.get("devices", []))
+    qualifying_evse_uuids: set | None = None
+    if ld:
+        qualifying_evse_uuids = {
+            evse.get("uuid")
+            for dev in filtered_raw
+            for evse in dev.get("evses", [])
+        }
+
+    parsed = _parse_status(status, allowed_evse_uuids=qualifying_evse_uuids)
+
     operator_obj = ld.get("operator") or {}
     operator = operator_obj.get("name") or operator_obj.get("trading_name") or ""
     hub_name = ld.get("name") or ""
@@ -198,7 +231,7 @@ def build_record(loc: dict, status: dict | None, scraped_at: str, loc_detail: di
         "is_24_7":           is_24_7,
         "pricing":           sorted(pricing_set),
         "payment_methods":   sorted(pm_set),
-        "devices_raw_loc":   _filter_raw_devices(ld.get("devices", [])),
+        "devices_raw_loc":   filtered_raw,
         "scraped_at": scraped_at,
     }
 
@@ -522,16 +555,24 @@ async def scrape():
     log.info("After CHAdeMO/EVSE filter: %d/%d bounding-box hubs meet >= %d non-excluded EVSEs",
              len(snapshot_records), len(all_records), MIN_EVSES)
 
-    # Snapshot-only records for DB hubs not found in current bounding-box sweep
+    # Snapshot-only records for DB hubs not found in current bounding-box sweep.
+    # Load stored devices_raw_loc from DB so we can derive qualifying EVSE UUIDs
+    # (power + connector filter) without re-fetching location details.
+    db_only_uuids = list(db_hub_uuids - qualifying_uuids)
+    db_stored_raw = db.get_devices_raw_for_hubs(db_only_uuids) if db_only_uuids else {}
+
     db_only_records = []
-    for uuid in db_hub_uuids - qualifying_uuids:
+    for uuid in db_only_uuids:
         s = status_map.get(uuid)
         if not s:
             continue
-        parsed = _parse_status(s)
-        non_excl_evses = sum(len(d["evses"]) for d in parsed["devices_out"])
-        if non_excl_evses < MIN_EVSES:
-            continue  # hub no longer meets threshold after CHAdeMO exclusion
+        filtered = _filter_raw_devices(db_stored_raw.get(uuid, []))
+        allowed = {e.get("uuid") for dev in filtered for e in dev.get("evses", [])}
+        # If no stored device data fall back to connector-only filter (None = no UUID restriction)
+        parsed = _parse_status(s, allowed_evse_uuids=allowed if allowed else None)
+        non_qual_evses = sum(len(d["evses"]) for d in parsed["devices_out"])
+        if non_qual_evses < MIN_EVSES:
+            continue  # hub falls below threshold after exclusions
         db_only_records.append({
             "uuid": uuid,
             "scraped_at": scraped_at,

@@ -80,8 +80,9 @@ def _hub_subquery(params: list, operator: str | list[str] | None, connector: str
     return " AND hub_uuid IN (SELECT uuid FROM hubs WHERE " + " AND ".join(conditions) + ")"
 
 
-MIN_EVSES = 12              # hubs below this non-excluded EVSE count are not surfaced by the API
+MIN_EVSES = 12              # hubs below this qualifying EVSE count are not surfaced by the API
 EXCLUDED_CONNECTORS = {"CHADEMO"}  # connector types stripped from all API responses
+MIN_SHARED_POWER_W = 300_000       # 300kW: EVSE must deliver >= 150kW even when shared with 1 other car
 
 # ---------------------------------------------------------------------------
 # Schema versioning
@@ -993,28 +994,58 @@ def get_hub_detail(uuid: str) -> dict | None:
     d["pricing"]          = json.loads(d["pricing"] or "[]")
     d["payment_methods"]  = json.loads(d["payment_methods"] or "[]")
 
-    # Filter excluded connector types out of device blobs — handles stale DB rows
-    # that pre-date the scraper-level exclusion.  devices_raw_loc connectors are
-    # objects with a 'standard' field; latest_devices_status connectors are strings.
+    # Filter device blobs at read time — cleans up stale DB rows that pre-date
+    # the scraper-level exclusion rules (excluded connectors + sub-300kW power).
+    # devices_raw_loc: connectors are objects with 'standard'+'max_electric_power'.
+    # latest_devices_status: connectors are plain strings (no power info), so we
+    # cross-reference qualifying EVSE UUIDs derived from devices_raw_loc.
     raw = json.loads(d["devices_raw_loc"] or "[]")
+    qualifying_evse_uuids: set = set()
     filtered_raw = []
     for dev in raw:
-        kept = [e for e in dev.get("evses", [])
-                if not {c.get("standard") for c in e.get("connectors", [])} & EXCLUDED_CONNECTORS]
+        kept = [
+            e for e in dev.get("evses", [])
+            if not {c.get("standard") for c in e.get("connectors", [])} & EXCLUDED_CONNECTORS
+            and max((c.get("max_electric_power") or 0 for c in e.get("connectors", [])), default=0)
+                >= MIN_SHARED_POWER_W
+        ]
         if kept:
             filtered_raw.append({**dev, "evses": kept})
+            for e in kept:
+                qualifying_evse_uuids.add(e.get("uuid"))
     d["devices_raw_loc"] = filtered_raw
 
     live = json.loads(d["latest_devices_status"] or "[]")
     filtered_live = []
     for dev in live:
-        kept = [e for e in dev.get("evses", [])
-                if not set(e.get("connectors", [])) & EXCLUDED_CONNECTORS]
+        kept = [
+            e for e in dev.get("evses", [])
+            if not set(e.get("connectors", [])) & EXCLUDED_CONNECTORS
+            and (not qualifying_evse_uuids or e.get("evse_uuid") in qualifying_evse_uuids)
+        ]
         if kept:
             filtered_live.append({**dev, "evses": kept})
     d["latest_devices_status"] = filtered_live
 
     return d
+
+
+def get_devices_raw_for_hubs(uuids: list[str]) -> dict[str, list]:
+    """Return {hub_uuid: devices_raw_loc} for the given hub UUIDs.
+
+    Used by the scraper's db-only snapshot loop to determine qualifying EVSE UUIDs
+    (power + connector filter) without re-fetching location details from the API.
+    """
+    if not uuids:
+        return {}
+    placeholders = ",".join("?" * len(uuids))
+    con = _connect()
+    rows = con.execute(
+        f"SELECT uuid, devices_raw_loc FROM hubs WHERE uuid IN ({placeholders})",
+        uuids,
+    ).fetchall()
+    con.close()
+    return {row["uuid"]: json.loads(row["devices_raw_loc"] or "[]") for row in rows}
 
 
 def get_hub_performance(hours: int = 168,

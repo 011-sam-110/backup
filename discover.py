@@ -55,31 +55,35 @@ def build_hub_record_from_detail(uuid: str, detail: dict, scraped_at: str) -> di
     operator_obj = (detail.get("operator") or {})
     operator = operator_obj.get("name") or operator_obj.get("trading_name") or ""
 
-    pricing_set, pm_set, connector_types, power_vals = set(), set(), set(), []
-    qualifying_evses = 0
+    # Collect payment details from all devices before filtering
+    pricing_set, pm_set = set(), set()
     for dev in detail.get("devices", []):
         pd_ = dev.get("payment_details") or {}
         if pd_.get("pricing"):
             pricing_set.add(pd_["pricing"])
         for m in (pd_.get("payment_methods") or []):
             pm_set.add(m)
+
+    # Apply the same filter as the scraper: strips excluded connectors + sub-300kW EVSEs
+    filtered_devices = _filter_raw_devices(detail.get("devices", []))
+
+    connector_types, power_vals = set(), []
+    for dev in filtered_devices:
         for evse in dev.get("evses", []):
-            evse_standards = {c.get("standard") for c in evse.get("connectors", [])}
-            if evse_standards & EXCLUDED_CONNECTORS:
-                continue  # skip CHAdeMO (and any other excluded) EVSEs entirely
-            qualifying_evses += 1
             for conn in evse.get("connectors", []):
                 if conn.get("standard"):
                     connector_types.add(conn["standard"])
                 if conn.get("max_electric_power"):
                     power_vals.append(conn["max_electric_power"])
 
+    qualifying_evses = sum(len(dev.get("evses", [])) for dev in filtered_devices)
+
     coords = detail.get("coordinates") or {}
     max_power_kw = round(max(power_vals) / 1000, 1) if power_vals else 0.0
     total_evses = qualifying_evses
 
     if total_evses < MIN_EVSES:
-        return None  # hub does not meet the minimum non-excluded EVSE threshold
+        return None  # hub does not meet the minimum qualifying EVSE threshold
 
     return {
         "uuid": uuid,
@@ -94,7 +98,7 @@ def build_hub_record_from_detail(uuid: str, detail: dict, scraped_at: str) -> di
         "inoperative_count": 0,
         "out_of_order_count": 0,
         "unknown_count": 0,
-        "devices_raw_loc": _filter_raw_devices(detail.get("devices", [])),
+        "devices_raw_loc": filtered_devices,
         "hub_name": detail.get("name") or None,
         "operator": operator or None,
         "user_rating": detail.get("user_rating"),
