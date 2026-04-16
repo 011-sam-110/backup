@@ -80,7 +80,7 @@ def _hub_subquery(params: list, operator: str | list[str] | None, connector: str
     return " AND hub_uuid IN (SELECT uuid FROM hubs WHERE " + " AND ".join(conditions) + ")"
 
 
-MIN_EVSES = 12              # hubs below this qualifying EVSE count are not surfaced by the API
+MIN_EVSES = 6               # hubs below this qualifying EVSE count are not surfaced by the API
 EXCLUDED_CONNECTORS = {"CHADEMO"}  # connector types stripped from all API responses
 MIN_SHARED_POWER_W = 150_000       # 150kW minimum per EVSE — tracks all rapid/ultra-rapid CCS2 units
 
@@ -244,8 +244,8 @@ def _migration_21_evse_cleanup(con: sqlite3.Connection) -> None:
         count = 0
         for dev in raw:
             for evse in dev.get("evses", []):
-                conns = evse.get("connectors", [])
-                if {c.get("standard") for c in conns} & EXCLUDED_CONNECTORS:
+                conns = [c for c in evse.get("connectors", []) if c.get("standard") not in EXCLUDED_CONNECTORS]
+                if not conns:
                     continue
                 if max((c.get("max_electric_power") or 0 for c in conns), default=0) < MIN_SHARED_POWER_W:
                     continue
@@ -273,8 +273,8 @@ def _migration_22_power_threshold_update(con: sqlite3.Connection) -> None:
         count = 0
         for dev in raw:
             for evse in dev.get("evses", []):
-                conns = evse.get("connectors", [])
-                if {c.get("standard") for c in conns} & EXCLUDED_CONNECTORS:
+                conns = [c for c in evse.get("connectors", []) if c.get("standard") not in EXCLUDED_CONNECTORS]
+                if not conns:
                     continue
                 if max((c.get("max_electric_power") or 0 for c in conns), default=0) < MIN_SHARED_POWER_W:
                     continue

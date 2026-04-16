@@ -20,7 +20,7 @@ load_dotenv()
 BASE_API = "https://api.zap-map.io/locations/v1"
 MIN_POWER_W = 100_000
 EXCLUDED_CONNECTORS = {"CHADEMO"}  # connector type strings excluded from tracking entirely
-MIN_EVSES = 12                      # hub must have this many qualifying EVSEs to be tracked
+MIN_EVSES = 6                       # hub must have this many qualifying EVSEs to be tracked
 MIN_SHARED_POWER_W = 150_000        # 150kW minimum per EVSE — tracks all rapid/ultra-rapid CCS2 units
 
 
@@ -28,8 +28,12 @@ def _filter_raw_devices(devices: list) -> list:
     """Return only qualifying EVSEs from a raw /location/{uuid} device list.
 
     An EVSE qualifies when:
-      - None of its connector standards are in EXCLUDED_CONNECTORS (e.g. CHAdeMO)
-      - Its max connector power >= MIN_SHARED_POWER_W (150kW minimum per EVSE)
+      - After stripping EXCLUDED_CONNECTORS, at least one connector remains
+      - Its max connector power (after stripping) >= MIN_SHARED_POWER_W (150kW minimum per EVSE)
+
+    Excluded connectors (e.g. CHAdeMO) are stripped from each EVSE's connector list rather than
+    dropping the whole EVSE — this preserves CCS connectors on dual-standard EVSEs that have both
+    CCS and CHAdeMO on the same unit.
 
     Connectors in this format are objects with 'standard' and 'max_electric_power' fields.
     Devices with no remaining EVSEs after filtering are also dropped.
@@ -39,11 +43,13 @@ def _filter_raw_devices(devices: list) -> list:
         kept = []
         for evse in dev.get("evses", []):
             conns = evse.get("connectors", [])
-            if {c.get("standard") for c in conns} & EXCLUDED_CONNECTORS:
+            # Strip excluded connector types; only skip the EVSE if nothing remains
+            conns = [c for c in conns if c.get("standard") not in EXCLUDED_CONNECTORS]
+            if not conns:
                 continue
             if max((c.get("max_electric_power") or 0 for c in conns), default=0) < MIN_SHARED_POWER_W:
                 continue
-            kept.append(evse)
+            kept.append({**evse, "connectors": conns})
         if kept:
             out.append({**dev, "evses": kept})
     return out
