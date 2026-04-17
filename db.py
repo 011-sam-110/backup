@@ -380,7 +380,7 @@ def init_db() -> None:
             ON snapshots(scraped_at);
 
         CREATE INDEX IF NOT EXISTS idx_snapshots_covering
-            ON snapshots(hub_uuid, scraped_at, utilisation_pct, charging_count, source);
+            ON snapshots(hub_uuid, scraped_at, utilisation_pct, charging_count);
 
         CREATE TABLE IF NOT EXISTS visits (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,

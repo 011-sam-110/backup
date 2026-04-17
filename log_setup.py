@@ -25,9 +25,6 @@ def setup_logging(log_file: str = "logs/scheduler.log") -> logging.Logger:
     # UTC timestamps
     fmt.converter = __import__("time").gmtime
 
-    root = logging.getLogger("evanti")
-    root.setLevel(logging.DEBUG)
-
     # ── stdout handler (shows up in docker compose logs) ──────────────────────
     sh = logging.StreamHandler(sys.stdout)
     sh.setLevel(logging.INFO)
@@ -43,6 +40,20 @@ def setup_logging(log_file: str = "logs/scheduler.log") -> logging.Logger:
     fh.setLevel(logging.DEBUG)
     fh.setFormatter(fmt)
 
-    root.addHandler(sh)
-    root.addHandler(fh)
-    return root
+    # ── evanti logger (our app code) ───────────────────────────────────────────
+    evanti = logging.getLogger("evanti")
+    evanti.setLevel(logging.DEBUG)
+    evanti.propagate = False  # don't double-emit via root
+    evanti.addHandler(sh)
+    evanti.addHandler(fh)
+
+    # ── root logger — catches uvicorn.*, fastapi.* and anything else ───────────
+    # Uvicorn loggers propagate to root by default, so adding our handler here
+    # gives timestamps to all uvicorn startup/access/error lines in docker logs.
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    if not any(isinstance(h, logging.StreamHandler) and h.stream is sys.stdout
+               for h in root.handlers):
+        root.addHandler(sh)
+
+    return evanti
