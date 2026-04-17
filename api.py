@@ -396,6 +396,22 @@ async def admin_discover(body: dict = Body(...), background_tasks: BackgroundTas
     return {"queued": len(new_uuids), "already_known": len(uuids) - len(new_uuids)}
 
 
+@app.post("/api/admin/rediscover")
+async def admin_rediscover(body: dict = Body(...), background_tasks: BackgroundTasks = None):
+    """
+    Force re-discover ALL provided UUIDs, including those already tracked in the DB.
+    One-time remediation: re-upserts hub records with corrected CHAdeMO-per-connector
+    filtering so EVSE counts and connector_types reflect the current filter logic.
+    """
+    uuids = body.get("uuids", [])
+    if not uuids:
+        raise HTTPException(status_code=400, detail="No UUIDs provided")
+    deduped = sorted(set(uuids))
+    Path("pending_uuids.json").write_text(json.dumps(deduped))
+    background_tasks.add_task(_run_discover)
+    return {"queued": len(deduped), "message": "Re-discovery queued for all UUIDs (including already-known)"}
+
+
 # Serve built React frontend — must be last so /api/* routes take priority
 _frontend_dist = Path(__file__).parent / "frontend" / "dist"
 if _frontend_dist.exists():
