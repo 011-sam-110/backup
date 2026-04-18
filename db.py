@@ -1631,10 +1631,10 @@ def get_stats() -> dict:
         "SELECT COUNT(*) FROM hubs WHERE total_evses >= ?", (MIN_EVSES,)
     ).fetchone()[0]
     last_scraped = con.execute(
-        "SELECT MAX(scraped_at) FROM snapshots"
+        "SELECT MAX(scraped_at) FROM snapshots WHERE source = 'full'"
     ).fetchone()[0]
 
-    # stats from the most recent scrape run only
+    # stats from the most recent full scrape run only (excludes targeted 1-min snapshots)
     if last_scraped:
         agg = con.execute("""
             SELECT
@@ -1646,7 +1646,7 @@ def get_stats() -> dict:
                     inoperative_count + out_of_order_count +
                     unknown_count)             AS total_evses
             FROM snapshots
-            WHERE scraped_at = ?
+            WHERE scraped_at = ? AND source = 'full'
         """, (last_scraped,)).fetchone()
         avg_util = agg["avg_utilisation_pct"] or 0.0
         total_charging = agg["total_charging"] or 0
