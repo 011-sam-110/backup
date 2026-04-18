@@ -27,6 +27,7 @@ import logging
 import os
 import secrets
 import asyncio
+import sqlite3
 import time
 from pathlib import Path
 
@@ -272,7 +273,10 @@ def create_group(body: dict = Body(...)):
     name = (body.get("name") or "").strip()
     if not name:
         raise HTTPException(status_code=400, detail="name is required")
-    return db.create_group(name)
+    try:
+        return db.create_group(name)
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=409, detail=f"Group '{name}' already exists")
 
 
 @app.patch("/api/groups/{group_id}")
