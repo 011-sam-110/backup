@@ -5,6 +5,8 @@ import { authFetch } from '../context/AuthContext'
 
 const ALL_COLS = [
   { key: 'uuid',               label: 'Hub UUID' },
+  { key: 'hub_name',           label: 'Site Name' },
+  { key: 'operator',           label: 'Operator' },
   { key: 'latitude',           label: 'Latitude' },
   { key: 'longitude',          label: 'Longitude' },
   { key: 'max_power_kw',       label: 'Max kW' },
