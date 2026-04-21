@@ -149,9 +149,13 @@ def _parse_status(status: dict, allowed_evse_uuids: set | None = None) -> dict:
             if allowed_evse_uuids is not None and evse_uuid not in allowed_evse_uuids:
                 continue
             connectors = evse.get("connectors", [])
-            # Connector-type safety-net (catches CHAdeMO even without allow-list)
-            if set(connectors) & EXCLUDED_CONNECTORS:
+            # Safety-net: when no UUID allow-list is available, fall back to connector-type check.
+            # When an allow-list IS present, _filter_raw_devices already handled exclusions —
+            # dual-standard EVSEs (e.g. CCS2 + CHAdeMO) are in the list and must not be dropped.
+            if allowed_evse_uuids is None and set(connectors) & EXCLUDED_CONNECTORS:
                 continue
+            # Strip excluded connector types from counts/storage even on dual-standard EVSEs
+            connectors = [c for c in connectors if c not in EXCLUDED_CONNECTORS]
             net = (evse.get("status") or {}).get("network") or {}
             usr = (evse.get("status") or {}).get("user") or {}
             net_status = net.get("status", "UNKNOWN")
