@@ -34,6 +34,8 @@ __pycache__/
 *$py.class
 *.pyc
 *.db
+*.db-wal
+*.db-shm
 *.log
 # C extensions
 *.so
