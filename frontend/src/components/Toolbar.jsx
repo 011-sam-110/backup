@@ -214,7 +214,28 @@ export default function Toolbar() {
     } catch { /* ignore */ }
   }
 
-  const [addingIntervalGroup, setAddingIntervalGroup] = useState(null) // { minutes, groupId }
+  const [addingIntervalGroup, setAddingIntervalGroup] = useState(null)
+  const [targetedEnabled, setTargetedEnabled] = useState(true)
+  const [targetedToggling, setTargetedToggling] = useState(false)
+
+  useEffect(() => {
+    authFetch('/api/settings').then(r => r.json()).then(d => setTargetedEnabled(d.targeted_scraping_enabled)).catch(() => {})
+  }, [])
+
+  const toggleTargetedScraping = async () => {
+    if (targetedToggling) return
+    setTargetedToggling(true)
+    try {
+      const res = await authFetch('/api/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targeted_scraping_enabled: !targetedEnabled }),
+      })
+      const d = await res.json()
+      setTargetedEnabled(d.targeted_scraping_enabled)
+    } catch { /* ignore */ }
+    setTargetedToggling(false)
+  }
 
   const INTERVAL_COLOURS = {
     1: '#ef4444',
@@ -280,8 +301,31 @@ export default function Toolbar() {
         </Section>
 
         <Section title="Targeted Scraping" icon="⏱" defaultOpen={false}>
-          <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 10 }}>
-            Assign groups to a polling interval (1–5 min). Runs in addition to the 15-min full scrape.
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+              Assign groups to a polling interval (1–5 min).
+            </span>
+            <button
+              onClick={toggleTargetedScraping}
+              disabled={targetedToggling}
+              title={targetedEnabled ? 'Targeted scraping ON — click to disable' : 'Targeted scraping OFF — click to enable'}
+              style={{
+                flexShrink: 0,
+                background: targetedEnabled ? 'var(--accent)' : '#adb5bd',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 10,
+                padding: '2px 10px',
+                fontSize: 11,
+                fontWeight: 700,
+                cursor: targetedToggling ? 'default' : 'pointer',
+                opacity: targetedToggling ? 0.6 : 1,
+                transition: 'background 0.2s',
+                letterSpacing: '0.03em',
+              }}
+            >
+              {targetedEnabled ? 'ON' : 'OFF'}
+            </button>
           </div>
           {[1, 2, 3, 4, 5].map(m => {
             const assignedGroups = groups.filter(g => g.scrape_interval === m)

@@ -321,6 +321,9 @@ def job():
 
 def targeted_job(minutes: int):
     """Targeted scrape for all groups configured at the given interval (1–5 min)."""
+    if db.get_setting("targeted_scraping_enabled", "1") != "1":
+        log.debug("Targeted scrape (%d min) skipped — targeted scraping disabled", minutes)
+        return
     if not _scrape_lock.acquire(blocking=False):
         log.debug("Targeted scrape (%d min) skipped — full scrape in progress", minutes)
         return

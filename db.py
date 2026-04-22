@@ -223,6 +223,15 @@ _MIGRATIONS: dict[int, str | list[str]] = {
         "DROP TABLE groups",
         "ALTER TABLE groups_new RENAME TO groups",
     ],
+
+    # 24: App-wide key-value settings table. Seeded with targeted_scraping_enabled = 1.
+    24: [
+        """CREATE TABLE IF NOT EXISTS app_settings (
+            key   TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        )""",
+        "INSERT OR IGNORE INTO app_settings (key, value) VALUES ('targeted_scraping_enabled', '1')",
+    ],
 }
 
 
@@ -1565,6 +1574,23 @@ def get_hubs_for_scrape_interval(minutes: int) -> list[str]:
     """, (minutes,)).fetchall()
     con.close()
     return [r["hub_uuid"] for r in rows]
+
+
+def get_setting(key: str, default: str = "") -> str:
+    con = _connect()
+    row = con.execute("SELECT value FROM app_settings WHERE key = ?", (key,)).fetchone()
+    con.close()
+    return row["value"] if row else default
+
+
+def set_setting(key: str, value: str) -> None:
+    con = _connect()
+    con.execute(
+        "INSERT INTO app_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        (key, value),
+    )
+    con.commit()
+    con.close()
 
 
 def get_charging_session_start(hub_uuid: str) -> str | None:

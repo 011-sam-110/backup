@@ -328,6 +328,20 @@ def remove_hub_from_group(group_id: int, hub_uuid: str):
     db.remove_hub_from_group(group_id, hub_uuid)
 
 
+@app.get("/api/settings")
+def get_settings():
+    return {
+        "targeted_scraping_enabled": db.get_setting("targeted_scraping_enabled", "1") == "1",
+    }
+
+
+@app.patch("/api/settings")
+def update_settings(body: dict = Body(...)):
+    if "targeted_scraping_enabled" in body:
+        db.set_setting("targeted_scraping_enabled", "1" if body["targeted_scraping_enabled"] else "0")
+    return get_settings()
+
+
 @app.get("/api/sparkline")
 def sparkline(days: int = Query(default=7, ge=1, le=90)):
     return db.get_global_sparkline(days)
