@@ -22,9 +22,9 @@ load_dotenv()
 setup_logging()
 log = logging.getLogger("evanti.scheduler")
 INTERVAL_MINUTES    = int(os.getenv("SCRAPE_INTERVAL_MINUTES", 15))
-HF_INTERVAL_MINUTES = int(os.getenv("HF_SCRAPE_INTERVAL_MINUTES", 1))  # high-frequency polling interval for flagged groups
 MAX_RETRIES         = 3    # attempts per scrape run
 RETRY_DELAY_S       = 30   # seconds between retry attempts
+SCRAPE_TIMEOUT_S    = int(os.getenv("SCRAPE_TIMEOUT_S", 300))  # hard timeout per scrape attempt (kills hung Playwright)
 DB_PATH = Path("chargers.db")
 
 colorama.init()
@@ -276,7 +276,7 @@ def job():
         last_exc = None
         for attempt in range(1, MAX_RETRIES + 1):
             try:
-                asyncio.run(scrape())
+                asyncio.run(asyncio.wait_for(scrape(), timeout=SCRAPE_TIMEOUT_S))
                 last_exc = None
                 break                           # success — exit retry loop
             except Exception as exc:
@@ -319,31 +319,32 @@ def job():
         _scrape_lock.release()
 
 
-def fast_job():
-    """1-minute targeted scrape for hubs in high-frequency groups."""
+def targeted_job(minutes: int):
+    """Targeted scrape for all groups configured at the given interval (1–5 min)."""
     if not _scrape_lock.acquire(blocking=False):
-        log.debug("Fast scrape skipped — full scrape in progress")
+        log.debug("Targeted scrape (%d min) skipped — full scrape in progress", minutes)
         return
     try:
-        uuids = db.get_high_frequency_hub_uuids()
+        uuids = db.get_hubs_for_scrape_interval(minutes)
         if not uuids:
             return
-        log.info("Fast scrape: %d high-frequency hubs", len(uuids))
+        log.info("Targeted scrape (%d min): %d hubs", minutes, len(uuids))
         try:
-            count = asyncio.run(scrape_targeted(uuids))
-            log.info("Fast scrape: %d snapshots saved", count)
+            count = asyncio.run(asyncio.wait_for(scrape_targeted(uuids), timeout=SCRAPE_TIMEOUT_S))
+            log.info("Targeted scrape (%d min): %d snapshots saved", minutes, count)
         except Exception as exc:
-            log.error("Fast scrape failed: %s", exc)
+            log.error("Targeted scrape (%d min) failed: %s", minutes, exc)
     finally:
         _scrape_lock.release()
 
 
 if __name__ == "__main__":
-    log.info("Scheduler starting — interval %d min, HF interval %d min, DB: %s",
-             INTERVAL_MINUTES, HF_INTERVAL_MINUTES, db.DB_PATH)
+    log.info("Scheduler starting — interval %d min, DB: %s", INTERVAL_MINUTES, db.DB_PATH)
     scheduler = BlockingScheduler()
-    scheduler.add_job(job,      "interval", minutes=INTERVAL_MINUTES,    max_instances=1)
-    scheduler.add_job(fast_job, "interval", minutes=HF_INTERVAL_MINUTES, max_instances=1)
+    scheduler.add_job(job, "interval", minutes=INTERVAL_MINUTES, max_instances=1)
+    for _m in range(1, 6):
+        scheduler.add_job(targeted_job, "interval", minutes=_m, max_instances=1,
+                          kwargs={"minutes": _m}, id=f"targeted_{_m}min")
     threading.Thread(target=_refresh_loop, daemon=True).start()
     job()
     scheduler.start()

@@ -205,6 +205,24 @@ _MIGRATIONS: dict[int, str | list[str]] = {
     # 22: Power threshold lowered from 300kW to 150kW — recompute total_evses so hubs with
     #     dedicated 150kW CCS2 units (previously excluded) now qualify for tracking.
     22: "_python_migration_22",  # resolved to _migration_22_power_threshold_update
+
+    # 23: Replace high_frequency boolean on groups with scrape_interval (1–5 min, NULL = off).
+    23: [
+        "DROP TABLE IF EXISTS groups_new",
+        """CREATE TABLE groups_new (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            name            TEXT NOT NULL UNIQUE,
+            created_at      TEXT NOT NULL,
+            scrape_interval INTEGER DEFAULT NULL
+                                CHECK(scrape_interval IN (1,2,3,4,5))
+        )""",
+        """INSERT INTO groups_new (id, name, created_at, scrape_interval)
+           SELECT id, name, created_at,
+                  CASE WHEN high_frequency = 1 THEN 1 ELSE NULL END
+           FROM groups""",
+        "DROP TABLE groups",
+        "ALTER TABLE groups_new RENAME TO groups",
+    ],
 }
 
 
@@ -394,11 +412,11 @@ def init_db() -> None:
             ON visits(hub_uuid, started_at);
 
         CREATE TABLE IF NOT EXISTS groups (
-            id             INTEGER PRIMARY KEY AUTOINCREMENT,
-            name           TEXT NOT NULL UNIQUE,
-            created_at     TEXT NOT NULL,
-            high_frequency INTEGER NOT NULL DEFAULT 0
-                               CHECK(high_frequency IN (0, 1))
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            name            TEXT NOT NULL UNIQUE,
+            created_at      TEXT NOT NULL,
+            scrape_interval INTEGER DEFAULT NULL
+                                CHECK(scrape_interval IN (1,2,3,4,5))
         );
 
         CREATE TABLE IF NOT EXISTS group_hubs (
@@ -1431,7 +1449,7 @@ def get_groups() -> list[dict]:
     """Return all groups with their hub counts."""
     con = _connect()
     rows = con.execute("""
-        SELECT g.id, g.name, g.created_at, g.high_frequency,
+        SELECT g.id, g.name, g.created_at, g.scrape_interval,
                COUNT(gh.hub_uuid) AS hub_count
         FROM groups g
         LEFT JOIN group_hubs gh ON gh.group_id = g.id
@@ -1452,7 +1470,7 @@ def create_group(name: str) -> dict:
         )
         con.commit()
         row = con.execute(
-            "SELECT id, name, created_at, 0 AS hub_count FROM groups WHERE id = ?",
+            "SELECT id, name, created_at, NULL AS scrape_interval, 0 AS hub_count FROM groups WHERE id = ?",
             (cur.lastrowid,)
         ).fetchone()
         con.close()
@@ -1520,11 +1538,12 @@ def get_group_by_id(group_id: int) -> dict | None:
     return dict(row) if row else None
 
 
-def set_group_high_frequency(group_id: int, value: bool) -> dict | None:
+def set_group_scrape_interval(group_id: int, minutes: int | None) -> dict | None:
+    """Set scrape_interval for a group. minutes must be 1–5 or None to disable."""
     con = _connect()
     cur = con.execute(
-        "UPDATE groups SET high_frequency = ? WHERE id = ?",
-        (1 if value else 0, group_id),
+        "UPDATE groups SET scrape_interval = ? WHERE id = ?",
+        (minutes, group_id),
     )
     con.commit()
     if cur.rowcount == 0:
@@ -1535,15 +1554,15 @@ def set_group_high_frequency(group_id: int, value: bool) -> dict | None:
     return dict(row) if row else None
 
 
-def get_high_frequency_hub_uuids() -> list[str]:
-    """Return UUIDs of all hubs belonging to at least one high-frequency group."""
+def get_hubs_for_scrape_interval(minutes: int) -> list[str]:
+    """Return distinct hub UUIDs for all groups with the given scrape_interval."""
     con = _connect()
     rows = con.execute("""
         SELECT DISTINCT gh.hub_uuid
         FROM group_hubs gh
         JOIN groups g ON g.id = gh.group_id
-        WHERE g.high_frequency = 1
-    """).fetchall()
+        WHERE g.scrape_interval = ?
+    """, (minutes,)).fetchall()
     con.close()
     return [r["hub_uuid"] for r in rows]
 

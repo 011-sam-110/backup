@@ -281,19 +281,24 @@ def create_group(body: dict = Body(...)):
 
 @app.patch("/api/groups/{group_id}")
 def update_group(group_id: int, body: dict = Body(...)):
-    name = (body.get("name") or "").strip()
-    hf   = body.get("high_frequency")
+    name     = (body.get("name") or "").strip()
+    interval = body.get("scrape_interval", ...)  # sentinel: ... means not provided
 
-    if not name and hf is None:
-        raise HTTPException(status_code=400, detail="name or high_frequency is required")
+    if not name and interval is ...:
+        raise HTTPException(status_code=400, detail="name or scrape_interval is required")
+
+    # validate interval value
+    if interval is not ...:
+        if interval is not None and interval not in (1, 2, 3, 4, 5):
+            raise HTTPException(status_code=400, detail="scrape_interval must be 1–5 or null")
 
     updated = None
     if name:
         updated = db.rename_group(group_id, name)
         if not updated:
             raise HTTPException(status_code=404, detail="Group not found")
-    if hf is not None:
-        updated = db.set_group_high_frequency(group_id, bool(hf))
+    if interval is not ...:
+        updated = db.set_group_scrape_interval(group_id, interval)
         if not updated:
             raise HTTPException(status_code=404, detail="Group not found")
 

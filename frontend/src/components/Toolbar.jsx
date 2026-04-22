@@ -203,15 +203,25 @@ export default function Toolbar() {
     } catch { /* ignore */ }
   }
 
-  const toggleHighFreq = async (g) => {
+  const setGroupInterval = async (groupId, minutes) => {
     try {
-      await authFetch(`/api/groups/${g.id}`, {
+      await authFetch(`/api/groups/${groupId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ high_frequency: !g.high_frequency }),
+        body: JSON.stringify({ scrape_interval: minutes }),
       })
       await loadGroups()
     } catch { /* ignore */ }
+  }
+
+  const [addingIntervalGroup, setAddingIntervalGroup] = useState(null) // { minutes, groupId }
+
+  const INTERVAL_COLOURS = {
+    1: '#ef4444',
+    2: '#f97316',
+    3: '#eab308',
+    4: '#22c55e',
+    5: '#3b82f6',
   }
 
   const hasFilters = search || minKw || maxKw || minEvses || maxEvses || minUtil || maxUtil ||
@@ -267,6 +277,79 @@ export default function Toolbar() {
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
+        </Section>
+
+        <Section title="Targeted Scraping" icon="⏱" defaultOpen={false}>
+          <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 10 }}>
+            Assign groups to a polling interval (1–5 min). Runs in addition to the 15-min full scrape.
+          </div>
+          {[1, 2, 3, 4, 5].map(m => {
+            const assignedGroups = groups.filter(g => g.scrape_interval === m)
+            const unassignedGroups = groups.filter(g => !g.scrape_interval)
+            const isAdding = addingIntervalGroup === m
+            return (
+              <div key={m} style={{ marginBottom: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, color: INTERVAL_COLOURS[m],
+                    background: INTERVAL_COLOURS[m] + '18',
+                    border: `1px solid ${INTERVAL_COLOURS[m]}40`,
+                    borderRadius: 4, padding: '1px 6px', minWidth: 36, textAlign: 'center',
+                  }}>
+                    {m} min
+                  </span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, flex: 1 }}>
+                    {assignedGroups.map(g => (
+                      <span key={g.id} style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 3,
+                        fontSize: 10, background: 'var(--bg)',
+                        border: '1px solid var(--border)', borderRadius: 4,
+                        padding: '1px 4px', color: 'var(--text)',
+                      }}>
+                        {g.name}
+                        <button
+                          onClick={() => setGroupInterval(g.id, null)}
+                          title="Remove from targeted scraping"
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', fontSize: 9, padding: 0, lineHeight: 1 }}
+                        >✕</button>
+                      </span>
+                    ))}
+                  </div>
+                  {unassignedGroups.length > 0 && !isAdding && (
+                    <button
+                      onClick={() => setAddingIntervalGroup(m)}
+                      title={`Add group to ${m}-min scrape`}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', fontSize: 14, padding: '0 2px', lineHeight: 1 }}
+                    >+</button>
+                  )}
+                </div>
+                {isAdding && (
+                  <div style={{ display: 'flex', gap: 4, marginLeft: 42 }}>
+                    <select
+                      autoFocus
+                      className="filter-input"
+                      style={{ flex: 1, boxSizing: 'border-box', fontSize: 11 }}
+                      defaultValue=""
+                      onChange={async e => {
+                        const id = Number(e.target.value)
+                        if (id) { await setGroupInterval(id, m) }
+                        setAddingIntervalGroup(null)
+                      }}
+                      onBlur={() => setAddingIntervalGroup(null)}
+                    >
+                      <option value="" disabled>Pick group…</option>
+                      {unassignedGroups.map(g => (
+                        <option key={g.id} value={g.id}>{g.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+          {groups.length === 0 && (
+            <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>Create groups first to assign them here.</div>
+          )}
         </Section>
 
         <Section title="Groups" icon="◈" defaultOpen={true}>
@@ -343,11 +426,16 @@ export default function Toolbar() {
                       borderRadius: 4, padding: '0 2px', lineHeight: 1,
                     }}
                   >◎</button>
-                  <button
-                    onClick={() => toggleHighFreq(g)}
-                    title={g.high_frequency ? '1-min polling ON — click to disable' : 'Enable 1-min polling for this group'}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: g.high_frequency ? '#f59e0b' : 'var(--text-dim)', fontSize: 12, padding: '0 1px', lineHeight: 1 }}
-                  >⚡</button>
+                  {g.scrape_interval && (
+                    <span
+                      title={`Targeted scrape every ${g.scrape_interval} min`}
+                      style={{
+                        fontSize: 9, fontWeight: 700, color: INTERVAL_COLOURS[g.scrape_interval],
+                        background: INTERVAL_COLOURS[g.scrape_interval] + '20',
+                        borderRadius: 3, padding: '1px 3px', lineHeight: 1,
+                      }}
+                    >{g.scrape_interval}m</span>
+                  )}
                   <button
                     onClick={() => { setRenamingId(g.id); setRenameVal(g.name) }}
                     title="Rename"
