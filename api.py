@@ -354,6 +354,52 @@ def export_snapshots(hours: int = Query(default=24, ge=1, le=8760),
     return db.get_all_snapshots(hours, start_dt=start_dt, end_dt=end_dt)
 
 
+@app.get("/api/exports")
+def list_r2_exports():
+    """List archived Excel exports from R2 with 1-hour pre-signed download URLs."""
+    endpoint = os.getenv("R2_ENDPOINT_URL")
+    key_id   = os.getenv("R2_ACCESS_KEY_ID")
+    secret   = os.getenv("R2_SECRET_ACCESS_KEY")
+    bucket   = os.getenv("R2_BUCKET", "ev-scraper")
+
+    if not all([endpoint, key_id, secret]):
+        raise HTTPException(status_code=503, detail="R2 storage not configured")
+
+    try:
+        import boto3
+        from botocore.config import Config
+        s3 = boto3.client(
+            "s3",
+            endpoint_url=endpoint,
+            aws_access_key_id=key_id,
+            aws_secret_access_key=secret,
+            config=Config(signature_version="s3v4"),
+            region_name="auto",
+        )
+        resp = s3.list_objects_v2(Bucket=bucket)
+        objects = [o for o in (resp.get("Contents") or []) if o["Key"].endswith(".xlsx")]
+        objects.sort(key=lambda o: o["LastModified"], reverse=True)
+
+        return [
+            {
+                "filename": obj["Key"],
+                "size_bytes": obj["Size"],
+                "modified": obj["LastModified"].isoformat(),
+                "url": s3.generate_presigned_url(
+                    "get_object",
+                    Params={"Bucket": bucket, "Key": obj["Key"]},
+                    ExpiresIn=3600,
+                ),
+            }
+            for obj in objects
+        ]
+    except HTTPException:
+        raise
+    except Exception:
+        log.error("Failed to list R2 exports:\n%s", traceback.format_exc())
+        raise HTTPException(status_code=502, detail="Failed to reach R2 storage")
+
+
 BEARER_MAX_AGE_S = 55 * 60  # matches scraper.py
 BEARER_CACHE_FILE = Path("bearer_token.cache")
 

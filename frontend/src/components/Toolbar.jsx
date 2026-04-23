@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useFilters, applyFilters } from '../context/FilterContext'
 import DateRangePicker from './DateRangePicker'
 import ExportModal from './ExportModal'
+import ArchiveModal from './ArchiveModal'
 import OperatorDropdown from './OperatorDropdown'
 import { authFetch } from '../context/AuthContext'
 import { groupColor } from '../utils/status'
@@ -104,6 +105,7 @@ export default function Toolbar({ isOpen, onClose, onToggle }) {
   }, [])
 
   const [showExport, setShowExport] = useState(false)
+  const [showArchive, setShowArchive] = useState(false)
   const [newGroupName, setNewGroupName] = useState('')
   const [creatingGroup, setCreatingGroup] = useState(false)
   const [renamingId, setRenamingId] = useState(null)
@@ -674,6 +676,13 @@ export default function Toolbar({ isOpen, onClose, onToggle }) {
               {exportingGroups ? 'Exporting…' : '↓ Export Groups'}
             </button>
           )}
+          <button
+            className="btn btn-outline"
+            style={{ width: '100%', marginTop: 6 }}
+            onClick={() => setShowArchive(true)}
+          >
+            ☁ Archived Exports
+          </button>
         </Section>
 
         {/* Spacer */}
@@ -681,6 +690,7 @@ export default function Toolbar({ isOpen, onClose, onToggle }) {
       </aside>
 
       {showExport && <ExportModal onClose={() => setShowExport(false)} />}
+      {showArchive && <ArchiveModal onClose={() => setShowArchive(false)} />}
     </>
   )
 }
