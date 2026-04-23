@@ -635,8 +635,7 @@ select.filter-input option {
 .sidebar-toggle-btn {
   position: absolute;
   right: -13px;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 12px;
   width: 26px;
   height: 26px;
   border-radius: 50%;
@@ -650,6 +649,25 @@ select.filter-input option {
   z-index: 10;
   box-shadow: 0 1px 4px rgba(0,0,0,0.1);
   flex-shrink: 0;
+}
+
+.sidebar-reopen-btn {
+  position: absolute;
+  left: 0;
+  top: 12px;
+  width: 26px;
+  height: 26px;
+  border-radius: 0 50% 50% 0;
+  border: 1px solid var(--border);
+  border-left: none;
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  box-shadow: 2px 1px 4px rgba(0,0,0,0.1);
 }
 
 .hamburger { display: none; }
@@ -674,6 +692,7 @@ select.filter-input option {
   }
 
   .sidebar-toggle-btn { display: none; }
+  .sidebar-reopen-btn { display: none; }
 
   .sidebar {
     position: fixed;

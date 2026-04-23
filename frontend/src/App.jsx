@@ -72,12 +72,21 @@ function AppInner() {
             Sign out
           </button>
         </nav>
-        <div className="app-body">
+        <div className="app-body" style={{ position: 'relative' }}>
           <div
             className={`sidebar-backdrop${sidebarOpen ? ' active' : ''}`}
             onClick={() => setSidebarOpen(false)}
           />
           <Toolbar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} onToggle={() => setSidebarOpen(o => !o)} />
+          {!sidebarOpen && (
+            <button
+              className="sidebar-reopen-btn"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open filters"
+            >
+              ›
+            </button>
+          )}
           <main className="main-content">
             <Routes>
               <Route path="/" element={<LiveStatus />} />
