@@ -7,7 +7,7 @@ from datetime import date
 from pathlib import Path
 
 from openpyxl import Workbook
-from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.styles import Alignment, Font, NamedStyle, PatternFill
 from openpyxl.utils import get_column_letter
 
 import db
@@ -15,6 +15,7 @@ import db
 log = logging.getLogger("evanti.export")
 
 _PCT_FMT = "0.00%"
+_PCT_STYLE = "pct"
 _BLUE = PatternFill("solid", fgColor="4472C4")
 _BLUE_FONT = Font(bold=True, color="FFFFFF")
 _LIGHT_BLUE = PatternFill("solid", fgColor="8EAADB")
@@ -148,6 +149,8 @@ def _build_workbook(data: dict) -> Workbook:
     C_DV = C_DU + D
 
     wb = Workbook()
+    pct = NamedStyle(name=_PCT_STYLE, number_format=_PCT_FMT)
+    wb.add_named_style(pct)
     ws = wb.active
     ws.title = "Report"
 
@@ -202,7 +205,7 @@ def _build_workbook(data: dict) -> Workbook:
         tu = data["totals_util"].get(uuid)
         c = ws.cell(row=ri, column=C_TU, value=tu)
         if tu is not None:
-            c.number_format = _PCT_FMT
+            c.style = _PCT_STYLE
 
         ws.cell(row=ri, column=C_TV, value=data["totals_visits"].get(uuid) or 0)
 
@@ -211,7 +214,7 @@ def _build_workbook(data: dict) -> Workbook:
             v = hub_mu.get(ym)
             c = ws.cell(row=ri, column=C_MU + i, value=v)
             if v is not None:
-                c.number_format = _PCT_FMT
+                c.style = _PCT_STYLE
 
         hub_mv = data["monthly_visits"].get(uuid, {})
         for i, ym in enumerate(months):
@@ -222,7 +225,7 @@ def _build_workbook(data: dict) -> Workbook:
             v = hub_du.get(day_str)
             c = ws.cell(row=ri, column=C_DU + i, value=v)
             if v is not None:
-                c.number_format = _PCT_FMT
+                c.style = _PCT_STYLE
 
         hub_dv = data["daily_visits"].get(uuid, {})
         for i, day_str in enumerate(days):

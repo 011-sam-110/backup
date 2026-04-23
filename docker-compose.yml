@@ -34,6 +34,7 @@ services:
       - ./proxies.txt:/app/proxies.txt:ro
       - ./logs:/app/logs
       - ./bearer_token.cache:/app/bearer_token.cache
+      - ./exports:/app/exports
     environment:
       - TERM=xterm
     env_file: .env
