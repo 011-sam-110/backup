@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
 import LiveStatus from './pages/LiveStatus'
 import Graphs from './pages/Graphs'
@@ -11,6 +12,12 @@ import './index.css'
 
 function AppInner() {
   const { token, logout } = useAuth()
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+
+  useEffect(() => {
+    document.body.style.overflow = sidebarOpen && window.innerWidth <= 768 ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [sidebarOpen])
 
   if (!token) return <LoginPage />
 
@@ -18,6 +25,13 @@ function AppInner() {
     <BrowserRouter>
       <FilterProvider>
         <nav className="nav">
+          <button
+            className="hamburger"
+            onClick={() => setSidebarOpen(o => !o)}
+            aria-label="Toggle filters"
+          >
+            ☰
+          </button>
           <div className="nav-brand">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <span className="nav-wordmark">
@@ -29,18 +43,22 @@ function AppInner() {
             </div>
           </div>
           <div className="nav-links">
-            <NavLink to="/" end className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+            <NavLink to="/" end className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+              onClick={() => window.innerWidth <= 768 && setSidebarOpen(false)}>
               Live Status
             </NavLink>
-            <NavLink to="/graphs" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+            <NavLink to="/graphs" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+              onClick={() => window.innerWidth <= 768 && setSidebarOpen(false)}>
               Analytics
             </NavLink>
-            <NavLink to="/map" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+            <NavLink to="/map" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+              onClick={() => window.innerWidth <= 768 && setSidebarOpen(false)}>
               Map
             </NavLink>
           </div>
           <button
             onClick={logout}
+            className="sign-out-btn"
             style={{
               position: 'absolute', right: 24,
               background: 'none', border: 'none',
@@ -55,7 +73,11 @@ function AppInner() {
           </button>
         </nav>
         <div className="app-body">
-          <Toolbar />
+          <div
+            className={`sidebar-backdrop${sidebarOpen ? ' active' : ''}`}
+            onClick={() => setSidebarOpen(false)}
+          />
+          <Toolbar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} onToggle={() => setSidebarOpen(o => !o)} />
           <main className="main-content">
             <Routes>
               <Route path="/" element={<LiveStatus />} />

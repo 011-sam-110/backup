@@ -72,7 +72,7 @@ function Label({ children }) {
   )
 }
 
-export default function Toolbar() {
+export default function Toolbar({ isOpen, onClose, onToggle }) {
   const filters = useFilters()
   const {
     search, setSearch,
@@ -252,26 +252,22 @@ export default function Toolbar() {
 
   return (
     <>
-      <aside style={{
-        width: 280,
-        flexShrink: 0,
-        background: '#F1F3F5',
-        borderRight: '1px solid var(--border)',
-        overflowY: 'auto',
-        display: 'flex',
-        flexDirection: 'column',
-        fontSize: 13,
-        color: 'var(--text)',
-      }}>
+      <aside className={`sidebar${isOpen ? ' sidebar--open' : ' sidebar--closed'}`}>
+        {/* Desktop collapse toggle */}
+        <button className="sidebar-toggle-btn" onClick={onToggle} aria-label="Toggle sidebar">
+          {isOpen ? '‹' : '›'}
+        </button>
         {/* Header */}
         <div style={{
           padding: '12px 12px 10px',
           borderBottom: '1px solid var(--border)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          position: 'relative',
         }}>
           <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.09em', color: '#495057' }}>
             Filters
           </span>
+          <button className="sidebar-close-btn" onClick={onClose} aria-label="Close filters">✕</button>
           {hasFilters && (
             <button
               onClick={clearFilters}
