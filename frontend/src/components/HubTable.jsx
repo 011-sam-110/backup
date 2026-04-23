@@ -3,18 +3,35 @@ import { utilColor, utilTier, utilIcon, fmtKw, hubEstKw } from '../utils/status'
 
 const PAGE_SIZE = 25
 
-function fmtTime(iso) {
+function fmtAgo(iso, now) {
   if (!iso) return '—'
-  const d = new Date(iso)
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  const secs = Math.floor((now - new Date(iso)) / 1000)
+  if (secs < 10) return 'just now'
+  if (secs < 60) return `${secs}s ago`
+  const mins = Math.floor(secs / 60)
+  if (mins < 60) return `${mins}m ago`
+  return `${Math.floor(mins / 60)}h ago`
+}
+
+function freshnessColor(iso, now) {
+  if (!iso) return 'var(--text-muted)'
+  const secs = Math.floor((now - new Date(iso)) / 1000)
+  if (secs < 120) return 'var(--green)'
+  if (secs < 600) return 'var(--amber, #f59e0b)'
+  return 'var(--text-muted)'
 }
 
 export default function HubTable({ hubs, onHubClick }) {
   const [sortKey, setSortKey] = useState('utilisation_pct')
   const [sortDir, setSortDir] = useState('desc')
   const [page, setPage] = useState(1)
+  const [now, setNow] = useState(Date.now())
 
   useEffect(() => { setPage(1) }, [hubs])
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 10_000)
+    return () => clearInterval(id)
+  }, [])
 
   function toggleSort(key) {
     if (sortKey === key) {
@@ -157,7 +174,7 @@ export default function HubTable({ hubs, onHubClick }) {
                 <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: utilColor(hub.util_24h ?? 0) }}>
                   {hub.util_24h != null ? `${hub.util_24h}%` : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                 </td>
-                <td style={{ color: 'var(--text-muted)' }}>{fmtTime(hub.scraped_at)}</td>
+                <td style={{ color: freshnessColor(hub.scraped_at, now), fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{fmtAgo(hub.scraped_at, now)}</td>
               </tr>
             )
           })}

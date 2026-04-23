@@ -33,7 +33,7 @@ import { useFilters, applyFilters } from '../context/FilterContext'
 import { authFetch } from '../context/AuthContext'
 import { fmtKw, hubEstKw } from '../utils/status'
 
-const REFRESH_MS = 60_000
+const REFRESH_MS = 15_000
 
 function Stat({ label, value, valueClass = '' }) {
   return (
