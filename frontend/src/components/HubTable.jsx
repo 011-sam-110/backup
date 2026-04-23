@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { utilColor, utilTier, utilIcon, fmtKw, hubEstKw } from '../utils/status'
 
 const PAGE_SIZE = 25
@@ -27,7 +27,14 @@ export default function HubTable({ hubs, onHubClick }) {
   const [page, setPage] = useState(1)
   const [now, setNow] = useState(Date.now())
 
-  useEffect(() => { setPage(1) }, [hubs])
+  const prevHubIds = useRef(null)
+  useEffect(() => {
+    const ids = hubs.map(h => h.uuid).sort().join(',')
+    if (prevHubIds.current !== ids) {
+      setPage(1)
+      prevHubIds.current = ids
+    }
+  }, [hubs])
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 10_000)
     return () => clearInterval(id)
