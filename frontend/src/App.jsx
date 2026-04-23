@@ -78,7 +78,15 @@ function AppInner() {
             onClick={() => setSidebarOpen(false)}
           />
           <Toolbar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} onToggle={() => setSidebarOpen(o => !o)} />
-          {!sidebarOpen && (
+          {sidebarOpen ? (
+            <button
+              className="sidebar-toggle-btn"
+              onClick={() => setSidebarOpen(false)}
+              aria-label="Close filters"
+            >
+              ‹
+            </button>
+          ) : (
             <button
               className="sidebar-reopen-btn"
               onClick={() => setSidebarOpen(true)}

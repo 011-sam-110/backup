@@ -255,10 +255,6 @@ export default function Toolbar({ isOpen, onClose, onToggle }) {
   return (
     <>
       <aside className={`sidebar${isOpen ? ' sidebar--open' : ' sidebar--closed'}`}>
-        {/* Desktop collapse toggle */}
-        <button className="sidebar-toggle-btn" onClick={onToggle} aria-label="Toggle sidebar">
-          {isOpen ? '‹' : '›'}
-        </button>
         {/* Header */}
         <div style={{
           padding: '12px 12px 10px',

@@ -634,7 +634,7 @@ select.filter-input option {
 
 .sidebar-toggle-btn {
   position: absolute;
-  right: -18px;
+  left: 262px;
   top: 12px;
   width: 36px;
   height: 36px;
