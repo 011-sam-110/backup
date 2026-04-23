@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 from log_setup import setup_logging
 from scraper import scrape, scrape_targeted
 import db
+from export import export_reports
 
 load_dotenv()
 setup_logging()
@@ -341,6 +342,17 @@ def targeted_job(minutes: int):
         _scrape_lock.release()
 
 
+def export_job():
+    """Daily Excel report export — all sites + one file per group."""
+    try:
+        paths = export_reports()
+        log.info("Daily export complete: %d file(s) generated", len(paths))
+        for p in paths:
+            log.info("  %s", p)
+    except Exception as exc:
+        log.error("Daily export failed: %s", exc)
+
+
 if __name__ == "__main__":
     log.info("Scheduler starting — interval %d min, DB: %s", INTERVAL_MINUTES, db.DB_PATH)
     scheduler = BlockingScheduler()
@@ -348,6 +360,7 @@ if __name__ == "__main__":
     for _m in range(1, 6):
         scheduler.add_job(targeted_job, "interval", minutes=_m, max_instances=1,
                           kwargs={"minutes": _m}, id=f"targeted_{_m}min")
+    scheduler.add_job(export_job, "cron", hour=6, minute=0, id="daily_export", max_instances=1)
     threading.Thread(target=_refresh_loop, daemon=True).start()
     job()
     scheduler.start()
