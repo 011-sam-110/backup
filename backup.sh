@@ -13,7 +13,7 @@
 set -euo pipefail
 
 DB_PATH="${DB_PATH:-/opt/jamie_dad/chargers.db}"
-BUCKET="${R2_BUCKET:-jamie-dad-backups}"
+BUCKET="${R2_BUCKET:-ev-scraper}"
 DATE=$(date -u +%Y-%m-%d)
 TMP="/tmp/chargers_${DATE}.db"
 
