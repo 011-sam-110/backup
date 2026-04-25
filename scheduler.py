@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 from log_setup import setup_logging
 from scraper import scrape, scrape_targeted
 import db
-from export import export_reports
+from export import export_reports, export_interval_comparison
 
 load_dotenv()
 setup_logging()
@@ -343,10 +343,11 @@ def targeted_job(minutes: int):
 
 
 def export_job():
-    """Daily Excel report export — all sites + one file per group."""
+    """Daily Excel report export — all sites + per-group + interval comparison."""
     try:
         paths = export_reports()
-        log.info("Daily export complete: %d file(s) generated", len(paths))
+        paths += export_interval_comparison()
+        log.info("Daily export complete: %d file(s)", len(paths))
         for p in paths:
             log.info("  %s", p)
     except Exception as exc:

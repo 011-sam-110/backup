@@ -3,7 +3,7 @@ import logging
 import re
 import sqlite3
 from calendar import monthrange
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from openpyxl import Workbook
@@ -254,6 +254,135 @@ def _build_workbook(data: dict) -> Workbook:
     return wb
 
 
+def _derive_interval_series(base: list, interval_minutes: int) -> dict:
+    """Return {boundary_dt: (charging_count, util_pct_raw)} for each N-min boundary."""
+    if not base:
+        return {}
+    tol = timedelta(seconds=interval_minutes * 30)
+    step = timedelta(minutes=interval_minutes)
+    first_dt = base[0][0].replace(second=0, microsecond=0)
+    last_dt = base[-1][0]
+    result = {}
+    boundary = first_dt
+    while boundary <= last_dt + tol:
+        candidates = [(abs(r[0] - boundary), r) for r in base if abs(r[0] - boundary) <= tol]
+        if candidates:
+            _, nearest = min(candidates, key=lambda x: x[0])
+            result[boundary] = (nearest[1], nearest[2])
+        boundary += step
+    return result
+
+
+def _build_interval_workbook(hub_name: str, intervals: list[int], snaps) -> Workbook:
+    base = []
+    for s in snaps:
+        raw = s["scraped_at"].replace("Z", "+00:00")
+        dt = datetime.fromisoformat(raw)
+        base.append((dt, s["charging_count"], s["utilisation_pct"]))
+
+    derived_maps: dict[int, dict] = {}
+    for interval in intervals[1:]:
+        derived_maps[interval] = _derive_interval_series(base, interval)
+
+    wb = Workbook()
+    pct = NamedStyle(name=_PCT_STYLE, number_format=_PCT_FMT)
+    wb.add_named_style(pct)
+    ws = wb.active
+    ws.title = hub_name[:31]
+
+    # Header row
+    _sh(ws, 1, 1, "Timestamp")
+    col = 2
+    for i in intervals:
+        _sh(ws, 1, col, f"Charging ({i}m)")
+        _sh(ws, 1, col + 1, f"Util% ({i}m)")
+        col += 2
+
+    # Data rows
+    base_tol = timedelta(seconds=intervals[0] * 30)
+    for row_i, (dt, charging, util_raw) in enumerate(base, start=2):
+        ws.cell(row=row_i, column=1, value=dt.time())
+        col = 2
+        # Base interval (first)
+        ws.cell(row=row_i, column=col, value=charging)
+        c = ws.cell(row=row_i, column=col + 1, value=util_raw / 100.0)
+        c.style = _PCT_STYLE
+        col += 2
+        # Coarser intervals
+        for interval in intervals[1:]:
+            tol = timedelta(seconds=interval * 30)
+            dm = derived_maps[interval]
+            match = next((v for b, v in dm.items() if abs(dt - b) <= tol), None)
+            if match:
+                ws.cell(row=row_i, column=col, value=match[0])
+                c = ws.cell(row=row_i, column=col + 1, value=match[1] / 100.0)
+                c.style = _PCT_STYLE
+            else:
+                ws.cell(row=row_i, column=col, value="")
+                ws.cell(row=row_i, column=col + 1, value="")
+            col += 2
+
+    ws.freeze_panes = "B2"
+    ws.column_dimensions[get_column_letter(1)].width = 12
+    for i in range(len(intervals)):
+        ws.column_dimensions[get_column_letter(2 + i * 2)].width = 14
+        ws.column_dimensions[get_column_letter(3 + i * 2)].width = 10
+
+    return wb
+
+
+def export_interval_comparison(output_dir: str | Path = "exports") -> list[Path]:
+    output_dir = Path(output_dir)
+    output_dir.mkdir(exist_ok=True)
+    today_str = date.today().strftime("%Y-%m-%d")
+    window_start = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+    generated: list[Path] = []
+
+    con = sqlite3.connect(db.DB_PATH)
+    con.row_factory = sqlite3.Row
+
+    hub_rows = con.execute("""
+        SELECT DISTINCT h.uuid, h.hub_name
+        FROM hubs h
+        JOIN group_hubs gh ON gh.hub_uuid = h.uuid
+        JOIN groups g ON g.id = gh.group_id
+        WHERE g.scrape_interval IS NOT NULL
+        ORDER BY h.hub_name
+    """).fetchall()
+
+    for hub in hub_rows:
+        uuid, name = hub["uuid"], hub["hub_name"] or hub["uuid"]
+
+        interval_rows = con.execute("""
+            SELECT DISTINCT g.scrape_interval
+            FROM groups g
+            JOIN group_hubs gh ON gh.group_id = g.id
+            WHERE gh.hub_uuid = ? AND g.scrape_interval IS NOT NULL
+            ORDER BY g.scrape_interval
+        """, (uuid,)).fetchall()
+        intervals = [r["scrape_interval"] for r in interval_rows]
+        if not intervals:
+            continue
+
+        snaps = con.execute("""
+            SELECT scraped_at, charging_count, utilisation_pct
+            FROM snapshots
+            WHERE hub_uuid = ? AND source = 'targeted' AND scraped_at >= ?
+            ORDER BY scraped_at
+        """, (uuid, window_start)).fetchall()
+        if not snaps:
+            continue
+
+        wb = _build_interval_workbook(name, intervals, snaps)
+        path = output_dir / f"interval_comparison_{_slug(name)}_{today_str}.xlsx"
+        wb.save(path)
+        log.info("Saved %s (%d rows, intervals %s)", path, len(snaps), intervals)
+        generated.append(path)
+
+    con.close()
+    return generated
+
+
 def export_reports(output_dir: str | Path = "exports") -> list[Path]:
     output_dir = Path(output_dir)
     output_dir.mkdir(exist_ok=True)
@@ -294,4 +423,6 @@ def export_reports(output_dir: str | Path = "exports") -> list[Path]:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     for p in export_reports():
+        print(p)
+    for p in export_interval_comparison():
         print(p)
