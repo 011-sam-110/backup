@@ -1,31 +1,115 @@
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend,
+  ResponsiveContainer, ReferenceLine, Brush, Legend,
 } from 'recharts'
 
-const INTERVAL_COLORS = ['#4472C4', '#10b981', '#f59e0b', '#e11d48', '#8b5cf6']
-const INTERVAL_DASH   = ['', '5 5', '2 4', '8 3', '3 6']
-
-const CustomTooltip = ({ active, payload, label, intervals }) => {
+const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
+  const util     = payload.find(p => p.dataKey === 'util')
+  const charging = payload.find(p => p.dataKey === 'charging')
   return (
     <div style={{
-      background: '#fff', border: '1px solid #E5E7EB',
+      background: '#FFFFFF', border: '1px solid #E5E7EB',
       borderRadius: 4, padding: '10px 14px', fontSize: 13,
+      fontFamily: 'Inter, sans-serif',
     }}>
-      <div style={{ color: '#6B7280', marginBottom: 6 }}>{label}</div>
-      {intervals.map((iv, i) => {
-        const c = payload.find(p => p.dataKey === `c_${iv}`)
-        const u = payload.find(p => p.dataKey === `u_${iv}`)
-        if (!c && !u) return null
-        return (
-          <div key={iv} style={{ color: INTERVAL_COLORS[i % INTERVAL_COLORS.length], marginBottom: 2 }}>
-            <strong>{iv}m:</strong>{' '}
-            {c?.value != null ? `${c.value} charging` : '—'}
-            {u?.value != null ? ` · ${u.value}%` : ''}
-          </div>
-        )
-      })}
+      <div style={{ color: '#6B7280', marginBottom: 4 }}>{label}</div>
+      {util && (
+        <div style={{ color: '#2563EB', fontWeight: 600 }}>
+          Utilisation: {util.value}%
+        </div>
+      )}
+      {charging && (
+        <div style={{ color: '#10b981' }}>
+          Charging: {charging.value}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function IntervalChart({ intervalMin, rows }) {
+  const data = rows
+    .filter(r => r[`c_${intervalMin}`] != null)
+    .map(r => ({ ts: r.ts, util: r[`u_${intervalMin}`], charging: r[`c_${intervalMin}`] }))
+
+  if (!data.length) {
+    return (
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text-muted)', marginBottom: 8 }}>
+          {intervalMin}-Minute Interval
+        </div>
+        <div className="empty">No data for this interval in this window yet.</div>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ marginBottom: 36 }}>
+      <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text-muted)', marginBottom: 8 }}>
+        {intervalMin}-Minute Interval — {data.length} data points
+      </div>
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart data={data} margin={{ top: 5, right: 20, bottom: 30, left: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+          <XAxis
+            dataKey="ts"
+            tick={{ fill: '#6B7280', fontSize: 11, fontFamily: 'Inter, sans-serif' }}
+            axisLine={{ stroke: '#E5E7EB' }}
+            tickLine={false}
+            interval="preserveStartEnd"
+          />
+          <YAxis
+            yAxisId="pct"
+            domain={[0, 100]}
+            tick={{ fill: '#6B7280', fontSize: 11, fontFamily: 'Inter, sans-serif' }}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={v => `${v}%`}
+          />
+          <YAxis
+            yAxisId="count"
+            orientation="right"
+            tick={{ fill: '#6B7280', fontSize: 11, fontFamily: 'Inter, sans-serif' }}
+            axisLine={false}
+            tickLine={false}
+            allowDecimals={false}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Legend wrapperStyle={{ fontSize: 11, fontFamily: 'Inter, sans-serif', color: '#6B7280', paddingBottom: 4 }} />
+          <ReferenceLine yAxisId="pct" y={50} stroke="#f59e0b" strokeDasharray="4 4" opacity={0.4} />
+          <ReferenceLine yAxisId="pct" y={80} stroke="#ef4444" strokeDasharray="4 4" opacity={0.4} />
+          <Line
+            yAxisId="pct"
+            type="monotone"
+            dataKey="util"
+            stroke="#2563EB"
+            strokeWidth={2}
+            dot={false}
+            name="Utilisation %"
+            isAnimationActive={false}
+          />
+          <Line
+            yAxisId="count"
+            type="monotone"
+            dataKey="charging"
+            stroke="#10b981"
+            strokeWidth={1.5}
+            dot={false}
+            strokeDasharray="4 2"
+            name="Charging count"
+            isAnimationActive={false}
+          />
+          <Brush
+            dataKey="ts"
+            height={24}
+            stroke="#E5E7EB"
+            fill="#F9FAFB"
+            travellerWidth={8}
+            travellerStyle={{ fill: '#0056b3' }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
     </div>
   )
 }
@@ -37,104 +121,14 @@ export default function IntervalComparisonChart({ data }) {
     return <div className="empty">No targeted snapshot data for this hub in this window.</div>
   }
 
-  // Thin the X-axis ticks — show one every ~15 rows to avoid crowding
-  const tickEvery = Math.max(1, Math.floor(rows.length / 20))
-  const xTicks = rows.filter((_, i) => i % tickEvery === 0).map(r => r.ts)
-
   return (
     <div>
-      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>
-        {hub_name} — {rows.length} base snapshots
+      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 24 }}>
+        {hub_name} — {rows.length} base snapshots · {intervals.length} interval{intervals.length !== 1 ? 's' : ''} configured
       </div>
-
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text-muted)', marginBottom: 8 }}>
-          Charging Count
-        </div>
-        <ResponsiveContainer width="100%" height={280}>
-          <LineChart data={rows} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-            <XAxis
-              dataKey="ts"
-              ticks={xTicks}
-              tick={{ fontSize: 11, fill: '#9CA3AF' }}
-              tickLine={false}
-            />
-            <YAxis
-              tick={{ fontSize: 11, fill: '#9CA3AF' }}
-              tickLine={false}
-              axisLine={false}
-              allowDecimals={false}
-              width={32}
-            />
-            <Tooltip content={<CustomTooltip intervals={intervals} />} />
-            <Legend
-              formatter={(val) => {
-                const m = val.match(/^c_(\d+)$/)
-                return m ? `${m[1]}m interval` : val
-              }}
-              wrapperStyle={{ fontSize: 12 }}
-            />
-            {intervals.map((iv, i) => (
-              <Line
-                key={`c_${iv}`}
-                dataKey={`c_${iv}`}
-                name={`c_${iv}`}
-                stroke={INTERVAL_COLORS[i % INTERVAL_COLORS.length]}
-                strokeWidth={i === 0 ? 2 : 1.5}
-                strokeDasharray={INTERVAL_DASH[i % INTERVAL_DASH.length]}
-                dot={false}
-                connectNulls={false}
-                isAnimationActive={false}
-              />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-
-      <div>
-        <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text-muted)', marginBottom: 8 }}>
-          Utilisation %
-        </div>
-        <ResponsiveContainer width="100%" height={220}>
-          <LineChart data={rows} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-            <XAxis
-              dataKey="ts"
-              ticks={xTicks}
-              tick={{ fontSize: 11, fill: '#9CA3AF' }}
-              tickLine={false}
-            />
-            <YAxis
-              tick={{ fontSize: 11, fill: '#9CA3AF' }}
-              tickLine={false}
-              axisLine={false}
-              width={36}
-              tickFormatter={v => `${v}%`}
-            />
-            <Tooltip
-              formatter={(v, name) => {
-                const m = name.match(/^u_(\d+)$/)
-                return [v != null ? `${v}%` : '—', m ? `${m[1]}m` : name]
-              }}
-              labelStyle={{ color: '#6B7280' }}
-            />
-            {intervals.map((iv, i) => (
-              <Line
-                key={`u_${iv}`}
-                dataKey={`u_${iv}`}
-                name={`u_${iv}`}
-                stroke={INTERVAL_COLORS[i % INTERVAL_COLORS.length]}
-                strokeWidth={i === 0 ? 2 : 1.5}
-                strokeDasharray={INTERVAL_DASH[i % INTERVAL_DASH.length]}
-                dot={false}
-                connectNulls={false}
-                isAnimationActive={false}
-              />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+      {intervals.map(iv => (
+        <IntervalChart key={iv} intervalMin={iv} rows={rows} />
+      ))}
     </div>
   )
 }
