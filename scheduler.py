@@ -265,7 +265,9 @@ def _build_failure_card(n: int, max_retries: int, duration: float, exc: Exceptio
 
 def job():
     global run_count, next_run_at, scraping, _last_render_lines, _stats_cached_at
-    _scrape_lock.acquire()
+    if not _scrape_lock.acquire(timeout=120):
+        log.error("job(): could not acquire scrape lock within 120s — targeted scrape may be stuck. Skipping this run.")
+        return
     try:
         run_count += 1
         scraping = True
@@ -334,7 +336,7 @@ def targeted_job(minutes: int):
             return
         log.info("Targeted scrape (%d min): %d hubs", minutes, len(uuids))
         try:
-            count = asyncio.run(asyncio.wait_for(scrape_targeted(uuids), timeout=SCRAPE_TIMEOUT_S))
+            count = asyncio.run(asyncio.wait_for(scrape_targeted(uuids), timeout=90))
             log.info("Targeted scrape (%d min): %d snapshots saved", minutes, count)
         except Exception as exc:
             log.error("Targeted scrape (%d min) failed: %s", minutes, exc)
