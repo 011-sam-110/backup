@@ -386,13 +386,13 @@ def export_interval_comparison(output_dir: str | Path = "exports") -> list[Path]
 def export_reports(output_dir: str | Path = "exports") -> list[Path]:
     output_dir = Path(output_dir)
     output_dir.mkdir(exist_ok=True)
-    today_str = date.today().strftime("%Y-%m-%d")
+    month_str = date.today().strftime("%Y-%m")
     generated: list[Path] = []
 
     log.info("Generating all-sites export...")
     data = _query_export_data(None)
     wb = _build_workbook(data)
-    path = output_dir / f"all_sites_{today_str}.xlsx"
+    path = output_dir / f"all_sites_{month_str}.xlsx"
     wb.save(path)
     log.info("Saved %s (%d hubs)", path, len(data["hubs"]))
     generated.append(path)
@@ -412,7 +412,7 @@ def export_reports(output_dir: str | Path = "exports") -> list[Path]:
         log.info("Generating export for group '%s' (%d hubs)...", group["name"], len(uuids))
         data = _query_export_data(uuids)
         wb = _build_workbook(data)
-        path = output_dir / f"{_slug(group['name'])}_{today_str}.xlsx"
+        path = output_dir / f"{_slug(group['name'])}_{month_str}.xlsx"
         wb.save(path)
         log.info("Saved %s", path)
         generated.append(path)
