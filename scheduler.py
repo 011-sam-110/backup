@@ -38,7 +38,8 @@ run_count = 0
 scraping = False          # suppresses auto-refresh while live scraper output is printing
 
 _IS_TTY            = sys.stdout.isatty()  # True in interactive terminal, False in Docker/pipe
-_scrape_lock       = threading.Lock()     # prevents job() and fast_job() writing DB concurrently
+_scrape_lock       = threading.Lock()     # prevents concurrent full scrapes
+_targeted_lock     = threading.Lock()     # prevents concurrent targeted scrapes (independent of full scrape)
 _last_render_lines: int   = 0             # lines printed in last render_screen() call
 _cached_stats: dict | None = None         # last db.get_stats() result
 _stats_cached_at: float    = 0.0          # time.monotonic() when cache was filled
@@ -327,8 +328,8 @@ def targeted_job(minutes: int):
     if db.get_setting("targeted_scraping_enabled", "1") != "1":
         log.debug("Targeted scrape (%d min) skipped — targeted scraping disabled", minutes)
         return
-    if not _scrape_lock.acquire(blocking=False):
-        log.debug("Targeted scrape (%d min) skipped — full scrape in progress", minutes)
+    if not _targeted_lock.acquire(blocking=False):
+        log.warning("Targeted scrape (%d min) skipped — previous targeted scrape still running", minutes)
         return
     try:
         uuids = db.get_hubs_for_scrape_interval(minutes)
@@ -341,7 +342,7 @@ def targeted_job(minutes: int):
         except Exception as exc:
             log.error("Targeted scrape (%d min) failed: %s", minutes, exc)
     finally:
-        _scrape_lock.release()
+        _targeted_lock.release()
 
 
 def export_job():
