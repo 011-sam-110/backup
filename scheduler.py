@@ -15,7 +15,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from dotenv import load_dotenv
 
 from log_setup import setup_logging
-from scraper import scrape, scrape_targeted
+from scraper import scrape
 import db
 from export import export_reports, export_interval_comparison
 
@@ -39,7 +39,6 @@ scraping = False          # suppresses auto-refresh while live scraper output is
 
 _IS_TTY            = sys.stdout.isatty()  # True in interactive terminal, False in Docker/pipe
 _scrape_lock       = threading.Lock()     # prevents concurrent full scrapes
-_targeted_lock     = threading.Lock()     # prevents concurrent targeted scrapes (independent of full scrape)
 _last_render_lines: int   = 0             # lines printed in last render_screen() call
 _cached_stats: dict | None = None         # last db.get_stats() result
 _stats_cached_at: float    = 0.0          # time.monotonic() when cache was filled
@@ -323,27 +322,6 @@ def job():
         _scrape_lock.release()
 
 
-def targeted_job(minutes: int):
-    """Targeted scrape for all groups configured at the given interval (1–5 min)."""
-    if db.get_setting("targeted_scraping_enabled", "1") != "1":
-        log.debug("Targeted scrape (%d min) skipped — targeted scraping disabled", minutes)
-        return
-    if not _targeted_lock.acquire(blocking=False):
-        log.warning("Targeted scrape (%d min) skipped — previous targeted scrape still running", minutes)
-        return
-    try:
-        uuids = db.get_hubs_for_scrape_interval(minutes)
-        if not uuids:
-            return
-        log.info("Targeted scrape (%d min): %d hubs", minutes, len(uuids))
-        try:
-            count = asyncio.run(asyncio.wait_for(scrape_targeted(uuids), timeout=90))
-            log.info("Targeted scrape (%d min): %d snapshots saved", minutes, count)
-        except Exception as exc:
-            log.error("Targeted scrape (%d min) failed: %s", minutes, exc)
-    finally:
-        _targeted_lock.release()
-
 
 def export_job():
     """Daily Excel report export — all sites + per-group + interval comparison."""
@@ -361,9 +339,6 @@ if __name__ == "__main__":
     log.info("Scheduler starting — interval %d min, DB: %s", INTERVAL_MINUTES, db.DB_PATH)
     scheduler = BlockingScheduler()
     scheduler.add_job(job, "interval", minutes=INTERVAL_MINUTES, max_instances=1)
-    for _m in range(1, 6):
-        scheduler.add_job(targeted_job, "interval", minutes=_m, max_instances=1,
-                          kwargs={"minutes": _m}, id=f"targeted_{_m}min")
     scheduler.add_job(export_job, "cron", hour=6, minute=0, id="daily_export", max_instances=1)
     threading.Thread(target=_refresh_loop, daemon=True).start()
     job()

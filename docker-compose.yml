@@ -39,3 +39,14 @@ services:
       - TERM=xterm
     env_file: .env
     restart: unless-stopped
+
+  targeted-scraper:
+    build: .
+    command: python targeted_scraper.py
+    volumes:
+      - ./chargers.db:/app/chargers.db
+      - ./proxies.txt:/app/proxies.txt:ro
+      - ./logs:/app/logs
+      - ./bearer_token.cache:/app/bearer_token.cache
+    env_file: .env
+    restart: unless-stopped
