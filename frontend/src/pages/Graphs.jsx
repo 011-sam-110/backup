@@ -8,6 +8,7 @@ import HubDetailModal from '../components/HubDetailModal'
 import PageLoader from '../components/PageLoader'
 import CustomRangePanel from '../components/charts/CustomRangePanel'
 import HubPerformanceTable from '../components/charts/HubPerformanceTable'
+import IntervalComparisonChart from '../components/charts/IntervalComparisonChart'
 import ProjectionsPanel from '../components/ProjectionsPanel'
 import { useFilters, applyFilters } from '../context/FilterContext'
 import { authFetch } from '../context/AuthContext'
@@ -21,6 +22,7 @@ const CHARTS = [
   { key: 'reliability', label: 'Network Composition', icon: '◑' },
   { key: 'hourly',      label: 'Day Pattern',         icon: '◷' },
   { key: 'performance', label: 'Performance',         icon: '◈' },
+  { key: 'interval',   label: 'Interval Comparison', icon: '⧗' },
 ]
 
 function exportTrendData(data) {
@@ -47,6 +49,12 @@ export default function Graphs() {
   const [loading, setLoading] = useState(true)
   const [selectedHub, setSelectedHub] = useState(null)
   const [activeChart, setActiveChart] = useState('hubs')
+
+  const [intervalHubs, setIntervalHubs] = useState([])
+  const [intervalHubUuid, setIntervalHubUuid] = useState('')
+  const [intervalHours, setIntervalHours] = useState(24)
+  const [intervalData, setIntervalData] = useState(null)
+  const [intervalLoading, setIntervalLoading] = useState(false)
 
   const filters = useFilters()
   const { analyticsParams, hubsUrl, setAvailableOperators,
@@ -100,6 +108,28 @@ export default function Graphs() {
   useEffect(() => {
     load(false)
   }, [dateRange, operatorFilter, connectorFilter, minKw, maxKw, minEvses, maxEvses, activeGroupIds]) // eslint-disable-line
+
+  // Fetch interval hubs when that tab is first selected
+  useEffect(() => {
+    if (activeChart !== 'interval') return
+    authFetch('/api/interval-hubs')
+      .then(r => r.json())
+      .then(hubs => {
+        setIntervalHubs(hubs)
+        if (hubs.length && !intervalHubUuid) setIntervalHubUuid(hubs[0].uuid)
+      })
+      .catch(() => {})
+  }, [activeChart]) // eslint-disable-line
+
+  // Fetch comparison data when hub or hours change
+  useEffect(() => {
+    if (!intervalHubUuid) return
+    setIntervalLoading(true)
+    authFetch(`/api/interval-comparison?hub_uuid=${intervalHubUuid}&hours=${intervalHours}`)
+      .then(r => r.json())
+      .then(d => { setIntervalData(d); setIntervalLoading(false) })
+      .catch(() => setIntervalLoading(false))
+  }, [intervalHubUuid, intervalHours])
 
   if (loading) return <PageLoader text="Loading charts…" />
 
@@ -285,6 +315,39 @@ export default function Graphs() {
               performanceData.length === 0
                 ? <div className="empty">No performance data in this window.</div>
                 : <HubPerformanceTable data={performanceData} onHubClick={setSelectedHub} />
+            )}
+
+            {activeChart === 'interval' && (
+              intervalHubs.length === 0
+                ? <div className="empty">No hubs have targeted scraping configured. Add a hub to a group with a scrape interval set.</div>
+                : <>
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 20, flexWrap: 'wrap' }}>
+                      <select
+                        value={intervalHubUuid}
+                        onChange={e => setIntervalHubUuid(e.target.value)}
+                        style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13 }}
+                      >
+                        {intervalHubs.map(h => (
+                          <option key={h.uuid} value={h.uuid}>{h.hub_name || h.uuid}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={intervalHours}
+                        onChange={e => setIntervalHours(Number(e.target.value))}
+                        style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13 }}
+                      >
+                        {[2, 6, 12, 24, 48].map(h => (
+                          <option key={h} value={h}>Last {h}h</option>
+                        ))}
+                      </select>
+                    </div>
+                    {intervalLoading
+                      ? <div className="empty">Loading…</div>
+                      : intervalData
+                        ? <IntervalComparisonChart data={intervalData} />
+                        : <div className="empty">Select a hub above.</div>
+                    }
+                  </>
             )}
           </div>
 

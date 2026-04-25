@@ -354,6 +354,95 @@ def export_snapshots(hours: int = Query(default=24, ge=1, le=8760),
     return db.get_all_snapshots(hours, start_dt=start_dt, end_dt=end_dt)
 
 
+@app.get("/api/interval-hubs")
+def interval_hubs():
+    """Return hubs that have at least one group with scrape_interval configured."""
+    con = sqlite3.connect(db.DB_PATH)
+    con.row_factory = sqlite3.Row
+    rows = con.execute("""
+        SELECT DISTINCT h.uuid, h.hub_name
+        FROM hubs h
+        JOIN group_hubs gh ON gh.hub_uuid = h.uuid
+        JOIN groups g ON g.id = gh.group_id
+        WHERE g.scrape_interval IS NOT NULL
+        ORDER BY h.hub_name
+    """).fetchall()
+    con.close()
+    return [dict(r) for r in rows]
+
+
+@app.get("/api/interval-comparison")
+def interval_comparison(hub_uuid: str = Query(...), hours: int = Query(default=24, ge=1, le=168)):
+    """Interval comparison data for a hub — base series + derived coarser-interval views."""
+    from datetime import datetime, timedelta, timezone
+    from export import _derive_interval_series
+
+    con = sqlite3.connect(db.DB_PATH)
+    con.row_factory = sqlite3.Row
+
+    hub = con.execute("SELECT hub_name FROM hubs WHERE uuid = ?", (hub_uuid,)).fetchone()
+    if not hub:
+        con.close()
+        raise HTTPException(status_code=404, detail="Hub not found")
+    hub_name = hub["hub_name"] or hub_uuid
+
+    interval_rows = con.execute("""
+        SELECT DISTINCT g.scrape_interval
+        FROM groups g
+        JOIN group_hubs gh ON gh.group_id = g.id
+        WHERE gh.hub_uuid = ? AND g.scrape_interval IS NOT NULL
+        ORDER BY g.scrape_interval
+    """, (hub_uuid,)).fetchall()
+    intervals = [r["scrape_interval"] for r in interval_rows]
+
+    if not intervals:
+        con.close()
+        return {"hub_name": hub_name, "intervals": [], "rows": []}
+
+    window_start = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+    snaps = con.execute("""
+        SELECT scraped_at, charging_count, utilisation_pct
+        FROM snapshots
+        WHERE hub_uuid = ? AND source = 'targeted' AND scraped_at >= ?
+        ORDER BY scraped_at
+    """, (hub_uuid, window_start)).fetchall()
+    con.close()
+
+    if not snaps:
+        return {"hub_name": hub_name, "intervals": intervals, "rows": []}
+
+    base = []
+    for s in snaps:
+        raw = s["scraped_at"].replace("Z", "+00:00")
+        dt = datetime.fromisoformat(raw)
+        base.append((dt, s["charging_count"], s["utilisation_pct"]))
+
+    derived_maps = {}
+    for interval in intervals[1:]:
+        derived_maps[interval] = _derive_interval_series(base, interval)
+
+    rows = []
+    for dt, charging, util_raw in base:
+        row = {
+            "ts": dt.strftime("%H:%M"),
+            f"c_{intervals[0]}": charging,
+            f"u_{intervals[0]}": round(util_raw, 1) if util_raw is not None else None,
+        }
+        for interval in intervals[1:]:
+            tol = timedelta(seconds=interval * 30)
+            dm = derived_maps[interval]
+            match = next((v for b, v in dm.items() if abs(dt - b) <= tol), None)
+            if match:
+                row[f"c_{interval}"] = match[0]
+                row[f"u_{interval}"] = round(match[1], 1) if match[1] is not None else None
+            else:
+                row[f"c_{interval}"] = None
+                row[f"u_{interval}"] = None
+        rows.append(row)
+
+    return {"hub_name": hub_name, "intervals": intervals, "rows": rows}
+
+
 @app.get("/api/exports")
 def list_r2_exports():
     """List archived Excel exports from R2 with 1-hour pre-signed download URLs."""
