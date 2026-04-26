@@ -103,7 +103,6 @@ async def _launch(pw):
     )
     page = await context.new_page()
     await page.add_init_script(_STEALTH_JS)
-    await page.route("**/*", _block_junk)
     log.info("Browser launched")
     return browser, page
 
