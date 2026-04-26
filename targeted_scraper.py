@@ -2,20 +2,18 @@
 Standalone targeted scraper — separate process from scheduler.py.
 
 Bearer token strategy:
-  - On startup (and every ~55 min), navigate to zapmap.com and use
-    page.expect_request() to wait however long it takes for zapmap's own
-    JS to fire an API call — captures the bearer from that request.
-  - Injects the token directly into scraper._last_bearer so that all
-    subsequent scrape_targeted() calls skip the page load entirely and
-    just hit the API.
-  - Caches the token to disk so a scheduler restart can also pick it up.
+  - On startup (and every ~55 min), navigate to zapmap.com using the exact
+    same pattern as scrape() in scraper.py: page.on("request") listener +
+    12-second wait after domcontentloaded. This is proven to capture the token.
+  - Injects the token into scraper._last_bearer so subsequent scrape_targeted()
+    calls skip the page load entirely and just hit the API directly.
+  - Caches the token to disk so a restart can pick it up immediately.
 """
 import asyncio
 import json
 import logging
 import os
 import time
-from datetime import datetime, timezone
 from pathlib import Path
 
 from playwright.async_api import async_playwright
@@ -24,7 +22,7 @@ from dotenv import load_dotenv
 import db
 import scraper as scraper_mod
 from log_setup import setup_logging
-from scraper import scrape_targeted
+from scraper import scrape_targeted, _pick_proxy
 
 load_dotenv()
 setup_logging(log_file="logs/targeted_scraper.log")
@@ -53,12 +51,9 @@ _STEALTH_JS = """
 
 async def _acquire_bearer() -> str | None:
     """
-    Load zapmap.com in a fresh browser and wait (up to 60 s) for zapmap's
-    own JavaScript to fire an authenticated API call. Capture the bearer
-    token from that request's Authorization header.
-
-    Uses page.expect_request() so we never rely on a fixed sleep — we wait
-    exactly as long as the page needs, no more.
+    Navigate to zapmap.com and capture the bearer token using the identical
+    pattern to scrape() in scraper.py: page.on("request") + 12s wait.
+    That is the only approach proven to work on this server.
     """
     log.info("Acquiring bearer token from zapmap.com...")
     bearer = None
@@ -72,6 +67,7 @@ async def _acquire_bearer() -> str | None:
                 "--disable-dev-shm-usage",
                 "--enable-unsafe-swiftshader",
             ],
+            proxy=_pick_proxy(),
         )
         context = await browser.new_context(
             viewport={"width": 1280, "height": 720},
@@ -84,38 +80,33 @@ async def _acquire_bearer() -> str | None:
         page = await context.new_page()
         await page.add_init_script(_STEALTH_JS)
 
+        def on_request(request):
+            nonlocal bearer
+            if bearer or "api.zap-map.io" not in request.url:
+                return
+            auth = request.headers.get("authorization", "")
+            if auth.startswith("Bearer "):
+                bearer = auth
+
+        page.on("request", on_request)
+
         try:
-            async with page.expect_request(
-                lambda r: (
-                    "api.zap-map.io" in r.url
-                    and r.headers.get("authorization", "").startswith("Bearer ")
-                ),
-                timeout=60_000,
-            ) as req_info:
-                await page.goto(
-                    "https://www.zapmap.com/live/",
-                    wait_until="domcontentloaded",
-                    timeout=90_000,
-                )
-
-            req = await req_info.value
-            bearer = req.headers.get("authorization")
-            log.info("Bearer token captured successfully")
-
+            await page.goto(
+                "https://www.zapmap.com/live/",
+                wait_until="domcontentloaded",
+                timeout=90_000,
+            )
+            await page.wait_for_timeout(12_000)  # same as scrape() line 406
         except Exception as exc:
-            log.warning("Bearer acquisition failed: %s", exc)
+            log.warning("Bearer page load failed: %s", exc)
         finally:
             await browser.close()
 
+    if bearer:
+        log.info("Bearer token captured successfully")
+    else:
+        log.warning("Bearer token not captured after 12s wait")
     return bearer
-
-
-def _bearer_still_valid() -> bool:
-    """Check whether scraper_mod's in-memory bearer is still within its TTL."""
-    if not scraper_mod._last_bearer:
-        return False
-    age = time.monotonic() - scraper_mod._bearer_cached_at
-    return age < BEARER_MAX_AGE_S
 
 
 def _write_cache(token: str) -> None:
@@ -125,11 +116,14 @@ def _write_cache(token: str) -> None:
         log.warning("Failed to write bearer cache: %s", e)
 
 
+def _bearer_still_valid() -> bool:
+    if not scraper_mod._last_bearer:
+        return False
+    return (time.monotonic() - scraper_mod._bearer_cached_at) < BEARER_MAX_AGE_S
+
+
 async def ensure_bearer() -> bool:
-    """
-    Guarantee scraper_mod._last_bearer is populated and fresh.
-    Returns True if a valid bearer is available, False if acquisition failed.
-    """
+    """Guarantee scraper_mod._last_bearer is fresh. Returns False if acquisition fails."""
     if _bearer_still_valid():
         return True
 
@@ -137,7 +131,6 @@ async def ensure_bearer() -> bool:
     if not token:
         return False
 
-    # Inject into scraper module so scrape_targeted() skips page load
     scraper_mod._last_bearer = token
     scraper_mod._bearer_cached_at = time.monotonic()
     _write_cache(token)
@@ -157,7 +150,6 @@ async def main():
             await asyncio.sleep(CYCLE_INTERVAL_S)
             continue
 
-        # Ensure we have a bearer before attempting any scrape
         if not await ensure_bearer():
             log.error("Could not obtain bearer token — skipping cycle %d", cycle)
             await asyncio.sleep(CYCLE_INTERVAL_S)
