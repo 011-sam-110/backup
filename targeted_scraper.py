@@ -2,12 +2,13 @@
 Standalone targeted scraper — separate process from scheduler.py.
 
 Bearer token strategy:
-  - On startup (and every ~55 min), navigate to zapmap.com using the exact
-    same pattern as scrape() in scraper.py: page.on("request") listener +
-    12-second wait after domcontentloaded. This is proven to capture the token.
-  - Injects the token into scraper._last_bearer so subsequent scrape_targeted()
-    calls skip the page load entirely and just hit the API directly.
-  - Caches the token to disk so a restart can pick it up immediately.
+  - On startup: read bearer_token.cache written by the scheduler's full scrape.
+    If valid (<55 min old) skip zapmap.com entirely and go straight to API calls.
+  - If cache is cold/expired: navigate to zapmap.com with the same stealth +
+    interaction pattern as scrape() (cookie consent, scroll) to pass Cloudflare.
+  - If direct acquisition also fails: poll the cache file for up to 2 min while
+    the scheduler's next run writes a fresh token.
+  - Caches every acquired token to disk for the next restart.
 """
 import asyncio
 import json
@@ -22,7 +23,7 @@ from dotenv import load_dotenv
 import db
 import scraper as scraper_mod
 from log_setup import setup_logging
-from scraper import scrape_targeted, _pick_proxy
+from scraper import scrape_targeted, _pick_proxy, _block_junk
 
 load_dotenv()
 setup_logging(log_file="logs/targeted_scraper.log")
@@ -50,13 +51,15 @@ _STEALTH_JS = """
 
 
 async def _acquire_bearer() -> str | None:
-    """
-    Navigate to zapmap.com and capture the bearer token using the identical
-    pattern to scrape() in scraper.py: page.on("request") + 12s wait.
-    That is the only approach proven to work on this server.
+    """Navigate to zapmap.com and capture the bearer token.
+
+    Mirrors scrape() interaction (route blocking, cookie consent, scroll) to
+    pass Cloudflare bot detection. Logs page URL/title and api request count
+    so it's immediately clear whether Cloudflare served a challenge page.
     """
     log.info("Acquiring bearer token from zapmap.com...")
     bearer = None
+    api_requests: list[str] = []
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
@@ -78,11 +81,15 @@ async def _acquire_bearer() -> str | None:
             ),
         )
         page = await context.new_page()
+        await page.route("**/*", _block_junk)
         await page.add_init_script(_STEALTH_JS)
 
         def on_request(request):
             nonlocal bearer
-            if bearer or "api.zap-map.io" not in request.url:
+            if "api.zap-map.io" not in request.url:
+                return
+            api_requests.append(request.url[:80])
+            if bearer:
                 return
             auth = request.headers.get("authorization", "")
             if auth.startswith("Bearer "):
@@ -96,16 +103,41 @@ async def _acquire_bearer() -> str | None:
                 wait_until="domcontentloaded",
                 timeout=90_000,
             )
-            await page.wait_for_timeout(12_000)  # same as scrape() line 406
+            log.info("Page loaded: url=%s title=%r", page.url, (await page.title())[:80])
+            await page.wait_for_timeout(12_000)
+
+            # Interaction mirrors scrape() — helps pass Cloudflare bot check
+            for sel in [
+                "#onetrust-accept-btn-handler",
+                "button:has-text('Allow all cookies')",
+                "button:has-text('Accept All')",
+                "button:has-text('Accept')",
+            ]:
+                try:
+                    await page.click(sel, timeout=3_000)
+                    log.info("Cookie consent dismissed")
+                    break
+                except Exception:
+                    pass
+
+            for _ in range(3):
+                await page.mouse.wheel(0, 400)
+                await page.wait_for_timeout(500)
+            await page.wait_for_timeout(8_000)
+
         except Exception as exc:
             log.warning("Bearer page load failed: %s", exc)
         finally:
+            log.info(
+                "Bearer acquisition done: api_requests=%d bearer=%s",
+                len(api_requests), "YES" if bearer else "NO",
+            )
+            if api_requests:
+                log.debug("api.zap-map.io requests seen: %s", api_requests[:5])
             await browser.close()
 
-    if bearer:
-        log.info("Bearer token captured successfully")
-    else:
-        log.warning("Bearer token not captured after 12s wait")
+    if not bearer:
+        log.warning("Bearer token not captured (api_requests=%d)", len(api_requests))
     return bearer
 
 
@@ -122,24 +154,83 @@ def _bearer_still_valid() -> bool:
     return (time.monotonic() - scraper_mod._bearer_cached_at) < BEARER_MAX_AGE_S
 
 
+def _load_bearer_from_cache() -> bool:
+    """Read bearer_token.cache (written by scheduler's full scrape) into memory.
+
+    Returns True if a valid, non-expired token was loaded.
+    Logs the specific reason for any failure so the next restart is diagnosable.
+    """
+    try:
+        if not BEARER_CACHE_FILE.exists():
+            log.info("Cache file not found: %s", BEARER_CACHE_FILE.resolve())
+            return False
+        raw = BEARER_CACHE_FILE.read_text().strip()
+        if not raw:
+            log.warning("Cache file is empty")
+            return False
+        data = json.loads(raw)
+        token = data.get("token", "")
+        ts    = float(data.get("ts", 0))
+        age_s = time.time() - ts
+        if not token:
+            log.warning("Cache file has no token field")
+            return False
+        if age_s >= BEARER_MAX_AGE_S:
+            log.warning("Cache token expired (age %.0fs / max %.0fs)", age_s, BEARER_MAX_AGE_S)
+            return False
+        scraper_mod._last_bearer = token
+        # Translate wall-clock age to monotonic so _bearer_still_valid() works correctly.
+        scraper_mod._bearer_cached_at = time.monotonic() - age_s
+        log.info("Bearer loaded from cache (age %.0fs)", age_s)
+        return True
+    except json.JSONDecodeError as exc:
+        log.warning("Cache file malformed: %s", exc)
+    except Exception as exc:
+        log.warning("Failed to read cache: %s", exc)
+    return False
+
+
 async def ensure_bearer() -> bool:
     """Guarantee scraper_mod._last_bearer is fresh. Returns False if acquisition fails."""
+    # 1. In-memory cache still valid (fast path — most cycles take this branch)
     if _bearer_still_valid():
         return True
 
-    token = await _acquire_bearer()
-    if not token:
-        return False
+    # 2. Disk cache written by scheduler's full scrape (runs every ~15 min)
+    if _load_bearer_from_cache():
+        return True
 
-    scraper_mod._last_bearer = token
-    scraper_mod._bearer_cached_at = time.monotonic()
-    _write_cache(token)
-    return True
+    # 3. Direct acquisition — loads zapmap.com with full interaction
+    log.info("Cache absent/expired — attempting direct acquisition...")
+    token = await _acquire_bearer()
+    if token:
+        scraper_mod._last_bearer = token
+        scraper_mod._bearer_cached_at = time.monotonic()
+        _write_cache(token)
+        return True
+
+    # 4. Direct acquisition failed (likely Cloudflare block) — poll the cache
+    #    file every 15s for up to 2 min while the scheduler's next run writes it
+    log.warning(
+        "Direct acquisition failed — polling cache for up to 120s "
+        "(scheduler writes every ~15 min)..."
+    )
+    for i in range(8):
+        await asyncio.sleep(15)
+        if _load_bearer_from_cache():
+            log.info("Cache populated after %ds wait", (i + 1) * 15)
+            return True
+        log.debug("Cache poll %d/8 — still empty/expired", i + 1)
+
+    log.error("Bearer token unavailable after 120s polling")
+    return False
 
 
 async def main():
     cycle = 0
     log.info("Targeted scraper starting — cycle %ds, DB: %s", CYCLE_INTERVAL_S, db.DB_PATH)
+    log.info("Bearer cache path: %s", BEARER_CACHE_FILE.resolve())
+    _load_bearer_from_cache()  # pre-warm from scheduler's cache before first cycle
 
     while True:
         cycle_start = time.monotonic()
