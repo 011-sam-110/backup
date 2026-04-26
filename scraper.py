@@ -315,6 +315,7 @@ async def scrape():
                     "--no-sandbox",
                     "--disable-dev-shm-usage",
                     "--enable-unsafe-swiftshader",
+                    "--no-zygote",
                 ],
                 proxy=proxy_cfg,
             )
@@ -619,8 +620,10 @@ async def scrape_targeted(uuids: list[str]) -> int:
     """Fetch status snapshots for a specific set of hub UUIDs (high-frequency mode).
 
     Launches a lightweight browser session — no bounding-box capture, no zooming.
-    Uses the module-level bearer token cache from the last full scrape as a fallback
-    if the page doesn't produce a fresh token within the initial wait.
+    When a valid cached bearer token exists, skips loading zapmap.com entirely
+    (new page starts at about:blank) to keep targeted runs fast and on-schedule.
+    Falls back to loading zapmap.com to obtain a fresh token only when the cache
+    is empty or expired.
 
     Returns the number of snapshots saved.
     """
@@ -629,7 +632,15 @@ async def scrape_targeted(uuids: list[str]) -> int:
     if not uuids:
         return 0
 
-    bearer_token: str | None = None
+    # Fast path: skip zapmap.com navigation when the cached token is still valid.
+    cached_age = time.monotonic() - _bearer_cached_at
+    skip_page_load = bool(_last_bearer and cached_age < BEARER_MAX_AGE_S)
+    bearer_token: str | None = _last_bearer if skip_page_load else None
+
+    if skip_page_load:
+        log.info("scrape_targeted: cached bearer token valid (age %.0fs) — skipping page load", cached_age)
+    else:
+        log.info("scrape_targeted: no valid cached token — navigating to zapmap.com/live/")
 
     async with async_playwright() as p:
         proxy_cfg = _pick_proxy()
@@ -640,6 +651,7 @@ async def scrape_targeted(uuids: list[str]) -> int:
                 "--no-sandbox",
                 "--disable-dev-shm-usage",
                 "--enable-unsafe-swiftshader",
+                "--no-zygote",
             ],
             proxy=proxy_cfg,
         )
@@ -654,49 +666,42 @@ async def scrape_targeted(uuids: list[str]) -> int:
         page = await context.new_page()
         await page.route("**/*", _block_junk)
 
-        def on_request(request):
-            nonlocal bearer_token
-            if bearer_token or "api.zap-map.io" not in request.url:
-                return
-            auth = request.headers.get("authorization", "")
-            if auth.startswith("Bearer "):
-                bearer_token = auth
+        if not skip_page_load:
+            def on_request(request):
+                nonlocal bearer_token
+                if bearer_token or "api.zap-map.io" not in request.url:
+                    return
+                auth = request.headers.get("authorization", "")
+                if auth.startswith("Bearer "):
+                    bearer_token = auth
 
-        page.on("request", on_request)
+            page.on("request", on_request)
 
-        await page.add_init_script("""
-            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
-            Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
-            Object.defineProperty(navigator, 'languages', {get: () => ['en-GB', 'en']});
-            Object.defineProperty(window, 'chrome', {
-                writable: true, enumerable: true, configurable: false,
-                value: {runtime: {}}
-            });
-            const _origQuery = window.navigator.permissions.query;
-            window.navigator.permissions.query = (p) =>
-                p.name === 'notifications'
-                    ? Promise.resolve({state: Notification.permission})
-                    : _origQuery(p);
-        """)
+            await page.add_init_script("""
+                Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+                Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
+                Object.defineProperty(navigator, 'languages', {get: () => ['en-GB', 'en']});
+                Object.defineProperty(window, 'chrome', {
+                    writable: true, enumerable: true, configurable: false,
+                    value: {runtime: {}}
+                });
+                const _origQuery = window.navigator.permissions.query;
+                window.navigator.permissions.query = (p) =>
+                    p.name === 'notifications'
+                        ? Promise.resolve({state: Notification.permission})
+                        : _origQuery(p);
+            """)
 
-        log.info("scrape_targeted: navigating to zapmap.com/live/")
-        await page.goto("https://www.zapmap.com/live/",
-                        wait_until="domcontentloaded", timeout=90_000)
-        # Short wait — just enough for the page to fire initial API requests
-        await page.wait_for_timeout(4_000)
+            await page.goto("https://www.zapmap.com/live/",
+                            wait_until="domcontentloaded", timeout=90_000)
+            await page.wait_for_timeout(4_000)
 
-        # Fall back to cached token if the page didn't produce a fresh one
-        if not bearer_token:
-            cached_age = time.monotonic() - _bearer_cached_at
-            if _last_bearer and cached_age < BEARER_MAX_AGE_S:
-                log.info("scrape_targeted: using cached bearer token (age %.0fs)", cached_age)
-                bearer_token = _last_bearer
-            else:
+            if not bearer_token:
                 log.warning("scrape_targeted: no bearer token available — skipping")
                 await browser.close()
                 return 0
 
-        # Update cache with the fresh token (if we got one from this session)
+        # Refresh the in-memory cache so the next run can skip page load too
         _last_bearer = bearer_token
         _bearer_cached_at = time.monotonic()
         _write_bearer_cache(bearer_token)

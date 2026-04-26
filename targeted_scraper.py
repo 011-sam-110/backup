@@ -69,6 +69,7 @@ async def _acquire_bearer() -> str | None:
                 "--no-sandbox",
                 "--disable-dev-shm-usage",
                 "--enable-unsafe-swiftshader",
+                "--no-zygote",
             ],
             proxy=_pick_proxy(),
         )
