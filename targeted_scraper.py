@@ -210,9 +210,17 @@ async def main():
                     try: await browser.close()
                     except Exception: pass
                 browser, page = await _launch(pw)
-                bearer = None  # force token refresh after restart
+                # Don't wipe bearer — disk-cached token is still usable
+                # even after a browser restart; page.evaluate() just needs
+                # a live browser, not one that has visited zapmap.com
 
-            # Refresh bearer token when expired
+            # Refresh bearer token when expired — try disk cache before navigating
+            if not bearer or bearer_age_s >= BEARER_MAX_AGE_S:
+                cached_token, cached_age = _read_bearer_cache()
+                if cached_token:
+                    bearer = cached_token
+                    bearer_age_s = cached_age
+                    log.info("Bearer reloaded from disk cache (age %.0fs)", cached_age)
             if not bearer or bearer_age_s >= BEARER_MAX_AGE_S:
                 log.info("Refreshing bearer token...")
                 bearer = await _fetch_bearer(page)
