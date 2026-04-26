@@ -136,15 +136,20 @@ async def _fetch_bearer(page) -> str | None:
 async def _api_fetch(page, url: str, bearer: str) -> dict | None:
     """Call a Zapmap API endpoint using the browser's JS fetch (real Chrome TLS)."""
     try:
-        return await page.evaluate(
+        result = await page.evaluate(
             """async ([url, auth]) => {
                 const r = await fetch(url, { headers: { Authorization: auth } });
-                if (!r.ok) return null;
+                if (!r.ok) return { _err: r.status };
                 return await r.json();
             }""",
             [url, bearer],
         )
-    except Exception:
+        if result and "_err" in result:
+            log.warning("_api_fetch: HTTP %s for %s", result["_err"], url)
+            return None
+        return result
+    except Exception as exc:
+        log.warning("_api_fetch exception: %s", exc)
         return None
 
 
@@ -245,7 +250,9 @@ async def main():
                     continue
                 uuids = db.get_hubs_for_scrape_interval(interval_min)
                 if not uuids:
+                    log.info("Cycle %d | %dm: no hubs configured for this interval", cycle, interval_min)
                     continue
+                log.info("Cycle %d | %dm: scraping %d hub(s)", cycle, interval_min, len(uuids))
                 t0 = time.monotonic()
                 count = await _scrape_hubs(page, bearer, uuids)
                 log.info("Cycle %d | %dm: %d snapshots in %.1fs",
