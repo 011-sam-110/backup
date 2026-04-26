@@ -108,27 +108,36 @@ async def _launch(pw):
     return browser, page
 
 
-async def _fetch_bearer(page) -> str | None:
-    """Navigate to zapmap.com/live/ on the persistent page to capture a bearer token."""
+async def _navigate_zapmap(page, capture_bearer: bool = False) -> str | None:
+    """Navigate to zapmap.com/live/ to establish origin context for API fetches.
+
+    The Zapmap API only accepts CORS requests from https://www.zapmap.com —
+    fetch() from about:blank is rejected. This must be called once after every
+    browser launch. When capture_bearer=True, also sniffs the bearer token from
+    outgoing requests (used on first boot and every ~55 min when token expires).
+    """
     bearer = None
 
-    def on_request(request):
-        nonlocal bearer
-        if bearer or "api.zap-map.io" not in request.url:
-            return
-        auth = request.headers.get("authorization", "")
-        if auth.startswith("Bearer "):
-            bearer = auth
+    if capture_bearer:
+        def on_request(request):
+            nonlocal bearer
+            if bearer or "api.zap-map.io" not in request.url:
+                return
+            auth = request.headers.get("authorization", "")
+            if auth.startswith("Bearer "):
+                bearer = auth
+        page.on("request", on_request)
 
-    page.on("request", on_request)
     try:
         await page.goto("https://www.zapmap.com/live/",
                         wait_until="domcontentloaded", timeout=90_000)
-        await page.wait_for_timeout(4_000)
+        # Wait for JS to fire its API calls so we can capture the bearer
+        await page.wait_for_timeout(5_000 if capture_bearer else 2_000)
     except Exception as exc:
-        log.warning("Bearer fetch — page.goto failed: %s", exc)
+        log.warning("_navigate_zapmap: page.goto failed: %s", exc)
     finally:
-        page.remove_listener("request", on_request)
+        if capture_bearer:
+            page.remove_listener("request", on_request)
 
     return bearer
 
@@ -215,26 +224,40 @@ async def main():
                     try: await browser.close()
                     except Exception: pass
                 browser, page = await _launch(pw)
-                # Don't wipe bearer — disk-cached token is still usable
-                # even after a browser restart; page.evaluate() just needs
-                # a live browser, not one that has visited zapmap.com
+                # Always navigate to zapmap.com after launch — fetch() from
+                # about:blank is CORS-blocked by the Zapmap API; the page must
+                # be on https://www.zapmap.com for API calls to succeed.
+                need_bearer = not bearer or bearer_age_s >= BEARER_MAX_AGE_S
+                log.info("Navigating to zapmap.com (capture_bearer=%s)...", need_bearer)
+                fresh = await _navigate_zapmap(page, capture_bearer=need_bearer)
+                if fresh:
+                    bearer = fresh
+                    bearer_age_s = 0.0
+                    _write_bearer_cache(bearer)
+                    log.info("Bearer token captured from navigation")
+                elif need_bearer:
+                    # Navigation didn't yield a bearer — try disk cache as fallback
+                    cached_token, cached_age = _read_bearer_cache()
+                    if cached_token:
+                        bearer = cached_token
+                        bearer_age_s = cached_age
+                        log.info("Bearer reloaded from disk cache (age %.0fs)", cached_age)
+                    else:
+                        log.warning("No bearer token available — skipping cycle %d", cycle)
+                        await asyncio.sleep(CYCLE_INTERVAL_S)
+                        continue
 
-            # Refresh bearer token when expired — try disk cache before navigating
-            if not bearer or bearer_age_s >= BEARER_MAX_AGE_S:
-                cached_token, cached_age = _read_bearer_cache()
-                if cached_token:
-                    bearer = cached_token
-                    bearer_age_s = cached_age
-                    log.info("Bearer reloaded from disk cache (age %.0fs)", cached_age)
-            if not bearer or bearer_age_s >= BEARER_MAX_AGE_S:
-                log.info("Refreshing bearer token...")
-                bearer = await _fetch_bearer(page)
-                if bearer:
+            # Refresh bearer token when it expires (~55 min)
+            if bearer_age_s >= BEARER_MAX_AGE_S:
+                log.info("Bearer token expired — refreshing...")
+                fresh = await _navigate_zapmap(page, capture_bearer=True)
+                if fresh:
+                    bearer = fresh
                     bearer_age_s = 0.0
                     _write_bearer_cache(bearer)
                     log.info("Bearer token refreshed")
                 else:
-                    log.warning("Could not obtain bearer token — skipping cycle %d", cycle)
+                    log.warning("Bearer refresh failed — will retry next cycle")
                     await asyncio.sleep(CYCLE_INTERVAL_S)
                     continue
 
