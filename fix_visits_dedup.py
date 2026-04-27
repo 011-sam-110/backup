@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""One-time cleanup: delete all visits for targeted hubs and start fresh.
+"""Cleanup: for each EVSE on targeted hubs, keep only the oldest open visit.
 
-The old targeted scraper wrote duplicate visits to the main visits table.
-The data is too mixed to unpick cleanly, so we clear it and let the fixed
-code rebuild accurate visits from this point forward.
+An EVSE can only have one active charging session at a time, so any EVSE with
+multiple open visits has duplicates. We keep the oldest (the real session start)
+and delete the rest. Visits that are already closed are not touched.
 
 Run with --dry-run to preview without making changes.
 """
@@ -33,27 +33,53 @@ def main(dry_run: bool = False) -> None:
         return
 
     ph = ",".join("?" * len(targeted_uuids))
-    count = con.execute(
-        f"SELECT COUNT(*) FROM visits WHERE hub_uuid IN ({ph})", targeted_uuids
-    ).fetchone()[0]
 
-    print(f"Targeted hubs: {len(targeted_uuids)}")
-    print(f"Visits to delete: {count}")
+    # Find EVSEs with more than one open visit
+    duped_evses = con.execute(f"""
+        SELECT evse_uuid, COUNT(*) AS open_count
+        FROM visits
+        WHERE hub_uuid IN ({ph})
+          AND ended_at IS NULL
+        GROUP BY evse_uuid
+        HAVING COUNT(*) > 1
+    """, targeted_uuids).fetchall()
 
-    if count == 0:
-        print("Nothing to delete.")
+    if not duped_evses:
+        print("No EVSEs with multiple open visits — nothing to do.")
         con.close()
         return
+
+    total_to_delete = 0
+    ids_to_delete = []
+
+    for row in duped_evses:
+        evse_uuid = row["evse_uuid"]
+        # Get all open visits for this EVSE, oldest first
+        open_visits = con.execute("""
+            SELECT id, started_at FROM visits
+            WHERE evse_uuid = ? AND ended_at IS NULL
+            ORDER BY started_at ASC
+        """, (evse_uuid,)).fetchall()
+
+        # Keep the oldest (index 0), delete the rest
+        duplicates = [v["id"] for v in open_visits[1:]]
+        ids_to_delete.extend(duplicates)
+        total_to_delete += len(duplicates)
+        print(f"  EVSE {evse_uuid}: keep oldest ({open_visits[0]['started_at'][:19]}), "
+              f"delete {len(duplicates)} duplicate(s)")
+
+    print(f"\nTotal duplicates to delete: {total_to_delete}")
 
     if dry_run:
         print("[DRY RUN] No changes made.")
         con.close()
         return
 
-    con.execute(f"DELETE FROM visits WHERE hub_uuid IN ({ph})", targeted_uuids)
+    ph2 = ",".join("?" * len(ids_to_delete))
+    con.execute(f"DELETE FROM visits WHERE id IN ({ph2})", ids_to_delete)
     con.commit()
     con.close()
-    print(f"Deleted {count} visits. Accurate counts will rebuild from the next scrape.")
+    print(f"Done. Deleted {total_to_delete} duplicate open visits.")
 
 
 if __name__ == "__main__":
