@@ -15,7 +15,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from dotenv import load_dotenv
 
 from log_setup import setup_logging
-from scraper import scrape
+from scraper import scrape, scrape_targeted
 import db
 from export import export_reports, export_interval_comparison
 
@@ -323,6 +323,18 @@ def job():
 
 
 
+def targeted_job(scrape_interval: int) -> None:
+    """Poll hubs in groups assigned to this scrape_interval."""
+    uuids = db.get_hubs_for_scrape_interval(scrape_interval)
+    if not uuids:
+        return
+    try:
+        count = asyncio.run(scrape_targeted(uuids, scrape_interval))
+        log.debug("targeted_job [%dmin]: %d records", scrape_interval, count)
+    except Exception as exc:
+        log.error("targeted_job [%dmin] failed: %s", scrape_interval, exc)
+
+
 def export_job():
     """Daily Excel report export — all sites + per-group + interval comparison."""
     try:
@@ -340,6 +352,18 @@ if __name__ == "__main__":
     scheduler = BlockingScheduler()
     scheduler.add_job(job, "interval", minutes=INTERVAL_MINUTES, max_instances=1)
     scheduler.add_job(export_job, "cron", hour=6, minute=0, id="daily_export", max_instances=1)
+
+    # Targeted interval jobs — one per valid scrape_interval value (1-5 min).
+    # Each returns early if no groups are assigned to that interval.
+    # Phase offsets ensure they don't all fire simultaneously on startup.
+    _now = datetime.now(timezone.utc)
+    for _iv, _offset in [(1, 10), (2, 22), (3, 34), (4, 46), (5, 58)]:
+        scheduler.add_job(
+            lambda m=_iv: targeted_job(m), "interval", minutes=_iv,
+            id=f"targeted_{_iv}min", max_instances=1,
+            next_run_time=_now + timedelta(seconds=_offset),
+        )
+
     threading.Thread(target=_refresh_loop, daemon=True).start()
     job()
     scheduler.start()

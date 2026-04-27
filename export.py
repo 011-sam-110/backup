@@ -254,84 +254,89 @@ def _build_workbook(data: dict) -> Workbook:
     return wb
 
 
-def _derive_interval_series(base: list, interval_minutes: int) -> dict:
-    """Return {boundary_dt: (charging_count, util_pct_raw)} for each N-min boundary."""
-    if not base:
-        return {}
-    tol = timedelta(seconds=interval_minutes * 30)
-    step = timedelta(minutes=interval_minutes)
-    first_dt = base[0][0].replace(second=0, microsecond=0)
-    last_dt = base[-1][0]
-    result = {}
-    boundary = first_dt
-    while boundary <= last_dt + tol:
-        candidates = [(abs(r[0] - boundary), r) for r in base if abs(r[0] - boundary) <= tol]
-        if candidates:
-            _, nearest = min(candidates, key=lambda x: x[0])
-            result[boundary] = (nearest[1], nearest[2])
-        boundary += step
-    return result
 
-
-def _build_interval_workbook(hub_name: str, intervals: list[int], snaps) -> Workbook:
-    base = []
-    for s in snaps:
-        raw = s["scraped_at"].replace("Z", "+00:00")
-        dt = datetime.fromisoformat(raw)
-        base.append((dt, s["charging_count"], s["utilisation_pct"]))
-
-    derived_maps: dict[int, dict] = {}
-    for interval in intervals[1:]:
-        derived_maps[interval] = _derive_interval_series(base, interval)
-
+def _build_interval_workbook(
+    hub_name: str,
+    intervals: list[int],
+    snap_data: dict,   # {interval: [{scraped_at, charging_count, utilisation_pct}]}
+    visit_data: dict,  # {interval: {total_visits, visit_days, avg_dwell_min}}
+) -> Workbook:
+    """Three-sheet workbook with real per-interval data from targeted_* tables."""
     wb = Workbook()
     pct = NamedStyle(name=_PCT_STYLE, number_format=_PCT_FMT)
     wb.add_named_style(pct)
-    ws = wb.active
-    ws.title = hub_name[:31]
 
-    # Header row
-    _sh(ws, 1, 1, "Timestamp")
-    col = 2
-    for i in intervals:
-        _sh(ws, 1, col, f"Charging ({i}m)")
-        _sh(ws, 1, col + 1, f"Util% ({i}m)")
-        col += 2
+    # ── Sheet 1: Timeline ────────────────────────────────────────────────────
+    ws1 = wb.active
+    ws1.title = "Timeline"
+    _sh(ws1, 1, 1, "Timestamp")
+    for col, iv in enumerate(intervals, start=2):
+        _sh(ws1, 1, col, f"Charging ({iv}m)")
 
-    # Data rows
-    base_tol = timedelta(seconds=intervals[0] * 30)
-    for row_i, (dt, charging, util_raw) in enumerate(base, start=2):
-        ws.cell(row=row_i, column=1, value=dt.time())
-        col = 2
-        # Base interval (first)
-        ws.cell(row=row_i, column=col, value=charging)
-        c = ws.cell(row=row_i, column=col + 1, value=util_raw / 100.0)
-        c.style = _PCT_STYLE
-        col += 2
-        # Coarser intervals
-        for interval in intervals[1:]:
-            tol = timedelta(seconds=interval * 30)
-            dm = derived_maps[interval]
-            match = next((v for b, v in dm.items() if abs(dt - b) <= tol), None)
-            if match:
-                ws.cell(row=row_i, column=col, value=match[0])
-                c = ws.cell(row=row_i, column=col + 1, value=match[1] / 100.0)
-                c.style = _PCT_STYLE
-            else:
-                ws.cell(row=row_i, column=col, value="")
-                ws.cell(row=row_i, column=col + 1, value="")
-            col += 2
+    snaps_by_interval: dict[int, dict[str, int]] = {}
+    for iv in intervals:
+        for s in snap_data.get(iv, []):
+            ts = s["scraped_at"][:16]
+            snaps_by_interval.setdefault(iv, {})[ts] = s["charging_count"]
 
-    ws.freeze_panes = "B2"
-    ws.column_dimensions[get_column_letter(1)].width = 12
+    all_timestamps = sorted({ts for iv in intervals for ts in snaps_by_interval.get(iv, {})})
+    for ri, ts in enumerate(all_timestamps, start=2):
+        ws1.cell(row=ri, column=1, value=ts)
+        for col, iv in enumerate(intervals, start=2):
+            v = snaps_by_interval.get(iv, {}).get(ts)
+            ws1.cell(row=ri, column=col, value=v if v is not None else "")
+
+    ws1.freeze_panes = "B2"
+    ws1.column_dimensions["A"].width = 18
     for i in range(len(intervals)):
-        ws.column_dimensions[get_column_letter(2 + i * 2)].width = 14
-        ws.column_dimensions[get_column_letter(3 + i * 2)].width = 10
+        ws1.column_dimensions[get_column_letter(2 + i)].width = 14
+
+    # ── Sheet 2: Visits ──────────────────────────────────────────────────────
+    ws2 = wb.create_sheet("Visits")
+    headers2 = ["Interval", "Total Visits", "Visit Days", "Visits/Day", "Avg Dwell (min)"]
+    for col, h in enumerate(headers2, start=1):
+        c = ws2.cell(row=1, column=col, value=h)
+        c.font = _BLUE_FONT
+        c.fill = _BLUE
+
+    for ri, iv in enumerate(intervals, start=2):
+        stats = visit_data.get(iv, {})
+        tv = stats.get("total_visits", 0)
+        vd = stats.get("visit_days") or 0
+        ws2.cell(row=ri, column=1, value=f"{iv} min")
+        ws2.cell(row=ri, column=2, value=tv)
+        ws2.cell(row=ri, column=3, value=vd)
+        ws2.cell(row=ri, column=4, value=round(tv / vd, 1) if vd else 0)
+        ws2.cell(row=ri, column=5, value=stats.get("avg_dwell_min"))
+
+    for col in range(1, 6):
+        ws2.column_dimensions[get_column_letter(col)].width = 18
+
+    # ── Sheet 3: Miss Rate ───────────────────────────────────────────────────
+    ws3 = wb.create_sheet("Miss Rate")
+    baseline = visit_data.get(intervals[0], {}).get("total_visits") or 0
+    _sh(ws3, 1, 1, "Interval")
+    _sh(ws3, 1, 2, "Visits Detected")
+    _sh(ws3, 1, 3, f"vs {intervals[0]}-min baseline")
+    _sh(ws3, 1, 4, "Miss Rate")
+
+    for ri, iv in enumerate(intervals, start=2):
+        detected = visit_data.get(iv, {}).get("total_visits", 0)
+        missed = baseline - detected
+        ws3.cell(row=ri, column=1, value=f"{iv} min")
+        ws3.cell(row=ri, column=2, value=detected)
+        ws3.cell(row=ri, column=3, value=missed)
+        c = ws3.cell(row=ri, column=4, value=(missed / baseline) if baseline else 0)
+        c.number_format = "0.0%"
+
+    for col in range(1, 5):
+        ws3.column_dimensions[get_column_letter(col)].width = 20
 
     return wb
 
 
 def export_interval_comparison(output_dir: str | Path = "exports") -> list[Path]:
+    """Per-hub workbooks comparing real independent per-interval polling data."""
     output_dir = Path(output_dir)
     output_dir.mkdir(exist_ok=True)
     today_str = date.today().strftime("%Y-%m-%d")
@@ -364,19 +369,36 @@ def export_interval_comparison(output_dir: str | Path = "exports") -> list[Path]
         if not intervals:
             continue
 
-        snaps = con.execute("""
-            SELECT scraped_at, charging_count, utilisation_pct
-            FROM snapshots
-            WHERE hub_uuid = ? AND source = 'targeted' AND scraped_at >= ?
-            ORDER BY scraped_at
-        """, (uuid, window_start)).fetchall()
-        if not snaps:
+        # Real per-interval snapshots from targeted_snapshots
+        snap_data: dict[int, list] = {}
+        for iv in intervals:
+            rows = con.execute("""
+                SELECT scraped_at, charging_count, utilisation_pct
+                FROM targeted_snapshots
+                WHERE hub_uuid = ? AND poll_interval_min = ? AND scraped_at >= ?
+                ORDER BY scraped_at
+            """, (uuid, iv, window_start)).fetchall()
+            snap_data[iv] = [dict(r) for r in rows]
+
+        if not any(snap_data.values()):
             continue
 
-        wb = _build_interval_workbook(name, intervals, snaps)
+        # Real per-interval visit stats from targeted_visits
+        visit_data: dict[int, dict] = {}
+        for iv in intervals:
+            row = con.execute("""
+                SELECT COUNT(*) AS total_visits,
+                       COUNT(DISTINCT DATE(started_at)) AS visit_days,
+                       ROUND(AVG(CASE WHEN ended_at IS NOT NULL THEN dwell_min END)) AS avg_dwell_min
+                FROM targeted_visits
+                WHERE hub_uuid = ? AND poll_interval_min = ? AND started_at >= ?
+            """, (uuid, iv, window_start)).fetchone()
+            visit_data[iv] = dict(row) if row else {}
+
+        wb = _build_interval_workbook(name, intervals, snap_data, visit_data)
         path = output_dir / f"interval_comparison_{_slug(name)}_{today_str}.xlsx"
         wb.save(path)
-        log.info("Saved %s (%d rows, intervals %s)", path, len(snaps), intervals)
+        log.info("Saved %s (intervals %s)", path, intervals)
         generated.append(path)
 
     con.close()

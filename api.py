@@ -373,9 +373,8 @@ def interval_hubs():
 
 @app.get("/api/interval-comparison")
 def interval_comparison(hub_uuid: str = Query(...), hours: int = Query(default=24, ge=1, le=168)):
-    """Interval comparison data for a hub — base series + derived coarser-interval views."""
+    """Real per-interval comparison data — reads from targeted_snapshots and targeted_visits."""
     from datetime import datetime, timedelta, timezone
-    from export import _derive_interval_series
 
     con = sqlite3.connect(db.DB_PATH)
     con.row_factory = sqlite3.Row
@@ -397,50 +396,53 @@ def interval_comparison(hub_uuid: str = Query(...), hours: int = Query(default=2
 
     if not intervals:
         con.close()
-        return {"hub_name": hub_name, "intervals": [], "rows": []}
+        return {"hub_name": hub_name, "intervals": [], "rows": [], "visit_stats": {}}
 
     window_start = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
-    snaps = con.execute("""
-        SELECT scraped_at, charging_count, utilisation_pct
-        FROM snapshots
-        WHERE hub_uuid = ? AND source = 'targeted' AND scraped_at >= ?
-        ORDER BY scraped_at
-    """, (hub_uuid, window_start)).fetchall()
+
+    # Real snapshots per interval from targeted_snapshots
+    snap_data: dict[int, list] = {}
+    for iv in intervals:
+        rows_q = con.execute("""
+            SELECT scraped_at, charging_count, utilisation_pct
+            FROM targeted_snapshots
+            WHERE hub_uuid = ? AND poll_interval_min = ? AND scraped_at >= ?
+            ORDER BY scraped_at
+        """, (hub_uuid, iv, window_start)).fetchall()
+        snap_data[iv] = [dict(r) for r in rows_q]
+
+    # Real visit stats per interval from targeted_visits
+    visit_stats: dict[int, dict] = {}
+    for iv in intervals:
+        row = con.execute("""
+            SELECT COUNT(*) AS total_visits,
+                   COUNT(DISTINCT DATE(started_at)) AS visit_days,
+                   ROUND(AVG(CASE WHEN ended_at IS NOT NULL THEN dwell_min END)) AS avg_dwell_min
+            FROM targeted_visits
+            WHERE hub_uuid = ? AND poll_interval_min = ? AND started_at >= ?
+        """, (hub_uuid, iv, window_start)).fetchone()
+        visit_stats[iv] = dict(row) if row else {}
+
     con.close()
 
-    if not snaps:
-        return {"hub_name": hub_name, "intervals": intervals, "rows": []}
-
-    base = []
-    for s in snaps:
-        raw = s["scraped_at"].replace("Z", "+00:00")
-        dt = datetime.fromisoformat(raw)
-        base.append((dt, s["charging_count"], s["utilisation_pct"]))
-
-    derived_maps = {}
-    for interval in intervals[1:]:
-        derived_maps[interval] = _derive_interval_series(base, interval)
+    # Build timeline rows — union all timestamps, blank where interval didn't poll
+    ts_by_interval: dict[int, dict[str, int | None]] = {}
+    all_timestamps: set[str] = set()
+    for iv in intervals:
+        ts_by_interval[iv] = {}
+        for s in snap_data.get(iv, []):
+            ts = s["scraped_at"][:16]
+            ts_by_interval[iv][ts] = s["charging_count"]
+            all_timestamps.add(ts)
 
     rows = []
-    for dt, charging, util_raw in base:
-        row = {
-            "ts": dt.strftime("%H:%M"),
-            f"c_{intervals[0]}": charging,
-            f"u_{intervals[0]}": round(util_raw, 1) if util_raw is not None else None,
-        }
-        for interval in intervals[1:]:
-            tol = timedelta(seconds=interval * 30)
-            dm = derived_maps[interval]
-            match = next((v for b, v in dm.items() if abs(dt - b) <= tol), None)
-            if match:
-                row[f"c_{interval}"] = match[0]
-                row[f"u_{interval}"] = round(match[1], 1) if match[1] is not None else None
-            else:
-                row[f"c_{interval}"] = None
-                row[f"u_{interval}"] = None
+    for ts in sorted(all_timestamps):
+        row: dict = {"ts": ts}
+        for iv in intervals:
+            row[f"c_{iv}"] = ts_by_interval[iv].get(ts)
         rows.append(row)
 
-    return {"hub_name": hub_name, "intervals": intervals, "rows": rows}
+    return {"hub_name": hub_name, "intervals": intervals, "rows": rows, "visit_stats": visit_stats}
 
 
 @app.get("/api/exports")

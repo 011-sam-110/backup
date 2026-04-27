@@ -233,6 +233,55 @@ _MIGRATIONS: dict[int, str | list[str]] = {
         )""",
         "INSERT OR IGNORE INTO app_settings (key, value) VALUES ('targeted_scraping_enabled', '1')",
     ],
+
+    # 25: Polling-interval experiment tables.
+    #     targeted_evse_events — independent per-interval event log (prior state never crosses intervals).
+    #     targeted_visits — independent per-interval visit tracking.
+    #     targeted_snapshots — raw charging counts per poll for the timeline export sheet.
+    #     experiment_hubs — created here but superseded by migration 26; use groups.scrape_interval instead.
+    25: [
+        """CREATE TABLE IF NOT EXISTS experiment_hubs (
+            hub_uuid          TEXT    NOT NULL REFERENCES hubs(uuid) ON DELETE CASCADE,
+            poll_interval_min INTEGER NOT NULL CHECK(poll_interval_min IN (1, 3, 5)),
+            added_at          TEXT    NOT NULL,
+            PRIMARY KEY (hub_uuid, poll_interval_min)
+        )""",
+        """CREATE TABLE IF NOT EXISTS targeted_evse_events (
+            id                INTEGER PRIMARY KEY AUTOINCREMENT,
+            poll_interval_min INTEGER NOT NULL CHECK(poll_interval_min IN (1, 3, 5)),
+            evse_uuid         TEXT    NOT NULL,
+            hub_uuid          TEXT    NOT NULL REFERENCES hubs(uuid),
+            scraped_at        TEXT    NOT NULL,
+            status            TEXT    NOT NULL
+                                  CHECK(status IN ('AVAILABLE', 'CHARGING', 'INOPERATIVE',
+                                                   'OUTOFORDER', 'UNKNOWN'))
+        )""",
+        "CREATE INDEX IF NOT EXISTS idx_tgt_evse_evt_lookup ON targeted_evse_events(poll_interval_min, evse_uuid, scraped_at)",
+        "CREATE INDEX IF NOT EXISTS idx_tgt_evse_evt_hub    ON targeted_evse_events(hub_uuid, poll_interval_min, scraped_at)",
+        """CREATE TABLE IF NOT EXISTS targeted_visits (
+            id                INTEGER PRIMARY KEY AUTOINCREMENT,
+            poll_interval_min INTEGER NOT NULL CHECK(poll_interval_min IN (1, 3, 5)),
+            hub_uuid          TEXT    NOT NULL REFERENCES hubs(uuid),
+            evse_uuid         TEXT    NOT NULL,
+            started_at        TEXT    NOT NULL,
+            ended_at          TEXT,
+            dwell_min         INTEGER
+        )""",
+        "CREATE INDEX IF NOT EXISTS idx_tgt_visits_hub  ON targeted_visits(hub_uuid, poll_interval_min, started_at)",
+        "CREATE INDEX IF NOT EXISTS idx_tgt_visits_evse ON targeted_visits(poll_interval_min, evse_uuid, started_at)",
+        """CREATE TABLE IF NOT EXISTS targeted_snapshots (
+            id                INTEGER PRIMARY KEY AUTOINCREMENT,
+            poll_interval_min INTEGER NOT NULL CHECK(poll_interval_min IN (1, 3, 5)),
+            hub_uuid          TEXT    NOT NULL REFERENCES hubs(uuid),
+            scraped_at        TEXT    NOT NULL,
+            charging_count    INTEGER,
+            utilisation_pct   REAL
+        )""",
+        "CREATE INDEX IF NOT EXISTS idx_tgt_snapshots ON targeted_snapshots(hub_uuid, poll_interval_min, scraped_at)",
+    ],
+
+    # 26: Drop experiment_hubs — hub-to-interval assignment is handled by groups.scrape_interval.
+    26: "DROP TABLE IF EXISTS experiment_hubs",
 }
 
 
@@ -1684,6 +1733,236 @@ def get_visit_stats(start_dt: str | None = None, end_dt: str | None = None,
     """, params).fetchall()
     con.close()
     return [dict(r) for r in rows]
+
+
+# ---------------------------------------------------------------------------
+# Polling-interval experiment — independent per-interval tracking
+# Hub assignment is managed through groups.scrape_interval (existing groups UI).
+# ---------------------------------------------------------------------------
+
+def get_hubs_for_scrape_interval(scrape_interval: int) -> list[str]:
+    """Return UUIDs of all hubs in any group assigned to this scrape_interval."""
+    con = _connect()
+    rows = con.execute("""
+        SELECT DISTINCT gh.hub_uuid
+        FROM group_hubs gh
+        JOIN groups g ON g.id = gh.group_id
+        WHERE g.scrape_interval = ?
+    """, (scrape_interval,)).fetchall()
+    con.close()
+    return [r["hub_uuid"] for r in rows]
+
+
+def detect_targeted_evse_changes(
+    records: list[dict], poll_interval_min: int, con: sqlite3.Connection
+) -> None:
+    """Independent visit detection for one polling interval.
+
+    Reads prior EVSE state exclusively from targeted_evse_events for this interval —
+    never touches hubs.latest_devices_status or the main evse_events table.
+    """
+    if not records:
+        return
+
+    hub_uuids = [r["uuid"] for r in records]
+    ph = ",".join("?" * len(hub_uuids))
+
+    # Latest known status per EVSE for this interval
+    prev_rows = con.execute(f"""
+        SELECT t.evse_uuid, t.hub_uuid, t.status
+        FROM targeted_evse_events t
+        INNER JOIN (
+            SELECT evse_uuid, MAX(scraped_at) AS max_at
+            FROM targeted_evse_events
+            WHERE poll_interval_min = ? AND hub_uuid IN ({ph})
+            GROUP BY evse_uuid
+        ) latest ON t.evse_uuid = latest.evse_uuid AND t.scraped_at = latest.max_at
+        WHERE t.poll_interval_min = ?
+    """, [poll_interval_min] + hub_uuids + [poll_interval_min]).fetchall()
+
+    old_status_map: dict[str, dict[str, str]] = {}
+    for row in prev_rows:
+        old_status_map.setdefault(row["hub_uuid"], {})[row["evse_uuid"]] = row["status"]
+
+    _VALID = frozenset({"AVAILABLE", "CHARGING", "INOPERATIVE", "OUTOFORDER", "UNKNOWN"})
+
+    event_rows: list[tuple] = []
+    visit_opens: list[tuple] = []   # (hub_uuid, evse_uuid, scraped_at)
+    visit_closes: list[tuple] = []  # (evse_uuid, scraped_at)
+
+    for r in records:
+        hub_uuid  = r["uuid"]
+        scraped_at = r["scraped_at"]
+        old_evse_map = old_status_map.get(hub_uuid)
+
+        for device in r.get("devices", []):
+            for evse in device.get("evses", []):
+                evse_uuid = evse.get("evse_uuid")
+                if not evse_uuid:
+                    continue
+                raw = (evse.get("network_status") or "UNKNOWN").upper()
+                new_status = raw if raw in _VALID else "UNKNOWN"
+
+                if old_evse_map is None:
+                    # First poll for this hub at this interval — record state, no visit action
+                    event_rows.append((poll_interval_min, evse_uuid, hub_uuid, scraped_at, new_status))
+                    continue
+
+                old_status = old_evse_map.get(evse_uuid)
+                if old_status is None:
+                    # New EVSE within an existing hub — record state, no visit action
+                    event_rows.append((poll_interval_min, evse_uuid, hub_uuid, scraped_at, new_status))
+                    continue
+
+                if old_status == new_status:
+                    continue
+
+                event_rows.append((poll_interval_min, evse_uuid, hub_uuid, scraped_at, new_status))
+
+                if new_status == "CHARGING":
+                    visit_opens.append((hub_uuid, evse_uuid, scraped_at))
+                if old_status == "CHARGING":
+                    visit_closes.append((evse_uuid, scraped_at))
+
+    if event_rows:
+        con.executemany(
+            "INSERT INTO targeted_evse_events "
+            "(poll_interval_min, evse_uuid, hub_uuid, scraped_at, status) VALUES (?,?,?,?,?)",
+            event_rows,
+        )
+
+    for hub_uuid, evse_uuid, scraped_at in visit_opens:
+        con.execute(
+            "INSERT INTO targeted_visits (poll_interval_min, hub_uuid, evse_uuid, started_at) "
+            "VALUES (?, ?, ?, ?)",
+            (poll_interval_min, hub_uuid, evse_uuid, scraped_at),
+        )
+
+    for evse_uuid, close_scraped_at in visit_closes:
+        open_visit = con.execute("""
+            SELECT id, started_at FROM targeted_visits
+            WHERE poll_interval_min = ? AND evse_uuid = ? AND ended_at IS NULL
+            ORDER BY started_at DESC LIMIT 1
+        """, (poll_interval_min, evse_uuid)).fetchone()
+        if open_visit:
+            start = datetime.fromisoformat(open_visit["started_at"].replace("Z", "+00:00"))
+            end   = datetime.fromisoformat(close_scraped_at.replace("Z", "+00:00"))
+            con.execute(
+                "UPDATE targeted_visits SET ended_at = ?, dwell_min = ? WHERE id = ?",
+                (close_scraped_at, round((end - start).total_seconds() / 60), open_visit["id"]),
+            )
+
+    log.info(
+        "detect_targeted_evse_changes [%dmin]: %d events, %d opens, %d closes",
+        poll_interval_min, len(event_rows), len(visit_opens), len(visit_closes),
+    )
+
+
+def close_stale_targeted_visits(
+    poll_interval_min: int, con: sqlite3.Connection, max_hours: int = 12
+) -> None:
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=max_hours)).isoformat()
+    ids = [
+        r["id"] for r in con.execute(
+            "SELECT id FROM targeted_visits "
+            "WHERE poll_interval_min = ? AND ended_at IS NULL AND started_at < ?",
+            (poll_interval_min, cutoff),
+        ).fetchall()
+    ]
+    if ids:
+        ph = ",".join("?" * len(ids))
+        con.execute(
+            f"UPDATE targeted_visits SET ended_at = ?, dwell_min = NULL WHERE id IN ({ph})",
+            [cutoff] + ids,
+        )
+        log.info("close_stale_targeted_visits [%dmin]: force-closed %d visits", poll_interval_min, len(ids))
+
+
+def insert_targeted_snapshots(records: list[dict], poll_interval_min: int, con: sqlite3.Connection) -> None:
+    if not records:
+        return
+    hub_uuids = [r["uuid"] for r in records]
+    ph = ",".join("?" * len(hub_uuids))
+    evse_counts = {
+        r["uuid"]: r["total_evses"]
+        for r in con.execute(f"SELECT uuid, total_evses FROM hubs WHERE uuid IN ({ph})", hub_uuids).fetchall()
+    }
+    rows = []
+    for r in records:
+        total = evse_counts.get(r["uuid"]) or 0
+        util  = round(100.0 * r["charging_count"] / total, 1) if total > 0 else None
+        rows.append((poll_interval_min, r["uuid"], r["scraped_at"], r["charging_count"], util))
+    con.executemany(
+        "INSERT INTO targeted_snapshots "
+        "(poll_interval_min, hub_uuid, scraped_at, charging_count, utilisation_pct) VALUES (?,?,?,?,?)",
+        rows,
+    )
+
+
+def purge_old_targeted_data(con: sqlite3.Connection) -> None:
+    evt_cutoff  = (datetime.now(timezone.utc) - timedelta(days=EVSE_EVENT_RETENTION_DAYS)).isoformat()
+    snap_cutoff = (datetime.now(timezone.utc) - timedelta(days=TARGETED_SNAPSHOT_RETENTION_DAYS)).isoformat()
+    cur = con.execute("DELETE FROM targeted_evse_events WHERE scraped_at < ?", (evt_cutoff,))
+    if cur.rowcount:
+        log.info("purge_old_targeted_data: deleted %d targeted_evse_events", cur.rowcount)
+    cur = con.execute("DELETE FROM targeted_snapshots WHERE scraped_at < ?", (snap_cutoff,))
+    if cur.rowcount:
+        log.info("purge_old_targeted_data: deleted %d targeted_snapshots", cur.rowcount)
+
+
+def process_targeted_evse_events(records: list[dict], poll_interval_min: int) -> None:
+    """Entry point called from scraper after each experiment poll."""
+    con = _connect()
+    try:
+        detect_targeted_evse_changes(records, poll_interval_min, con)
+        close_stale_targeted_visits(poll_interval_min, con)
+        insert_targeted_snapshots(records, poll_interval_min, con)
+        purge_old_targeted_data(con)
+        con.commit()
+    finally:
+        con.close()
+
+
+def get_interval_comparison_data(hub_uuid: str, hours: int = 24) -> dict:
+    """Return per-interval visit counts + raw timeline snapshots for one hub."""
+    con = _connect()
+    window_start = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+
+    visit_rows = con.execute("""
+        SELECT poll_interval_min,
+               COUNT(*)                                             AS total_visits,
+               COUNT(DISTINCT DATE(started_at))                     AS visit_days,
+               ROUND(AVG(CASE WHEN ended_at IS NOT NULL
+                               THEN dwell_min END))                 AS avg_dwell_min
+        FROM targeted_visits
+        WHERE hub_uuid = ? AND started_at >= ?
+        GROUP BY poll_interval_min
+    """, (hub_uuid, window_start)).fetchall()
+
+    snap_rows = con.execute("""
+        SELECT poll_interval_min, scraped_at, charging_count, utilisation_pct
+        FROM targeted_snapshots
+        WHERE hub_uuid = ? AND scraped_at >= ?
+        ORDER BY scraped_at, poll_interval_min
+    """, (hub_uuid, window_start)).fetchall()
+
+    con.close()
+
+    visit_by_interval = {r["poll_interval_min"]: dict(r) for r in visit_rows}
+    snapshots_by_interval: dict[int, list] = {}
+    for r in snap_rows:
+        snapshots_by_interval.setdefault(r["poll_interval_min"], []).append({
+            "scraped_at": r["scraped_at"],
+            "charging_count": r["charging_count"],
+            "utilisation_pct": r["utilisation_pct"],
+        })
+
+    return {
+        "hub_uuid": hub_uuid,
+        "hours": hours,
+        "visit_stats": visit_by_interval,
+        "snapshots": snapshots_by_interval,
+    }
 
 
 def get_stats() -> dict:

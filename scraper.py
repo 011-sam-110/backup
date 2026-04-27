@@ -665,14 +665,18 @@ async def scrape():
     print(f"Saved {total_snapshots} hub snapshots to database.")
 
 
-async def scrape_targeted(uuids: list[str]) -> int:
-    """Fetch status snapshots for a specific set of hub UUIDs (high-frequency mode).
+async def scrape_targeted(uuids: list[str], scrape_interval: int) -> int:
+    """Fetch status snapshots for a specific set of hub UUIDs at one polling interval.
 
     Launches a lightweight browser session — no bounding-box capture, no zooming.
     When a valid cached bearer token exists, skips loading zapmap.com entirely
     (new page starts at about:blank) to keep targeted runs fast and on-schedule.
     Falls back to loading zapmap.com to obtain a fresh token only when the cache
     is empty or expired.
+
+    Writes to targeted_evse_events, targeted_visits, targeted_snapshots (keyed by
+    scrape_interval) and the main snapshots table. Does NOT write to the main
+    evse_events or visits tables — those are reserved for the full scraper.
 
     Returns the number of snapshots saved.
     """
@@ -787,11 +791,14 @@ async def scrape_targeted(uuids: list[str]) -> int:
         })
 
     if records:
-        db.process_evse_events(records)
+        db.process_targeted_evse_events(records, scrape_interval)
         db.insert_snapshots(records, source='targeted')
         log.info("scrape_targeted: saved %d snapshots", len(records))
 
     return len(records)
+
+
+
 
 
 if __name__ == "__main__":
