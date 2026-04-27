@@ -1911,9 +1911,15 @@ def purge_old_targeted_data(con: sqlite3.Connection) -> None:
 
 
 def process_targeted_evse_events(records: list[dict], poll_interval_min: int) -> None:
-    """Entry point called from scraper after each experiment poll."""
+    """Entry point called from scraper after each targeted poll.
+
+    Writes to both the main visits table (for Live Status) and the targeted_*
+    tables (for interval comparison). detect_evse_changes must run before
+    update_latest_devices_status so it reads the previous state correctly.
+    """
     con = _connect()
     try:
+        detect_evse_changes(records, con)
         detect_targeted_evse_changes(records, poll_interval_min, con)
         close_stale_targeted_visits(poll_interval_min, con)
         insert_targeted_snapshots(records, poll_interval_min, con)
@@ -1921,6 +1927,7 @@ def process_targeted_evse_events(records: list[dict], poll_interval_min: int) ->
         con.commit()
     finally:
         con.close()
+    update_latest_devices_status(records)
 
 
 def get_interval_comparison_data(hub_uuid: str, hours: int = 24) -> dict:

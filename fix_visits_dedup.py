@@ -1,16 +1,9 @@
 #!/usr/bin/env python3
-"""One-time cleanup: remove duplicate visits created by the targeted scraper bug.
+"""One-time cleanup: delete all visits for targeted hubs and start fresh.
 
-Bug: scrape_targeted() called detect_evse_changes() but never updated
-latest_devices_status, so every targeted poll re-detected the same
-AVAILABLE->CHARGING transition and opened a new visit row each minute.
-
-The duplicates have a specific fingerprint on targeted-hub EVSEs:
-  - dwell_min IS NULL  (set by close_stale_visits after 12h — never properly closed)
-  - ended_at IS NOT NULL  (already stale-closed)
-
-Properly-closed visits (dwell_min IS NOT NULL) are left untouched.
-Non-targeted hubs are not touched.
+The old targeted scraper wrote duplicate visits to the main visits table.
+The data is too mixed to unpick cleanly, so we clear it and let the fixed
+code rebuild accurate visits from this point forward.
 
 Run with --dry-run to preview without making changes.
 """
@@ -25,7 +18,6 @@ def main(dry_run: bool = False) -> None:
     con = sqlite3.connect(DB_PATH)
     con.row_factory = sqlite3.Row
 
-    # Only act on EVSEs belonging to targeted hubs (scrape_interval IS NOT NULL)
     targeted_uuids = [
         r["hub_uuid"] for r in con.execute("""
             SELECT DISTINCT gh.hub_uuid
@@ -40,57 +32,29 @@ def main(dry_run: bool = False) -> None:
         con.close()
         return
 
-    print(f"Targeted hubs: {len(targeted_uuids)}")
-
     ph = ",".join("?" * len(targeted_uuids))
+    count = con.execute(
+        f"SELECT COUNT(*) FROM visits WHERE hub_uuid IN ({ph})", targeted_uuids
+    ).fetchone()[0]
 
-    # Count what we're about to delete
-    stale_count = con.execute(f"""
-        SELECT COUNT(*) FROM visits
-        WHERE hub_uuid IN ({ph})
-          AND ended_at IS NOT NULL
-          AND dwell_min IS NULL
-    """, targeted_uuids).fetchone()[0]
+    print(f"Targeted hubs: {len(targeted_uuids)}")
+    print(f"Visits to delete: {count}")
 
-    # Count what we're keeping
-    real_count = con.execute(f"""
-        SELECT COUNT(*) FROM visits
-        WHERE hub_uuid IN ({ph})
-          AND dwell_min IS NOT NULL
-    """, targeted_uuids).fetchone()[0]
-
-    open_count = con.execute(f"""
-        SELECT COUNT(*) FROM visits
-        WHERE hub_uuid IN ({ph})
-          AND ended_at IS NULL
-    """, targeted_uuids).fetchone()[0]
-
-    print(f"\nVisits for targeted hubs:")
-    print(f"  Stale-closed duplicates (dwell_min IS NULL): {stale_count}  ← will DELETE")
-    print(f"  Properly closed (dwell_min IS NOT NULL):     {real_count}   ← kept")
-    print(f"  Still open (ended_at IS NULL):               {open_count}   ← kept")
-
-    if stale_count == 0:
-        print("\nNothing to delete.")
+    if count == 0:
+        print("Nothing to delete.")
         con.close()
         return
 
     if dry_run:
-        print(f"\n[DRY RUN] Would delete {stale_count} stale-closed visits.")
+        print("[DRY RUN] No changes made.")
         con.close()
         return
 
-    con.execute(f"""
-        DELETE FROM visits
-        WHERE hub_uuid IN ({ph})
-          AND ended_at IS NOT NULL
-          AND dwell_min IS NULL
-    """, targeted_uuids)
+    con.execute(f"DELETE FROM visits WHERE hub_uuid IN ({ph})", targeted_uuids)
     con.commit()
     con.close()
-    print(f"\nDeleted {stale_count} stale-closed duplicate visits.")
+    print(f"Deleted {count} visits. Accurate counts will rebuild from the next scrape.")
 
 
 if __name__ == "__main__":
-    dry_run = "--dry-run" in sys.argv
-    main(dry_run=dry_run)
+    main("--dry-run" in sys.argv)
