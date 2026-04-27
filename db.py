@@ -1579,6 +1579,19 @@ def get_hubs_for_scrape_interval(minutes: int) -> list[str]:
     return [r["hub_uuid"] for r in rows]
 
 
+def get_all_targeted_hub_uuids() -> set[str]:
+    """Return UUIDs of all hubs covered by any targeted scrape group (scrape_interval IS NOT NULL)."""
+    con = _connect()
+    rows = con.execute("""
+        SELECT DISTINCT gh.hub_uuid
+        FROM group_hubs gh
+        JOIN groups g ON g.id = gh.group_id
+        WHERE g.scrape_interval IS NOT NULL
+    """).fetchall()
+    con.close()
+    return {r["hub_uuid"] for r in rows}
+
+
 def get_setting(key: str, default: str = "") -> str:
     con = _connect()
     row = con.execute("SELECT value FROM app_settings WHERE key = ?", (key,)).fetchone()

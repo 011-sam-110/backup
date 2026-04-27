@@ -486,6 +486,46 @@ async def scrape():
                     for loc in data.get("data", []):
                         locations[loc["uuid"]] = loc
 
+        # ── Multi-centre sweep: tile GB with additional bounding-box queries ──
+        # The Zapmap API returns at most ~300 results per centre point. A single
+        # centre at lat=52/lng=-1 (central England) misses Scotland, Wales, and
+        # the far south-west. These extra centres cover the remainder.
+        EXTRA_BBOX_CENTRES = [
+            (54.5, -1.5),   # Northern England (Newcastle/Durham)
+            (53.5, -2.5),   # NW England (Manchester/Liverpool)
+            (51.5, -3.5),   # Wales / Bristol
+            (51.2,  0.5),   # SE England (Kent/Surrey)
+            (56.5, -4.0),   # Central Scotland (Glasgow/Edinburgh)
+            (57.5, -4.0),   # Highland Scotland (Inverness)
+        ]
+        if _bbox_base_url:
+            for clat, clng in EXTRA_BBOX_CENTRES:
+                centre_url = re.sub(
+                    r"(latitude=)[^&]+(&longitude=)[^&]+",
+                    rf"\g<1>{clat}\g<2>{clng}",
+                    _bbox_base_url,
+                )
+                before = len(locations)
+                sep = "&" if "?" in centre_url else "?"
+                first = await fetch_via_browser(page, centre_url, auth=bearer_token)
+                if not first:
+                    log.warning("Multi-centre bbox failed for (%.1f, %.1f)", clat, clng)
+                    continue
+                last_page = (first.get("meta") or {}).get("last_page", 1)
+                for loc in first.get("data", []):
+                    locations[loc["uuid"]] = loc
+                for page_num in range(2, last_page + 1):
+                    data = await fetch_via_browser(
+                        page, f"{centre_url}{sep}page={page_num}", auth=bearer_token
+                    )
+                    if data:
+                        for loc in data.get("data", []):
+                            locations[loc["uuid"]] = loc
+                added = len(locations) - before
+                print(f"  Centre ({clat}, {clng}): +{added} new locations (total: {len(locations)})")
+                log.info("Multi-centre bbox (%.1f, %.1f): %d pages, +%d locations",
+                         clat, clng, last_page, added)
+
         if not bearer_token:
             log.warning("No Bearer token captured — snapshots will have zero counts")
             print("WARNING: No Bearer token captured — status data will be missing. Snapshots will have zero counts.")
@@ -602,6 +642,15 @@ async def scrape():
 
     # Persist to SQLite
     db.init_db()
+
+    # Exclude hubs covered by targeted scraping — they get snapshots + event detection
+    # from targeted_scraper.py, so writing full-scrape snapshots for them would double
+    # visit counts and inflate utilisation history.
+    targeted_uuids = db.get_all_targeted_hub_uuids()
+    if targeted_uuids:
+        snapshot_records = [r for r in snapshot_records if r["uuid"] not in targeted_uuids]
+        db_only_records  = [r for r in db_only_records  if r["uuid"] not in targeted_uuids]
+        log.info("Full scrape: excluded %d targeted hub(s) from snapshot write", len(targeted_uuids))
 
     # EVSE-level change detection must run before upsert_hubs overwrites latest_devices_status
     db.process_evse_events(snapshot_records + db_only_records)
