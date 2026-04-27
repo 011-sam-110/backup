@@ -46,7 +46,7 @@ function toRows(data, activeCols) {
 
 export default function ExportModal({ onClose }) {
   const filters = useFilters()
-  const { hubsUrl } = filters
+  const { hubsUrl, analyticsParams } = filters
 
   const hasFilters = filters.search || filters.minKw || filters.maxKw ||
     filters.minUtil || filters.maxUtil || filters.connectorFilter !== 'all' ||
@@ -66,6 +66,33 @@ export default function ExportModal({ onClose }) {
   }
 
   async function handleDownload() {
+    if (scope === 'trend') {
+      setDownloading(true)
+      try {
+        const ap = analyticsParams()
+        const url = `/api/history?hours=${hours}${ap}`
+        const res = await authFetch(url)
+        const raw = await res.json()
+        const rows = raw.map(r => ({
+          'Time': r.scraped_at,
+          'Avg Utilisation %': r.avg_utilisation_pct,
+          'Total Charging': r.total_charging,
+          'Hub Count': r.hub_count,
+        }))
+        const ws = XLSX.utils.json_to_sheet(rows)
+        const wb = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(wb, ws, 'Utilisation Trend')
+        const date = new Date().toISOString().slice(0, 10)
+        XLSX.writeFile(wb, `utilisation_trend_${date}.xlsx`)
+        onClose()
+      } catch (e) {
+        alert('Export failed: ' + e.message)
+      } finally {
+        setDownloading(false)
+      }
+      return
+    }
+
     const anySelected = ALL_COLS.some(c => cols[c.key])
     if (!anySelected) { alert('Select at least one column.'); return }
 
@@ -128,7 +155,7 @@ export default function ExportModal({ onClose }) {
             <input type="radio" name="scope" value="current" checked={scope === 'current'} onChange={() => setScope('current')} />
             Current snapshot — one row per hub, latest data only
           </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, cursor: 'pointer', fontSize: 13 }}>
             <input type="radio" name="scope" value="history" checked={scope === 'history'} onChange={() => setScope('history')} />
             Full history — all scrape runs, last&nbsp;
             <input
@@ -143,10 +170,25 @@ export default function ExportModal({ onClose }) {
             />
             &nbsp;hours
           </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+            <input type="radio" name="scope" value="trend" checked={scope === 'trend'} onChange={() => setScope('trend')} />
+            Export utilisation trend — one row per scrape run, last&nbsp;
+            <input
+              className="filter-input"
+              type="number"
+              min="1"
+              max="8760"
+              value={hours}
+              onChange={e => setHours(Number(e.target.value))}
+              style={{ width: 70, padding: '3px 8px' }}
+              disabled={scope !== 'trend'}
+            />
+            &nbsp;hours
+          </label>
         </div>
 
         {/* Hubs */}
-        <div style={{ marginBottom: 20 }}>
+        {scope !== 'trend' && <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: 10 }}>
             Hubs
           </div>
@@ -166,10 +208,10 @@ export default function ExportModal({ onClose }) {
             Current filter
             {!hasFilters && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>(no filters active)</span>}
           </label>
-        </div>
+        </div>}
 
         {/* Columns */}
-        <div style={{ marginBottom: 20 }}>
+        {scope !== 'trend' && <div style={{ marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <div style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>
               Columns
@@ -193,7 +235,7 @@ export default function ExportModal({ onClose }) {
               </label>
             ))}
           </div>
-        </div>
+        </div>}
 
         {/* Actions */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
