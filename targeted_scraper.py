@@ -256,7 +256,7 @@ async def main():
             log.info("Cycle %d | %dm: scraping %d hub(s)", cycle, interval_min, len(uuids))
             t0 = time.monotonic()
             try:
-                count = await asyncio.wait_for(scrape_targeted(uuids), timeout=SCRAPE_TIMEOUT_S)
+                count = await asyncio.wait_for(scrape_targeted(uuids, interval_min), timeout=SCRAPE_TIMEOUT_S)
                 log.info("Cycle %d | %dm: %d snapshots in %.1fs",
                          cycle, interval_min, count, time.monotonic() - t0)
             except asyncio.TimeoutError:
